@@ -1,65 +1,51 @@
-import Image from "next/image";
+import { getClinicTheme } from "@/lib/clinicTheme";
+import Link from "next/link";
 
-export default function Home() {
+export default function HomePage() {
+  const theme = getClinicTheme("demo123");
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-gradient-to-b from-slate-100 to-white px-4">
+      <div className="mx-auto max-w-xl py-24 text-center">
+        <div className="flex min-h-[70vh] flex-col items-center justify-center">
+          <div
+            className="mb-4 flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold shadow-sm"
+            style={{ backgroundColor: `${theme.accent}1f`, color: theme.accent }}
+          >
+            {theme.logoText}
+          </div>
+
+          <h1 className="text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">Reservas Clínicas</h1>
+          <p className="mt-4 text-base text-gray-600 sm:text-lg">
+            Sistema de autoservicio para confirmar, cambiar o cancelar citas sin llamar a recepción.
           </p>
+
+          <div className="mt-8 grid w-full max-w-sm gap-3">
+            <Link
+              href="/a/demo123"
+              className="rounded-xl px-5 py-3 text-base font-medium text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
+              style={{ backgroundColor: theme.primary }}
+            >
+              Ver demo paciente
+            </Link>
+            <Link
+              href="/demo/dashboard"
+              className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-base font-medium text-gray-900 transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+            >
+              Ver demo clínica
+            </Link>
+          </div>
+
+          <p className="mt-5 text-sm text-gray-500">Demo interactiva del MVP para clínicas privadas.</p>
+
+          <section className="mx-auto mt-8 w-full max-w-md space-y-2 text-left text-sm text-gray-600">
+            <h2 className="text-center font-medium text-gray-900">Cómo funciona</h2>
+            <p>1. La clínica envía un enlace único al paciente</p>
+            <p>2. El paciente confirma, cambia o cancela en segundos</p>
+            <p>3. La clínica recibe la actualización automáticamente</p>
+          </section>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
