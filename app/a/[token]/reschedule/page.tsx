@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
+import { getAppointmentByToken, updateAppointment } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
-import { loadAppointment, updateAppointmentStatus } from "@/lib/storage";
+import type { Appointment } from "@/lib/types";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const SLOTS = [
   "Lunes · 16:30",
@@ -17,17 +18,88 @@ const SLOTS = [
   "Miércoles · 16:00",
 ];
 
-type ReschedulePageProps = {
-  params: {
-    token: string;
-  };
-};
+function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
+  if (!row) return null;
 
-export default function ReschedulePage({ params }: ReschedulePageProps) {
-  const token = params.token;
+  return {
+    token: row.token,
+    clinicName: row.clinic_name,
+    service: row.service,
+    datetimeLabel: row.datetime_label,
+    patientName: row.patient_name,
+    address: row.address,
+    durationLabel: row.duration_label,
+    status: row.status,
+    lastUpdateLabel: row.updated_at,
+    idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
+  };
+}
+
+export default function ReschedulePage() {
+  const params = useParams();
+  const token = params.token as string;
   const theme = getClinicTheme(token);
   const router = useRouter();
-  const appointment = useMemo(() => loadAppointment(token), [token]);
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const row = await getAppointmentByToken(token);
+        if (active) setAppointment(toViewAppointment(row));
+      } catch {
+        if (active) setAppointment(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const handleSlotSelect = async (slot: string) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await updateAppointment(token, {
+        status: "change_requested",
+        datetime_label: slot,
+      });
+      router.push(`/a/${token}/confirm`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-600 shadow-sm">
+          Cargando cita...
+        </section>
+      </div>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <div className="space-y-4">
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
+          <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -43,17 +115,15 @@ export default function ReschedulePage({ params }: ReschedulePageProps) {
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">Selecciona un nuevo horario</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Al cambiar, tu cita anterior se libera automáticamente.
+          Al solicitar el cambio, la clínica revisará tu solicitud y te confirmará el horario.
         </p>
+
         <div className="mt-4 space-y-2">
           {SLOTS.map((slot) => (
             <button
               key={slot}
               type="button"
-              onClick={() => {
-                updateAppointmentStatus(token, "rescheduled", { datetimeLabel: slot });
-                router.push(`/a/${token}/confirm`);
-              }}
+              onClick={() => handleSlotSelect(slot)}
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
             >
               {slot}

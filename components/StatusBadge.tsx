@@ -7,8 +7,8 @@ type StatusBadgeProps = {
 const STATUS_META: Record<AppointmentStatus, { label: string; className: string }> = {
   pending: { label: "Pendiente", className: "bg-amber-50 text-amber-700 border border-amber-200" },
   confirmed: { label: "Confirmada", className: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
+  change_requested: { label: "Cambio solicitado", className: "bg-blue-50 text-blue-700 border border-blue-200" },
   cancelled: { label: "Cancelada", className: "bg-red-50 text-red-700 border border-red-200" },
-  rescheduled: { label: "Reprogramada", className: "bg-blue-50 text-blue-700 border border-blue-200" },
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

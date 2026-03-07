@@ -1,4 +1,13 @@
-export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "rescheduled";
+export type AppointmentStatus = "pending" | "confirmed" | "change_requested" | "cancelled";
+export type ActivityAction = "confirmed" | "change_requested" | "cancelled";
+
+export type ActivityEvent = {
+  token: string;
+  patientName: string;
+  datetimeLabel: string;
+  action: ActivityAction;
+  timestamp: string;
+};
 
 export type Appointment = {
   token: string;
