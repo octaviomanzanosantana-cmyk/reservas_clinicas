@@ -1,13 +1,20 @@
 import "server-only";
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { google } from "googleapis";
 import type { AppointmentRow } from "@/lib/appointments";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
-const GOOGLE_TOKEN_PATH = path.join(process.cwd(), ".google-calendar-token.json");
 const DEFAULT_TIMEZONE = "Europe/Madrid";
+const GOOGLE_TOKEN_ROW_ID = "default";
+
+type GoogleOAuthTokens = {
+  access_token?: string | null;
+  refresh_token?: string | null;
+  scope?: string | null;
+  token_type?: string | null;
+  expiry_date?: number | null;
+};
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -26,16 +33,41 @@ function getOAuthClient() {
 }
 
 async function readStoredTokens() {
-  try {
-    const raw = await fs.readFile(GOOGLE_TOKEN_PATH, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
+  const { data, error } = await supabaseAdmin
+    .from("google_calendar_tokens")
+    .select("access_token, refresh_token, scope, token_type, expiry_date")
+    .eq("id", GOOGLE_TOKEN_ROW_ID)
+    .maybeSingle<GoogleOAuthTokens>();
+
+  if (error) {
+    throw new Error(error.message);
   }
+
+  return data ?? null;
 }
 
 async function writeStoredTokens(tokens: unknown) {
-  await fs.writeFile(GOOGLE_TOKEN_PATH, JSON.stringify(tokens, null, 2), "utf8");
+  const nextTokens =
+    typeof tokens === "object" && tokens !== null ? (tokens as GoogleOAuthTokens) : {};
+
+  const payload = {
+    id: GOOGLE_TOKEN_ROW_ID,
+    access_token: nextTokens.access_token ?? null,
+    refresh_token: nextTokens.refresh_token ?? null,
+    scope: nextTokens.scope ?? null,
+    token_type: nextTokens.token_type ?? null,
+    expiry_date:
+      typeof nextTokens.expiry_date === "number" ? Math.trunc(nextTokens.expiry_date) : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabaseAdmin.from("google_calendar_tokens").upsert(payload, {
+    onConflict: "id",
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 function normalizeWeekday(input: string): string {
