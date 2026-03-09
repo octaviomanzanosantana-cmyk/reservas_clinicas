@@ -346,17 +346,27 @@ export default function DemoDashboardPage() {
                 ))}
               </select>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowCreatePanel(true);
-                setCreateError(null);
-              }}
-              className="mt-6 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
-              style={{ backgroundColor: theme.primary }}
-            >
-              Crear cita
-            </button>
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              {!googleConnected && googleAuthUrl ? (
+                <a
+                  href={googleAuthUrl}
+                  className="inline-flex rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 shadow-sm transition-all duration-150 hover:bg-amber-100 active:translate-y-[1px]"
+                >
+                  Conectar Google Calendar
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreatePanel(true);
+                  setCreateError(null);
+                }}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
+                style={{ backgroundColor: theme.primary }}
+              >
+                Crear cita
+              </button>
+            </div>
           </div>
 
           <p className="mt-2 text-sm text-gray-600">
@@ -457,18 +467,6 @@ export default function DemoDashboardPage() {
             </form>
 
             {createError ? <p className="mt-3 text-sm text-red-600">{createError}</p> : null}
-            {!googleConnected && googleAuthUrl ? (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                <p>Google Calendar no está autorizado todavía.</p>
-                <a
-                  href={googleAuthUrl}
-                  className="mt-2 inline-flex rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100"
-                >
-                  Conectar Google Calendar
-                </a>
-              </div>
-            ) : null}
-
             {createdLink ? (
               <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
                 <p className="text-sm font-semibold text-emerald-900">Cita creada correctamente</p>
