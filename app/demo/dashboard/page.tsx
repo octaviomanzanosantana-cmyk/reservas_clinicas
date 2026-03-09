@@ -347,7 +347,30 @@ export default function DemoDashboardPage() {
               </select>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-2">
-              {!googleConnected && googleAuthUrl ? (
+              <span className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm">
+                {googleConnected ? "Google Calendar — Conectado" : "Google Calendar — No conectado"}
+              </span>
+              {googleConnected ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/google/disconnect", { method: "POST" });
+                      if (!response.ok) {
+                        throw new Error("No se pudo desconectar Google Calendar");
+                      }
+                      setGoogleConnected(false);
+                    } catch (error) {
+                      setCreateError(
+                        error instanceof Error ? error.message : "No se pudo desconectar Google Calendar",
+                      );
+                    }
+                  }}
+                  className="inline-flex rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+                >
+                  Desconectar
+                </button>
+              ) : googleAuthUrl ? (
                 <a
                   href={googleAuthUrl}
                   className="inline-flex rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 shadow-sm transition-all duration-150 hover:bg-amber-100 active:translate-y-[1px]"
