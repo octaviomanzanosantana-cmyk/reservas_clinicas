@@ -478,9 +478,14 @@ export default function DemoDashboardPage() {
                   <p className="mt-1 text-xs text-emerald-700">Evento creado en Google Calendar.</p>
                 )}
                 <p className="mt-1 text-xs text-emerald-700">Enlace del paciente</p>
-                <p className="mt-2 break-all rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-900">
+                <a
+                  href={createdLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 block break-all rounded-xl border border-emerald-300 bg-white px-3 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm transition-colors hover:bg-emerald-100"
+                >
                   {createdLink}
-                </p>
+                </a>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
