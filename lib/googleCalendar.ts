@@ -154,7 +154,13 @@ async function getAuthorizedOAuthClient() {
     throw new Error("Google Calendar no autorizado. Conecta la cuenta primero.");
   }
 
-  client.setCredentials(tokens);
+  client.setCredentials({
+    access_token: tokens.access_token ?? undefined,
+    refresh_token: tokens.refresh_token ?? undefined,
+    scope: tokens.scope ?? undefined,
+    token_type: tokens.token_type ?? undefined,
+    expiry_date: tokens.expiry_date ?? undefined,
+  });
   return client;
 }
 
