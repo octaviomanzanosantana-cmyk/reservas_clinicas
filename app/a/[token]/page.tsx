@@ -10,6 +10,13 @@ import type { Appointment } from "@/lib/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+const STATUS_MESSAGE: Record<Appointment["status"], string> = {
+  pending: "Tu cita está pendiente de confirmación",
+  confirmed: "Tu cita está confirmada",
+  cancelled: "Esta cita ha sido cancelada",
+  change_requested: "Hemos recibido tu solicitud de cambio",
+};
+
 function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
   if (!row) return null;
 
@@ -85,21 +92,12 @@ export default function AppointmentHomePage() {
           accentColor={theme.accent}
         />
 
-        <span
-          className="inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium"
-          style={{ backgroundColor: `${theme.accent}1f`, color: theme.accent }}
+        <section
+          className="rounded-2xl border px-4 py-3 text-sm font-medium shadow-sm"
+          style={{ borderColor: `${theme.accent}33`, backgroundColor: `${theme.accent}12`, color: theme.accent }}
         >
-          Enlace seguro de autoservicio
-        </span>
-
-        <p className="text-xs text-gray-500">Tu cita es en 2 días</p>
-
-        {appointment.status === "confirmed" ? (
-          <p className="text-sm font-medium text-emerald-600">Cita confirmada</p>
-        ) : null}
-        {appointment.status === "change_requested" ? (
-          <p className="text-sm font-medium text-blue-700">Solicitud de cambio enviada</p>
-        ) : null}
+          {STATUS_MESSAGE[appointment.status]}
+        </section>
 
         <AppointmentCard appointment={appointment} />
 
