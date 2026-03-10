@@ -2,21 +2,17 @@
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
-import { getAppointmentByToken, updateAppointment } from "@/lib/appointments";
+import { getAppointmentByToken } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const SLOTS = [
-  "Lunes · 16:30",
-  "Lunes · 17:00",
-  "Martes · 10:00",
-  "Martes · 11:30",
-  "Miércoles · 12:00",
-  "Miércoles · 16:00",
-];
+type AvailabilitySlot = {
+  value: string;
+  label: string;
+};
 
 function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
   if (!row) return null;
@@ -43,19 +39,45 @@ export default function ReschedulePage() {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       setLoading(true);
+      setSlotsLoading(true);
       try {
         const row = await getAppointmentByToken(token);
-        if (active) setAppointment(toViewAppointment(row));
+        if (!active) return;
+
+        setAppointment(toViewAppointment(row));
+
+        const baseDate = row?.scheduled_at ? new Date(row.scheduled_at) : new Date();
+        const year = baseDate.getFullYear();
+        const month = String(baseDate.getMonth() + 1).padStart(2, "0");
+        const day = String(baseDate.getDate()).padStart(2, "0");
+        const dateParam = `${year}-${month}-${day}`;
+
+        const response = await fetch(
+          `/api/availability?date=${encodeURIComponent(dateParam)}&excludeToken=${encodeURIComponent(token)}`,
+        );
+        const data = (await response.json()) as { slots?: AvailabilitySlot[] };
+        if (active) {
+          setSlots(response.ok ? (data.slots ?? []) : []);
+        }
       } catch {
-        if (active) setAppointment(null);
+        if (active) {
+          setAppointment(null);
+          setSlots([]);
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setSlotsLoading(false);
+        }
       }
     };
 
@@ -66,15 +88,28 @@ export default function ReschedulePage() {
     };
   }, [token]);
 
-  const handleSlotSelect = async (slot: string) => {
+  const handleSlotSelect = async (slot: AvailabilitySlot) => {
     if (submitting) return;
     setSubmitting(true);
+    setErrorMessage(null);
     try {
-      await updateAppointment(token, {
-        status: "change_requested",
-        datetime_label: slot,
+      const response = await fetch("/api/appointments/reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          scheduled_at: slot.value,
+          datetime_label: slot.label,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("No se pudo reprogramar la cita");
+      }
+
       router.push(`/a/${token}/confirm`);
+    } catch {
+      setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -119,17 +154,24 @@ export default function ReschedulePage() {
         </p>
 
         <div className="mt-4 space-y-2">
-          {SLOTS.map((slot) => (
-            <button
-              key={slot}
-              type="button"
-              onClick={() => handleSlotSelect(slot)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
-            >
-              {slot}
-            </button>
-          ))}
+          {slotsLoading ? (
+            <p className="text-sm text-gray-600">Cargando disponibilidad...</p>
+          ) : slots.length > 0 ? (
+            slots.map((slot) => (
+              <button
+                key={slot.value}
+                type="button"
+                onClick={() => handleSlotSelect(slot)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+              >
+                {slot.label}
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-gray-600">No hay horarios disponibles para esa fecha.</p>
+          )}
         </div>
+        {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
       </section>
 
       <Link
