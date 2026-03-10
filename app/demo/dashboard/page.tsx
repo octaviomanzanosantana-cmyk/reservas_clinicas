@@ -585,24 +585,62 @@ export default function DemoDashboardPage() {
                         <StatusBadge status={item.status} />
                       </td>
                       <td className="px-2 py-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const link = `${window.location.origin}/a/${item.token}`;
-                              await navigator.clipboard.writeText(link);
-                              setCopiedId(String(item.id));
-                              window.setTimeout(() => {
-                                setCopiedId(null);
-                              }, 2000);
-                            } catch {
-                              setCreateError("No se pudo copiar el enlace");
-                            }
-                          }}
-                          className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          {copiedId === String(item.id) ? "✓ Copiado" : "Copiar enlace"}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const link = `${window.location.origin}/a/${item.token}`;
+                                await navigator.clipboard.writeText(link);
+                                setCopiedId(String(item.id));
+                                window.setTimeout(() => {
+                                  setCopiedId(null);
+                                }, 2000);
+                              } catch {
+                                setCreateError("No se pudo copiar el enlace");
+                              }
+                            }}
+                            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            {copiedId === String(item.id) ? "✓ Copiado" : "Copiar enlace"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch("/api/appointments/cancel", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ token: item.token }),
+                                });
+                                if (!response.ok) {
+                                  throw new Error("No se pudo cancelar la cita");
+                                }
+
+                                const updatedAt = new Date().toISOString();
+                                setClinicAppointments((prev) =>
+                                  prev.map((row) =>
+                                    row.token === item.token
+                                      ? { ...row, status: "cancelled", updated_at: updatedAt }
+                                      : row,
+                                  ),
+                                );
+                                setAppointment((prev) =>
+                                  prev && prev.token === item.token
+                                    ? { ...prev, status: "cancelled", updated_at: updatedAt }
+                                    : prev,
+                                );
+                              } catch (error) {
+                                setCreateError(
+                                  error instanceof Error ? error.message : "No se pudo cancelar la cita",
+                                );
+                              }
+                            }}
+                            className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
