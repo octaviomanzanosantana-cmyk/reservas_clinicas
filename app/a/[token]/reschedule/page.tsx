@@ -4,6 +4,7 @@ import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import { getAppointmentByToken } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
+import { getClinicSlugByClinicName } from "@/lib/demoClinics";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -101,9 +102,22 @@ export default function ReschedulePage() {
 
       setSlotsLoading(true);
       try {
-        const response = await fetch(
-          `/api/availability?date=${encodeURIComponent(selectedDate)}&excludeToken=${encodeURIComponent(token)}`,
-        );
+        const searchParams = new URLSearchParams({
+          date: selectedDate,
+          excludeToken: token,
+        });
+        const clinicSlug = appointment?.clinicName
+          ? getClinicSlugByClinicName(appointment.clinicName)
+          : null;
+
+        if (clinicSlug) {
+          searchParams.set("clinicSlug", clinicSlug);
+        }
+        if (appointment?.service) {
+          searchParams.set("service", appointment.service);
+        }
+
+        const response = await fetch(`/api/availability?${searchParams.toString()}`);
         const data = (await response.json()) as { slots?: AvailabilitySlot[] };
         if (active) {
           setSlots(response.ok ? (data.slots ?? []) : []);
@@ -124,7 +138,7 @@ export default function ReschedulePage() {
     return () => {
       active = false;
     };
-  }, [selectedDate, token]);
+  }, [appointment?.clinicName, appointment?.service, selectedDate, token]);
 
   const handleSlotSelect = async (slot: AvailabilitySlot) => {
     if (submitting) return;

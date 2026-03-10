@@ -76,3 +76,8 @@ export const DEMO_TOKENS = Object.keys(DEMO_CLINICS);
 export function getClinicConfig(token: string): DemoClinicConfig {
   return DEMO_CLINICS[token] ?? DEMO_CLINICS.demo123;
 }
+
+export function getClinicSlugByClinicName(clinicName: string): string | null {
+  const match = Object.values(DEMO_CLINICS).find((clinic) => clinic.clinicName === clinicName);
+  return match?.clinicSlug ?? null;
+}
