@@ -238,6 +238,7 @@ export default function DemoDashboardPage() {
       })
       .map((item) => ({
         id: item.id,
+        token: item.token,
         hourLabel: item.scheduled_at
           ? timeFormatter.format(new Date(item.scheduled_at))
           : "--:--",
@@ -570,6 +571,7 @@ export default function DemoDashboardPage() {
                   <th className="px-2 py-2 font-medium">Paciente</th>
                   <th className="px-2 py-2 font-medium">Servicio</th>
                   <th className="px-2 py-2 font-medium">Estado</th>
+                  <th className="px-2 py-2 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -582,11 +584,27 @@ export default function DemoDashboardPage() {
                       <td className="px-2 py-2">
                         <StatusBadge status={item.status} />
                       </td>
+                      <td className="px-2 py-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const link = `${window.location.origin}/a/${item.token}`;
+                              await navigator.clipboard.writeText(link);
+                            } catch {
+                              setCreateError("No se pudo copiar el enlace");
+                            }
+                          }}
+                          className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Copiar enlace
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td className="px-2 py-4 text-gray-500" colSpan={4}>
+                    <td className="px-2 py-4 text-gray-500" colSpan={5}>
                       No hay citas programadas para hoy
                     </td>
                   </tr>
