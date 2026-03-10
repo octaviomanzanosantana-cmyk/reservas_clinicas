@@ -1,5 +1,6 @@
 import { getAvailableSlotsForDate, getBusyRangesFromAppointments } from "@/lib/availability";
 import { getGoogleCalendarBusyRangesForDate } from "@/lib/googleCalendar";
+import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
@@ -36,6 +37,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
     const excludeToken = searchParams.get("excludeToken") ?? undefined;
+    const clinicSlug = searchParams.get("clinicSlug")?.trim();
+    const service = searchParams.get("service")?.trim();
 
     if (!dateParam) {
       return NextResponse.json({ error: "date es requerido" }, { status: 400 });
@@ -70,10 +73,15 @@ export async function GET(request: Request) {
     });
     const googleBusyRanges = await getGoogleCalendarBusyRangesForDate(date);
     const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
+    const serviceRow =
+      clinicSlug && service
+        ? await getServiceByClinicSlugAndName(clinicSlug, service)
+        : null;
 
     const slots = getAvailableSlotsForDate({
       date,
       busyRanges,
+      ...(serviceRow ? { slotMinutes: serviceRow.duration_minutes } : {}),
     });
 
     return NextResponse.json({ slots });
