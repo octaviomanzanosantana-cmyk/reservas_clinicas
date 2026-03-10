@@ -5,21 +5,27 @@ type AvailabilityAppointment = {
   status?: string | null;
 };
 
-type GetAvailableSlotsParams = {
-  date: Date;
-  appointments: AvailabilityAppointment[];
-  excludeToken?: string;
-  slotMinutes?: number;
+export type BusyRange = {
+  start: Date;
+  end: Date;
 };
 
-type AvailableSlot = {
+export type GetAvailableSlotsParams = {
+  date: Date;
+  busyRanges: BusyRange[];
+  slotMinutes?: number;
+  dayStartHour?: number;
+  dayEndHour?: number;
+};
+
+export type AvailableSlot = {
   value: string;
   label: string;
 };
 
 const DEFAULT_DURATION_MINUTES = 30;
-const CLINIC_START_HOUR = 9;
-const CLINIC_END_HOUR = 18;
+const DEFAULT_DAY_START_HOUR = 9;
+const DEFAULT_DAY_END_HOUR = 18;
 
 export function parseDurationMinutes(durationLabel: string | null | undefined): number {
   if (!durationLabel) return DEFAULT_DURATION_MINUTES;
@@ -39,13 +45,29 @@ export function formatTimeLabel(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
-export function buildDaySlots(date: Date, slotMinutes = DEFAULT_DURATION_MINUTES): Date[] {
+export function buildDaySlots(
+  date: Date,
+  slotMinutes = DEFAULT_DURATION_MINUTES,
+  dayStartHour = DEFAULT_DAY_START_HOUR,
+  dayEndHour = DEFAULT_DAY_END_HOUR,
+): Date[] {
   const safeSlotMinutes = slotMinutes > 0 ? slotMinutes : DEFAULT_DURATION_MINUTES;
+  const safeDayStartHour =
+    typeof dayStartHour === "number" && Number.isFinite(dayStartHour)
+      ? dayStartHour
+      : DEFAULT_DAY_START_HOUR;
+  const safeDayEndHour =
+    typeof dayEndHour === "number" && Number.isFinite(dayEndHour)
+      ? dayEndHour
+      : DEFAULT_DAY_END_HOUR;
+  if (safeDayEndHour <= safeDayStartHour) {
+    return [];
+  }
   const start = new Date(date);
-  start.setHours(CLINIC_START_HOUR, 0, 0, 0);
+  start.setHours(safeDayStartHour, 0, 0, 0);
 
   const end = new Date(date);
-  end.setHours(CLINIC_END_HOUR, 0, 0, 0);
+  end.setHours(safeDayEndHour, 0, 0, 0);
 
   const slots: Date[] = [];
   for (let cursor = new Date(start); cursor < end; cursor = new Date(cursor.getTime() + safeSlotMinutes * 60_000)) {
@@ -63,18 +85,18 @@ function isSameLocalDate(a: Date, b: Date): boolean {
   );
 }
 
-function rangesOverlap(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
+export function rangesOverlap(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
   return startA < endB && startB < endA;
 }
 
-export function getAvailableSlotsForDate(params: GetAvailableSlotsParams): AvailableSlot[] {
-  const { date, appointments, excludeToken, slotMinutes = DEFAULT_DURATION_MINUTES } = params;
-  const safeSlotMinutes = slotMinutes > 0 ? slotMinutes : DEFAULT_DURATION_MINUTES;
-  const slotDurationMs = safeSlotMinutes * 60_000;
+export function getBusyRangesFromAppointments(params: {
+  date: Date;
+  appointments: AvailabilityAppointment[];
+  excludeToken?: string;
+}): BusyRange[] {
+  const { date, appointments, excludeToken } = params;
 
-  const slots = buildDaySlots(date, safeSlotMinutes);
-
-  const occupiedRanges = appointments
+  return appointments
     .filter((item) => item.status !== "cancelled")
     .filter((item) => (excludeToken ? item.token !== excludeToken : true))
     .map((item) => {
@@ -89,12 +111,26 @@ export function getAvailableSlotsForDate(params: GetAvailableSlotsParams): Avail
 
       return { start, end };
     })
-    .filter((item): item is { start: Date; end: Date } => Boolean(item));
+    .filter((item): item is BusyRange => Boolean(item));
+}
+
+export function getAvailableSlotsForDate(params: GetAvailableSlotsParams): AvailableSlot[] {
+  const {
+    date,
+    busyRanges,
+    slotMinutes = DEFAULT_DURATION_MINUTES,
+    dayStartHour = DEFAULT_DAY_START_HOUR,
+    dayEndHour = DEFAULT_DAY_END_HOUR,
+  } = params;
+  const safeSlotMinutes = slotMinutes > 0 ? slotMinutes : DEFAULT_DURATION_MINUTES;
+  const slotDurationMs = safeSlotMinutes * 60_000;
+
+  const slots = buildDaySlots(date, safeSlotMinutes, dayStartHour, dayEndHour);
 
   return slots
     .filter((slotStart) => {
       const slotEnd = new Date(slotStart.getTime() + slotDurationMs);
-      return !occupiedRanges.some((occupied) =>
+      return !busyRanges.some((occupied) =>
         rangesOverlap(slotStart, slotEnd, occupied.start, occupied.end),
       );
     })

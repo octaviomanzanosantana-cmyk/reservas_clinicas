@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { BusyRange } from "@/lib/availability";
 import { google } from "googleapis";
 import type { AppointmentRow } from "@/lib/appointments";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -78,6 +79,22 @@ function normalizeWeekday(input: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function parseGoogleEventDate(value?: string | null): Date | null {
+  if (!value) return null;
+
+  const allDayMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (allDayMatch) {
+    const year = Number.parseInt(allDayMatch[1], 10);
+    const monthIndex = Number.parseInt(allDayMatch[2], 10) - 1;
+    const day = Number.parseInt(allDayMatch[3], 10);
+    const date = new Date(year, monthIndex, day);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function resolveDateTimeFromLabel(label: string): { start: Date; end: Date } {
   const fallbackStart = new Date();
   fallbackStart.setHours(fallbackStart.getHours() + 1, 0, 0, 0);
@@ -154,6 +171,15 @@ async function getAuthorizedOAuthClient() {
     throw new Error("Google Calendar no autorizado. Conecta la cuenta primero.");
   }
 
+  client.on("tokens", async (nextTokens) => {
+    const currentTokens = await readStoredTokens();
+    await writeStoredTokens({
+      ...currentTokens,
+      ...nextTokens,
+      refresh_token: nextTokens.refresh_token ?? currentTokens?.refresh_token ?? null,
+    });
+  });
+
   client.setCredentials({
     access_token: tokens.access_token ?? undefined,
     refresh_token: tokens.refresh_token ?? undefined,
@@ -162,6 +188,47 @@ async function getAuthorizedOAuthClient() {
     expiry_date: tokens.expiry_date ?? undefined,
   });
   return client;
+}
+
+export async function getGoogleCalendarBusyRangesForDate(
+  date: Date,
+  calendarId?: string | null,
+): Promise<BusyRange[]> {
+  const auth = await getAuthorizedOAuthClient();
+  const calendar = google.calendar({ version: "v3", auth });
+  const resolvedCalendarId = calendarId || getRequiredEnv("GOOGLE_CALENDAR_ID");
+
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const { data } = await calendar.events.list({
+    calendarId: resolvedCalendarId,
+    timeMin: startOfDay.toISOString(),
+    timeMax: endOfDay.toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+  });
+
+  return (data.items ?? [])
+    .filter((event) => event.status !== "cancelled")
+    .filter((event) => event.transparency !== "transparent")
+    .map((event) => {
+      const start = parseGoogleEventDate(event.start?.dateTime ?? event.start?.date);
+      const end = parseGoogleEventDate(event.end?.dateTime ?? event.end?.date);
+
+      if (!start || !end) return null;
+
+      const clampedStart = new Date(Math.max(start.getTime(), startOfDay.getTime()));
+      const clampedEnd = new Date(Math.min(end.getTime(), endOfDay.getTime()));
+
+      if (clampedEnd <= clampedStart) return null;
+
+      return { start: clampedStart, end: clampedEnd };
+    })
+    .filter((item): item is BusyRange => Boolean(item));
 }
 
 export async function createCalendarEvent(appointment: AppointmentRow): Promise<{

@@ -1,4 +1,5 @@
-import { getAvailableSlotsForDate } from "@/lib/availability";
+import { getAvailableSlotsForDate, getBusyRangesFromAppointments } from "@/lib/availability";
+import { getGoogleCalendarBusyRangesForDate } from "@/lib/googleCalendar";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
@@ -45,18 +46,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "date inválido, usa YYYY-MM-DD" }, { status: 400 });
     }
 
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfNextDay = new Date(date);
+    endOfNextDay.setDate(endOfNextDay.getDate() + 1);
+    endOfNextDay.setHours(0, 0, 0, 0);
+
     const { data, error } = await supabase
       .from("appointments")
-      .select("scheduled_at, duration_label, token, status");
+      .select("scheduled_at, duration_label, token, status")
+      .gte("scheduled_at", startOfDay.toISOString())
+      .lt("scheduled_at", endOfNextDay.toISOString());
 
     if (error) {
       throw new Error(error.message);
     }
 
-    const slots = getAvailableSlotsForDate({
+    const appointmentBusyRanges = getBusyRangesFromAppointments({
       date,
       appointments: (data ?? []) as AvailabilityAppointmentRow[],
       excludeToken,
+    });
+    const googleBusyRanges = await getGoogleCalendarBusyRangesForDate(date);
+    const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
+
+    const slots = getAvailableSlotsForDate({
+      date,
+      busyRanges,
     });
 
     return NextResponse.json({ slots });
