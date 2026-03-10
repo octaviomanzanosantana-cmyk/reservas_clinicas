@@ -20,6 +20,7 @@ function toViewAppointment(row: AppointmentRow | null): Appointment | null {
     clinicName: row.clinic_name,
     service: row.service,
     datetimeLabel: row.datetime_label,
+    scheduledAt: row.scheduled_at,
     patientName: row.patient_name,
     address: row.address,
     durationLabel: row.duration_label,
@@ -27,6 +28,28 @@ function toViewAppointment(row: AppointmentRow | null): Appointment | null {
     lastUpdateLabel: row.updated_at,
     idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
   };
+}
+
+function buildGoogleCalendarUrl(appointment: Appointment): string | null {
+  if (!appointment.scheduledAt) return null;
+
+  const start = new Date(appointment.scheduledAt);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const durationMatch = appointment.durationLabel.match(/\d+/);
+  const durationMinutes = durationMatch ? Number(durationMatch[0]) : 30;
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const formatGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: appointment.service,
+    dates: `${formatGoogleDate(start)}/${formatGoogleDate(end)}`,
+    details: `Cita: ${appointment.service}\nClinica: ${appointment.clinicName}`,
+    location: appointment.address,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export default function ConfirmPage() {
@@ -100,8 +123,9 @@ export default function ConfirmPage() {
     const isChangeRequested = appointment.status === "change_requested";
     const title = isChangeRequested ? "Solicitud de cambio enviada" : "Cita confirmada";
     const description = isChangeRequested
-      ? "La clínica revisará tu solicitud y te confirmará el nuevo horario."
+      ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : `La clínica ha recibido tu confirmación. Te esperamos ${appointment.datetimeLabel}.`;
+    const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
 
     return (
       <>
@@ -127,6 +151,17 @@ export default function ConfirmPage() {
         </section>
 
         <AppointmentCard appointment={appointment} />
+
+        {googleCalendarUrl ? (
+          <a
+            href={googleCalendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50"
+          >
+            Añadir a mi calendario
+          </a>
+        ) : null}
 
         <Link
           href={`/a/${token}`}

@@ -206,8 +206,16 @@ export default function ReschedulePage() {
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">Selecciona un nuevo horario</h1>
+        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <p className="text-sm font-semibold text-gray-900">Tu cita actual</p>
+          <p className="mt-2 text-sm text-gray-700">{appointment.datetimeLabel}</p>
+          <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
+        </div>
         <p className="mt-2 text-sm text-gray-600">
-          Al solicitar el cambio, la clínica revisará tu solicitud y te confirmará el horario.
+          Selecciona un nuevo horario
+        </p>
+        <p className="mt-2 text-sm text-gray-600">
+          Elige un nuevo horario disponible para reprogramar tu cita.
         </p>
 
         <div className="mt-4 space-y-2">

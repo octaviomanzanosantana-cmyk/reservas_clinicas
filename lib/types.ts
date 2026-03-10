@@ -14,6 +14,7 @@ export type Appointment = {
   clinicName: string;
   service: string;
   datetimeLabel: string;
+  scheduledAt?: string | null;
   patientName: string;
   address: string;
   durationLabel: string;
