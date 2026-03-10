@@ -71,6 +71,7 @@ export default function DemoDashboardPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState<string | null>(null);
 
@@ -585,13 +586,17 @@ export default function DemoDashboardPage() {
                             try {
                               const link = `${window.location.origin}/a/${item.token}`;
                               await navigator.clipboard.writeText(link);
+                              setCopiedId(String(item.id));
+                              window.setTimeout(() => {
+                                setCopiedId(null);
+                              }, 2000);
                             } catch {
                               setCreateError("No se pudo copiar el enlace");
                             }
                           }}
                           className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
                         >
-                          Copiar enlace
+                          {copiedId === String(item.id) ? "✓ Copiado" : "Copiar enlace"}
                         </button>
                       </td>
                     </tr>
