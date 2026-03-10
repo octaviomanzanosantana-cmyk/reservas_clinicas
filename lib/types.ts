@@ -24,6 +24,7 @@ export type Appointment = {
 };
 
 export type DemoClinicConfig = {
+  clinicSlug: string;
   clinicName: string;
   themeColor: string;
   supportPhone: string;

@@ -39,6 +39,14 @@ type CreateFormState = {
   duration_label: string;
 };
 
+type ClinicService = {
+  id: string;
+  clinic_slug: string;
+  name: string;
+  duration_minutes: number;
+  active: boolean;
+};
+
 function generateToken(): string {
   const random = Math.random().toString(36).slice(2, 8);
   return `cita-${Date.now().toString(36)}-${random}`.toLowerCase();
@@ -74,6 +82,7 @@ export default function DemoDashboardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState<string | null>(null);
+  const [services, setServices] = useState<ClinicService[]>([]);
 
   const clinic = getClinicConfig(token);
   const theme = getClinicTheme(token);
@@ -95,14 +104,52 @@ export default function DemoDashboardPage() {
   );
 
   useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      clinic_name: clinic.clinicName,
-      service: prev.service || clinic.defaultAppointment.service,
-      address: prev.address || clinic.address,
-      duration_label: prev.duration_label || clinic.defaultAppointment.durationLabel,
-    }));
-  }, [clinic.address, clinic.clinicName, clinic.defaultAppointment.durationLabel, clinic.defaultAppointment.service]);
+    let active = true;
+
+    const loadServices = async () => {
+      try {
+        const response = await fetch(`/api/services?clinicSlug=${encodeURIComponent(clinic.clinicSlug)}`);
+        const data = (await response.json()) as { services?: ClinicService[] };
+
+        if (!active) return;
+        setServices(response.ok ? (data.services ?? []) : []);
+      } catch {
+        if (!active) return;
+        setServices([]);
+      }
+    };
+
+    void loadServices();
+
+    return () => {
+      active = false;
+    };
+  }, [clinic.clinicSlug]);
+
+  useEffect(() => {
+    setForm((prev) => {
+      const resolvedService =
+        services.find((item) => item.name === prev.service) ??
+        (services.length > 0 ? services[0] : null);
+
+      return {
+        ...prev,
+        clinic_name: clinic.clinicName,
+        service: resolvedService?.name ?? prev.service ?? clinic.defaultAppointment.service,
+        address: prev.address || clinic.address,
+        duration_label:
+          resolvedService?.duration_minutes != null
+            ? `${resolvedService.duration_minutes} min`
+            : prev.duration_label || clinic.defaultAppointment.durationLabel,
+      };
+    });
+  }, [
+    clinic.address,
+    clinic.clinicName,
+    clinic.defaultAppointment.durationLabel,
+    clinic.defaultAppointment.service,
+    services,
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -432,11 +479,25 @@ export default function DemoDashboardPage() {
                 onChange={(value) => setForm((prev) => ({ ...prev, patient_name: value }))}
                 required
               />
-              <Field
+              <SelectField
                 label="Servicio"
-                placeholder="Ej: Diagnóstico capilar"
                 value={form.service}
-                onChange={(value) => setForm((prev) => ({ ...prev, service: value }))}
+                onChange={(value) => {
+                  const selectedService = services.find((item) => item.name === value);
+                  setForm((prev) => ({
+                    ...prev,
+                    service: value,
+                    duration_label:
+                      selectedService?.duration_minutes != null
+                        ? `${selectedService.duration_minutes} min`
+                        : prev.duration_label,
+                  }));
+                }}
+                options={
+                  services.length > 0
+                    ? services.map((item) => ({ value: item.name, label: item.name }))
+                    : [{ value: clinic.defaultAppointment.service, label: clinic.defaultAppointment.service }]
+                }
                 required
               />
               <Field
@@ -461,13 +522,6 @@ export default function DemoDashboardPage() {
                 required
               />
               <Field
-                label="Duración estimada"
-                placeholder="Ej: 30 min"
-                value={form.duration_label}
-                onChange={(value) => setForm((prev) => ({ ...prev, duration_label: value }))}
-                required
-              />
-              <Field
                 label="Código interno clínica"
                 placeholder="Ej: CPC_TEST"
                 helper="Opcional para piloto"
@@ -476,6 +530,9 @@ export default function DemoDashboardPage() {
               />
 
               <div className="sm:col-span-2">
+                <p className="mb-2 text-xs text-gray-500">
+                  Duración estimada: <span className="font-medium text-gray-700">{form.duration_label}</span>
+                </p>
                 <p className="mb-2 text-xs text-gray-500">
                   Vista previa de cita: <span className="font-medium text-gray-700">{computedDateTimeLabel}</span>
                 </p>
@@ -753,6 +810,41 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         className="mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
       />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  helper,
+  value,
+  onChange,
+  options,
+  required = false,
+}: {
+  label: string;
+  helper?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold tracking-wide text-gray-700">{label}</span>
+      {helper ? <span className="ml-2 text-[11px] text-gray-500">{helper}</span> : null}
+      <select
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

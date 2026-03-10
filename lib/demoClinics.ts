@@ -2,6 +2,7 @@ import type { DemoClinicConfig } from "@/lib/types";
 
 export const DEMO_CLINICS: Record<string, DemoClinicConfig> = {
   demo123: {
+    clinicSlug: "pilarcastillo",
     clinicName: "Clínica Pilar Castillo",
     themeColor: "#2563EB",
     supportPhone: "+34 600 000 000",
@@ -18,6 +19,7 @@ export const DEMO_CLINICS: Record<string, DemoClinicConfig> = {
     },
   },
   pilarcastillo: {
+    clinicSlug: "pilarcastillo",
     clinicName: "Clínica Pilar Castillo",
     themeColor: "#2563EB",
     supportPhone: "+34 600 000 000",
@@ -34,6 +36,7 @@ export const DEMO_CLINICS: Record<string, DemoClinicConfig> = {
     },
   },
   "fisio-demo": {
+    clinicSlug: "fisio-demo",
     clinicName: "Fisio Atlántico",
     themeColor: "#059669",
     supportPhone: "+34 611 111 111",
@@ -50,6 +53,7 @@ export const DEMO_CLINICS: Record<string, DemoClinicConfig> = {
     },
   },
   "dental-demo": {
+    clinicSlug: "dental-demo",
     clinicName: "Dental Norte",
     themeColor: "#7C3AED",
     supportPhone: "+34 622 222 222",
