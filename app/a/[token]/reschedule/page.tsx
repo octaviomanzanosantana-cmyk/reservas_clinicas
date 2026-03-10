@@ -21,6 +21,10 @@ function toDateInputValue(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function getTodayInputValue(): string {
+  return toDateInputValue(new Date());
+}
+
 function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
   if (!row) return null;
 
@@ -50,6 +54,7 @@ export default function ReschedulePage() {
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const minDate = getTodayInputValue();
 
   useEffect(() => {
     let active = true;
@@ -203,6 +208,7 @@ export default function ReschedulePage() {
               id="selected-date"
               type="date"
               value={selectedDate}
+              min={minDate}
               onChange={(event) => setSelectedDate(event.target.value)}
               className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
@@ -224,7 +230,7 @@ export default function ReschedulePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-600">No hay horarios disponibles para esa fecha.</p>
+            <p className="text-sm text-gray-600">No hay horarios disponibles para este día. Prueba con otra fecha.</p>
           )}
         </div>
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
