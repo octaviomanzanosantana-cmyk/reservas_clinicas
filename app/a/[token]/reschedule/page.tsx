@@ -7,7 +7,7 @@ import { getClinicTheme } from "@/lib/clinicTheme";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AvailabilitySlot = {
   value: string;
@@ -42,6 +42,63 @@ export default function ReschedulePage() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const groupedSlots = useMemo(() => {
+    const dayFormatter = new Intl.DateTimeFormat("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    const timeFormatter = new Intl.DateTimeFormat("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    const groups = new Map<
+      string,
+      {
+        title: string;
+        items: Array<{ slot: AvailabilitySlot; timeLabel: string }>;
+      }
+    >();
+
+    for (const slot of slots) {
+      const date = new Date(slot.value);
+      if (Number.isNaN(date.getTime())) {
+        const fallbackKey = slot.value;
+        const existingFallback = groups.get(fallbackKey);
+        const item = { slot, timeLabel: slot.label };
+        if (existingFallback) {
+          existingFallback.items.push(item);
+        } else {
+          groups.set(fallbackKey, { title: slot.label, items: [item] });
+        }
+        continue;
+      }
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const key = `${year}-${month}-${day}`;
+      const formattedDay = dayFormatter.format(date);
+      const title = `${formattedDay.charAt(0).toUpperCase()}${formattedDay.slice(1)}`;
+      const item = { slot, timeLabel: timeFormatter.format(date) };
+      const existing = groups.get(key);
+
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        groups.set(key, { title, items: [item] });
+      }
+    }
+
+    return Array.from(groups.entries()).map(([key, group]) => ({
+      key,
+      title: group.title,
+      items: group.items.sort((a, b) => a.slot.value.localeCompare(b.slot.value)),
+    }));
+  }, [slots]);
 
   useEffect(() => {
     let active = true;
@@ -157,15 +214,22 @@ export default function ReschedulePage() {
           {slotsLoading ? (
             <p className="text-sm text-gray-600">Cargando disponibilidad...</p>
           ) : slots.length > 0 ? (
-            slots.map((slot) => (
-              <button
-                key={slot.value}
-                type="button"
-                onClick={() => handleSlotSelect(slot)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
-              >
-                {slot.label}
-              </button>
+            groupedSlots.map((group) => (
+              <div key={group.key} className="space-y-3">
+                <h2 className="text-sm font-semibold text-gray-900">{group.title}</h2>
+                <div className="flex flex-wrap gap-2">
+                  {group.items.map(({ slot, timeLabel }) => (
+                    <button
+                      key={slot.value}
+                      type="button"
+                      onClick={() => handleSlotSelect(slot)}
+                      className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+                    >
+                      {timeLabel}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))
           ) : (
             <p className="text-sm text-gray-600">No hay horarios disponibles para esa fecha.</p>
