@@ -248,21 +248,6 @@ export default function DemoDashboardPage() {
       }));
   }, [scopedAppointments]);
 
-  const changeRequests = useMemo(() => {
-    return scopedAppointments
-      .filter((item) => item.status === "change_requested")
-      .slice()
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-      .map((item) => ({
-        id: item.id,
-        token: item.token,
-        patientName: item.patient_name,
-        service: item.service,
-        datetimeLabel: item.datetime_label,
-        status: item.status,
-      }));
-  }, [scopedAppointments]);
-
   const patientLink = createdLink ?? (typeof window !== "undefined" ? `${window.location.origin}/a/${token}` : `/a/${token}`);
   const computedDateTimeLabel = buildDateTimeLabel(form.scheduled_date, form.scheduled_time);
   const computedScheduledAt = useMemo(() => {
@@ -663,101 +648,6 @@ export default function DemoDashboardPage() {
                   <tr>
                     <td className="px-2 py-4 text-gray-500" colSpan={5}>
                       No hay citas programadas para hoy
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900">Solicitudes de cambio</h2>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="px-2 py-2 font-medium">Paciente</th>
-                  <th className="px-2 py-2 font-medium">Servicio</th>
-                  <th className="px-2 py-2 font-medium">Fecha y hora</th>
-                  <th className="px-2 py-2 font-medium">Estado</th>
-                  <th className="px-2 py-2 font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {changeRequests.length > 0 ? (
-                  changeRequests.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="px-2 py-2 text-gray-900">{item.patientName}</td>
-                      <td className="px-2 py-2 text-gray-700">{item.service}</td>
-                      <td className="px-2 py-2 text-gray-700">{item.datetimeLabel}</td>
-                      <td className="px-2 py-2">
-                        <StatusBadge status={item.status} />
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const link = `${window.location.origin}/a/${item.token}`;
-                                await navigator.clipboard.writeText(link);
-                                setCopiedId(String(item.id));
-                                window.setTimeout(() => {
-                                  setCopiedId(null);
-                                }, 2000);
-                              } catch {
-                                setCreateError("No se pudo copiar el enlace");
-                              }
-                            }}
-                            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            {copiedId === String(item.id) ? "✓ Copiado" : "Copiar enlace"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch("/api/appointments/cancel", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ token: item.token }),
-                                });
-                                if (!response.ok) {
-                                  throw new Error("No se pudo cancelar la cita");
-                                }
-
-                                const updatedAt = new Date().toISOString();
-                                setClinicAppointments((prev) =>
-                                  prev.map((row) =>
-                                    row.token === item.token
-                                      ? { ...row, status: "cancelled", updated_at: updatedAt }
-                                      : row,
-                                  ),
-                                );
-                                setAppointment((prev) =>
-                                  prev && prev.token === item.token
-                                    ? { ...prev, status: "cancelled", updated_at: updatedAt }
-                                    : prev,
-                                );
-                              } catch (error) {
-                                setCreateError(
-                                  error instanceof Error ? error.message : "No se pudo cancelar la cita",
-                                );
-                              }
-                            }}
-                            className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="px-2 py-4 text-gray-500" colSpan={5}>
-                      No hay solicitudes de cambio pendientes
                     </td>
                   </tr>
                 )}
