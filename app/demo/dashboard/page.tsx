@@ -209,10 +209,7 @@ export default function DemoDashboardPage() {
   }, [scopedAppointments]);
 
   const todayAgenda = useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const day = today.getDate();
+    const todayKey = new Date().toLocaleDateString("en-CA");
 
     const timeFormatter = new Intl.DateTimeFormat("es-ES", {
       hour: "2-digit",
@@ -224,12 +221,9 @@ export default function DemoDashboardPage() {
       .filter((item) => {
         if (!item.scheduled_at) return false;
         const scheduled = new Date(item.scheduled_at);
-        return (
-          !Number.isNaN(scheduled.getTime()) &&
-          scheduled.getFullYear() === year &&
-          scheduled.getMonth() === month &&
-          scheduled.getDate() === day
-        );
+        if (Number.isNaN(scheduled.getTime())) return false;
+        const scheduledKey = scheduled.toLocaleDateString("en-CA");
+        return scheduledKey === todayKey;
       })
       .sort((a, b) => {
         const aTime = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
