@@ -7,12 +7,19 @@ import { getClinicTheme } from "@/lib/clinicTheme";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type AvailabilitySlot = {
   value: string;
   label: string;
 };
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
   if (!row) return null;
@@ -41,71 +48,14 @@ export default function ReschedulePage() {
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const groupedSlots = useMemo(() => {
-    const dayFormatter = new Intl.DateTimeFormat("es-ES", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-    const timeFormatter = new Intl.DateTimeFormat("es-ES", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
-    const groups = new Map<
-      string,
-      {
-        title: string;
-        items: Array<{ slot: AvailabilitySlot; timeLabel: string }>;
-      }
-    >();
-
-    for (const slot of slots) {
-      const date = new Date(slot.value);
-      if (Number.isNaN(date.getTime())) {
-        const fallbackKey = slot.value;
-        const existingFallback = groups.get(fallbackKey);
-        const item = { slot, timeLabel: slot.label };
-        if (existingFallback) {
-          existingFallback.items.push(item);
-        } else {
-          groups.set(fallbackKey, { title: slot.label, items: [item] });
-        }
-        continue;
-      }
-
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const key = `${year}-${month}-${day}`;
-      const formattedDay = dayFormatter.format(date);
-      const title = `${formattedDay.charAt(0).toUpperCase()}${formattedDay.slice(1)}`;
-      const item = { slot, timeLabel: timeFormatter.format(date) };
-      const existing = groups.get(key);
-
-      if (existing) {
-        existing.items.push(item);
-      } else {
-        groups.set(key, { title, items: [item] });
-      }
-    }
-
-    return Array.from(groups.entries()).map(([key, group]) => ({
-      key,
-      title: group.title,
-      items: group.items.sort((a, b) => a.slot.value.localeCompare(b.slot.value)),
-    }));
-  }, [slots]);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       setLoading(true);
-      setSlotsLoading(true);
       try {
         const row = await getAppointmentByToken(token);
         if (!active) return;
@@ -113,27 +63,16 @@ export default function ReschedulePage() {
         setAppointment(toViewAppointment(row));
 
         const baseDate = row?.scheduled_at ? new Date(row.scheduled_at) : new Date();
-        const year = baseDate.getFullYear();
-        const month = String(baseDate.getMonth() + 1).padStart(2, "0");
-        const day = String(baseDate.getDate()).padStart(2, "0");
-        const dateParam = `${year}-${month}-${day}`;
-
-        const response = await fetch(
-          `/api/availability?date=${encodeURIComponent(dateParam)}&excludeToken=${encodeURIComponent(token)}`,
-        );
-        const data = (await response.json()) as { slots?: AvailabilitySlot[] };
-        if (active) {
-          setSlots(response.ok ? (data.slots ?? []) : []);
-        }
+        const safeBaseDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
+        setSelectedDate(toDateInputValue(safeBaseDate));
       } catch {
         if (active) {
           setAppointment(null);
-          setSlots([]);
+          setSelectedDate("");
         }
       } finally {
         if (active) {
           setLoading(false);
-          setSlotsLoading(false);
         }
       }
     };
@@ -144,6 +83,43 @@ export default function ReschedulePage() {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSlots = async () => {
+      if (!selectedDate) {
+        setSlots([]);
+        setSlotsLoading(false);
+        return;
+      }
+
+      setSlotsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/availability?date=${encodeURIComponent(selectedDate)}&excludeToken=${encodeURIComponent(token)}`,
+        );
+        const data = (await response.json()) as { slots?: AvailabilitySlot[] };
+        if (active) {
+          setSlots(response.ok ? (data.slots ?? []) : []);
+        }
+      } catch {
+        if (active) {
+          setSlots([]);
+        }
+      } finally {
+        if (active) {
+          setSlotsLoading(false);
+        }
+      }
+    };
+
+    void loadSlots();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDate, token]);
 
   const handleSlotSelect = async (slot: AvailabilitySlot) => {
     if (submitting) return;
@@ -219,26 +195,34 @@ export default function ReschedulePage() {
         </p>
 
         <div className="mt-4 space-y-2">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <label className="block text-sm font-semibold text-gray-900" htmlFor="selected-date">
+              Elige un día
+            </label>
+            <input
+              id="selected-date"
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+
           {slotsLoading ? (
             <p className="text-sm text-gray-600">Cargando disponibilidad...</p>
           ) : slots.length > 0 ? (
-            groupedSlots.map((group) => (
-              <div key={group.key} className="space-y-3">
-                <h2 className="text-sm font-semibold text-gray-900">{group.title}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {group.items.map(({ slot, timeLabel }) => (
-                    <button
-                      key={slot.value}
-                      type="button"
-                      onClick={() => handleSlotSelect(slot)}
-                      className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
-                    >
-                      {timeLabel}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))
+            <div className="flex flex-wrap gap-2">
+              {slots.map((slot) => (
+                <button
+                  key={slot.value}
+                  type="button"
+                  onClick={() => handleSlotSelect(slot)}
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+                >
+                  {slot.label}
+                </button>
+              ))}
+            </div>
           ) : (
             <p className="text-sm text-gray-600">No hay horarios disponibles para esa fecha.</p>
           )}
