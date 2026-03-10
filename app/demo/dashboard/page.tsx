@@ -210,7 +210,7 @@ export default function DemoDashboardPage() {
   }, [scopedAppointments]);
 
   const todayAgenda = useMemo(() => {
-    const todayKey = new Date().toLocaleDateString("en-CA");
+    const todayKey = new Date().toISOString().slice(0, 10);
 
     const timeFormatter = new Intl.DateTimeFormat("es-ES", {
       hour: "2-digit",
@@ -223,7 +223,7 @@ export default function DemoDashboardPage() {
         if (!item.scheduled_at) return false;
         const scheduled = new Date(item.scheduled_at);
         if (Number.isNaN(scheduled.getTime())) return false;
-        const scheduledKey = scheduled.toLocaleDateString("en-CA");
+        const scheduledKey = scheduled.toISOString().slice(0, 10);
         return scheduledKey === todayKey;
       })
       .sort((a, b) => {
