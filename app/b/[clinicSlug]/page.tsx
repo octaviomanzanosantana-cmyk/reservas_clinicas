@@ -277,9 +277,6 @@ export default function PublicBookingPage() {
               className="rounded-3xl border bg-white p-7 shadow-sm"
               style={{
                 borderColor: clinicDetails.theme_color || "#e5e7eb",
-                backgroundColor: clinicDetails.theme_color
-                  ? `${clinicDetails.theme_color}12`
-                  : "#ffffff",
               }}
             >
               <div className="space-y-4">
