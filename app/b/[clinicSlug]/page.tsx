@@ -48,14 +48,22 @@ function getClinicDetails(clinicSlug: string) {
   if (directMatch) {
     return {
       clinicName: directMatch.clinicName,
+      description: "",
       address: directMatch.address,
+      phone: "",
+      logo_url: "",
+      theme_color: directMatch.themeColor ?? "",
     };
   }
 
   const config = Object.values(DEMO_CLINICS).find((item) => item.clinicSlug === clinicSlug);
   return {
     clinicName: config?.clinicName ?? clinicSlug,
+    description: "",
     address: config?.address ?? "",
+    phone: "",
+    logo_url: "",
+    theme_color: config?.themeColor ?? "",
   };
 }
 
@@ -64,7 +72,11 @@ export default function PublicBookingPage() {
   const clinicSlug = params.clinicSlug as string;
   const [clinicDetails, setClinicDetails] = useState<{
     clinicName: string;
-    address: string;
+    description?: string;
+    address?: string;
+    phone?: string;
+    logo_url?: string;
+    theme_color?: string;
   } | null>(null);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceOption | null>(null);
@@ -91,7 +103,11 @@ export default function PublicBookingPage() {
         if (response.ok && data.clinic) {
           setClinicDetails({
             clinicName: data.clinic.name,
+            description: data.clinic.description ?? "",
             address: data.clinic.address ?? "",
+            phone: data.clinic.phone ?? "",
+            logo_url: data.clinic.logo_url ?? "",
+            theme_color: data.clinic.theme_color ?? "",
           });
         } else {
           const fallback = getClinicDetails(clinicSlug);
@@ -253,8 +269,39 @@ export default function PublicBookingPage() {
         {clinicDetails && (
           <>
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              {clinicDetails.logo_url ? (
+                <img src={clinicDetails.logo_url} alt={clinicDetails.clinicName} className="mb-3 h-12" />
+              ) : null}
               <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Reserva tu cita</h1>
               <p className="mt-2 text-sm text-gray-600">{clinicDetails.clinicName}</p>
+              {clinicDetails.description ? (
+                <p className="text-sm text-gray-600">{clinicDetails.description}</p>
+              ) : null}
+              {(clinicDetails.address || clinicDetails.phone) ? (
+                <div className="mt-3 space-y-1 text-sm text-gray-600">
+                  {clinicDetails.address ? (
+                    <p>
+                      Dirección:{" "}
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline"
+                      >
+                        {clinicDetails.address}
+                      </a>
+                    </p>
+                  ) : null}
+                  {clinicDetails.phone ? (
+                    <p>
+                      Teléfono:{" "}
+                      <a href={`tel:${clinicDetails.phone}`} className="underline">
+                        {clinicDetails.phone}
+                      </a>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -306,9 +353,14 @@ export default function PublicBookingPage() {
                           onClick={() => setSelectedSlot(slot)}
                           className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm transition-all duration-150 ${
                             selectedSlot?.value === slot.value
-                              ? "border-blue-600 bg-blue-50 text-blue-700"
+                              ? "border-transparent text-white"
                               : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
                           }`}
+                          style={
+                            selectedSlot?.value === slot.value && clinicDetails.theme_color
+                              ? { backgroundColor: clinicDetails.theme_color }
+                              : undefined
+                          }
                         >
                           {slot.label}
                         </button>
@@ -333,7 +385,8 @@ export default function PublicBookingPage() {
                 <button
                   type="submit"
                   disabled={submitting || !selectedService || !selectedSlot}
-                  className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: clinicDetails.theme_color ?? "#111827" }}
                 >
                   {submitting ? "Reservando..." : "Reservar cita"}
                 </button>
