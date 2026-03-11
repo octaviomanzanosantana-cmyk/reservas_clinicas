@@ -28,3 +28,54 @@ export async function getClinicHoursByClinicSlug(clinicSlug: string): Promise<Cl
 
   return (data as ClinicHourRow[]) ?? [];
 }
+
+export async function getClinicHoursConfigByClinicSlug(clinicSlug: string): Promise<ClinicHourRow[]> {
+  const safeClinicSlug = clinicSlug.trim();
+  if (!safeClinicSlug) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("clinic_hours")
+    .select("id, clinic_slug, day_of_week, start_time, end_time, active")
+    .eq("clinic_slug", safeClinicSlug)
+    .order("day_of_week", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as ClinicHourRow[]) ?? [];
+}
+
+export async function upsertClinicHour(input: {
+  clinic_slug: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  active: boolean;
+}): Promise<ClinicHourRow> {
+  const clinicSlug = input.clinic_slug.trim();
+
+  const { data, error } = await supabaseAdmin
+    .from("clinic_hours")
+    .upsert(
+      {
+        clinic_slug: clinicSlug,
+        day_of_week: input.day_of_week,
+        start_time: input.start_time,
+        end_time: input.end_time,
+        active: input.active,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "clinic_slug,day_of_week",
+      },
+    )
+    .select("id, clinic_slug, day_of_week, start_time, end_time, active")
+    .single<ClinicHourRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "No se pudo guardar el horario");
+  }
+
+  return data;
+}
