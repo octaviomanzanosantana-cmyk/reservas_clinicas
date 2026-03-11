@@ -89,6 +89,7 @@ export default function PublicBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [logoVisible, setLogoVisible] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -125,6 +126,10 @@ export default function PublicBookingPage() {
       active = false;
     };
   }, [clinicSlug]);
+
+  useEffect(() => {
+    setLogoVisible(Boolean(clinicDetails?.logo_url));
+  }, [clinicDetails?.logo_url]);
 
   useEffect(() => {
     let active = true;
@@ -269,8 +274,13 @@ export default function PublicBookingPage() {
         {clinicDetails && (
           <>
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              {clinicDetails.logo_url ? (
-                <img src={clinicDetails.logo_url} alt={clinicDetails.clinicName} className="mb-3 h-12" />
+              {clinicDetails.logo_url && logoVisible ? (
+                <img
+                  src={clinicDetails.logo_url}
+                  alt={clinicDetails.clinicName}
+                  className="mb-3 h-12"
+                  onError={() => setLogoVisible(false)}
+                />
               ) : null}
               <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Reserva tu cita</h1>
               <p className="mt-2 text-sm text-gray-600">{clinicDetails.clinicName}</p>
