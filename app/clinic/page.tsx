@@ -264,7 +264,11 @@ export default function ClinicDashboardPage() {
               <tbody className="divide-y divide-gray-100">
                 {appointments.map((appointment) => (
                   <tr key={appointment.id} className="text-gray-700">
-                    <td className="px-3 py-3">{appointment.patient_name}</td>
+                    <td className="px-3 py-3">
+                      <Link href={`/a/${appointment.token}`} className="text-blue-600 hover:underline">
+                        {appointment.patient_name}
+                      </Link>
+                    </td>
                     <td className="px-3 py-3">{appointment.service}</td>
                     <td className="px-3 py-3">
                       {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
