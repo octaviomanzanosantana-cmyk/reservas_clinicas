@@ -42,3 +42,32 @@ export async function listClinics(): Promise<ClinicRow[]> {
 
   return data ?? [];
 }
+
+export async function updateClinicBySlug(
+  slug: string,
+  input: Partial<
+    Pick<
+      ClinicRow,
+      "name" | "description" | "address" | "phone" | "logo_url" | "theme_color" | "booking_enabled"
+    >
+  >,
+): Promise<ClinicRow | null> {
+  const safeSlug = slug.trim();
+  if (!safeSlug) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from("clinics")
+    .update({
+      ...input,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("slug", safeSlug)
+    .select("*")
+    .maybeSingle<ClinicRow>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? null;
+}
