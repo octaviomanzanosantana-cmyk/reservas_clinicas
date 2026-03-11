@@ -167,16 +167,32 @@ export default function ClinicSettingsPage() {
                   onChange={(event) => setLogoUrl(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 />
+                <p className="mt-2 text-xs text-gray-500">
+                  Pega una URL pública de imagen para mostrar el logo en la página de reservas.
+                </p>
+                {logoUrl ? (
+                  <div className="mt-3 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                    <img src={logoUrl} alt="Preview logo" className="h-16 object-contain" />
+                  </div>
+                ) : null}
               </label>
 
               <label className="block">
                 <span className="text-sm font-medium text-gray-700">Color</span>
-                <input
-                  type="text"
-                  value={themeColor}
-                  onChange={(event) => setThemeColor(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-                />
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={themeColor || "#2563eb"}
+                    onChange={(event) => setThemeColor(event.target.value)}
+                    className="h-11 w-14 rounded-lg border border-gray-300 bg-white p-1"
+                  />
+                  <input
+                    type="text"
+                    value={themeColor}
+                    onChange={(event) => setThemeColor(event.target.value)}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  />
+                </div>
               </label>
 
               <button
