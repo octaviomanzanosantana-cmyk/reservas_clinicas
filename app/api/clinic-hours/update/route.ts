@@ -38,11 +38,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "active es requerido" }, { status: 400 });
     }
 
+    const startTime = body.start_time ?? "09:00";
+    const endTime = body.end_time ?? "18:00";
+
     const clinicHour = await upsertClinicHour({
       clinic_slug: clinicSlug,
       day_of_week: body.day_of_week,
-      start_time: body.start_time,
-      end_time: body.end_time,
+      start_time: startTime,
+      end_time: endTime,
       active: body.active,
     });
 
