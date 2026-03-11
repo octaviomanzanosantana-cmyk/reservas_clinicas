@@ -77,6 +77,52 @@ export function buildDaySlots(
   return slots;
 }
 
+export function buildDaySlotsFromTimeRange(
+  date: Date,
+  startTime: string,
+  endTime: string,
+  slotMinutes = DEFAULT_DURATION_MINUTES,
+): Date[] {
+  const safeSlotMinutes = slotMinutes > 0 ? slotMinutes : DEFAULT_DURATION_MINUTES;
+  const slotDurationMs = safeSlotMinutes * 60_000;
+  const startMatch = startTime.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+  const endMatch = endTime.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+
+  if (!startMatch || !endMatch) {
+    return [];
+  }
+
+  const startHours = Number.parseInt(startMatch[1], 10);
+  const startMinutes = Number.parseInt(startMatch[2], 10);
+  const endHours = Number.parseInt(endMatch[1], 10);
+  const endMinutes = Number.parseInt(endMatch[2], 10);
+
+  const start = new Date(date);
+  start.setHours(startHours, startMinutes, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(endHours, endMinutes, 0, 0);
+
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    end <= start
+  ) {
+    return [];
+  }
+
+  const slots: Date[] = [];
+  for (
+    let cursor = new Date(start);
+    cursor.getTime() + slotDurationMs <= end.getTime();
+    cursor = new Date(cursor.getTime() + slotDurationMs)
+  ) {
+    slots.push(new Date(cursor));
+  }
+
+  return slots;
+}
+
 function isSameLocalDate(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

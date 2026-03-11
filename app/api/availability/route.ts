@@ -1,4 +1,11 @@
-import { getAvailableSlotsForDate, getBusyRangesFromAppointments } from "@/lib/availability";
+import {
+  buildDaySlotsFromTimeRange,
+  formatTimeLabel,
+  getAvailableSlotsForDate,
+  getBusyRangesFromAppointments,
+  rangesOverlap,
+} from "@/lib/availability";
+import { getClinicHoursByClinicSlug } from "@/lib/clinicHours";
 import { getGoogleCalendarBusyRangesForDate } from "@/lib/googleCalendar";
 import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabase } from "@/lib/supabase";
@@ -77,12 +84,44 @@ export async function GET(request: Request) {
       clinicSlug && service
         ? await getServiceByClinicSlugAndName(clinicSlug, service)
         : null;
+    const slotMinutes = serviceRow?.duration_minutes;
 
-    const slots = getAvailableSlotsForDate({
-      date,
-      busyRanges,
-      ...(serviceRow ? { slotMinutes: serviceRow.duration_minutes } : {}),
-    });
+    const slots = clinicSlug
+      ? await (async () => {
+          const clinicHours = await getClinicHoursByClinicSlug(clinicSlug);
+          const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
+          const clinicHour = clinicHours.find((item) => item.day_of_week === dayOfWeek);
+
+          if (!clinicHour) {
+            return [];
+          }
+
+          const safeSlotMinutes = slotMinutes && slotMinutes > 0 ? slotMinutes : 30;
+          const slotDurationMs = safeSlotMinutes * 60_000;
+          const daySlots = buildDaySlotsFromTimeRange(
+            date,
+            clinicHour.start_time,
+            clinicHour.end_time,
+            safeSlotMinutes,
+          );
+
+          return daySlots
+            .filter((slotStart) => {
+              const slotEnd = new Date(slotStart.getTime() + slotDurationMs);
+              return !busyRanges.some((occupied) =>
+                rangesOverlap(slotStart, slotEnd, occupied.start, occupied.end),
+              );
+            })
+            .map((slot) => ({
+              value: slot.toISOString(),
+              label: formatTimeLabel(slot),
+            }));
+        })()
+      : getAvailableSlotsForDate({
+          date,
+          busyRanges,
+          ...(slotMinutes ? { slotMinutes } : {}),
+        });
 
     return NextResponse.json({ slots });
   } catch (error) {
