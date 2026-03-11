@@ -270,51 +270,85 @@ export default function PublicBookingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-2xl space-y-8">
         {clinicDetails && (
           <>
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              {clinicDetails.logo_url && logoVisible ? (
-                <img
-                  src={clinicDetails.logo_url}
-                  alt={clinicDetails.clinicName}
-                  className="mb-3 h-12"
-                  onError={() => setLogoVisible(false)}
-                />
-              ) : null}
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Reserva tu cita</h1>
-              <p className="mt-2 text-sm text-gray-600">{clinicDetails.clinicName}</p>
-              {clinicDetails.description ? (
-                <p className="text-sm text-gray-600">{clinicDetails.description}</p>
-              ) : null}
-              {(clinicDetails.address || clinicDetails.phone) ? (
-                <div className="mt-3 space-y-1 text-sm text-gray-600">
-                  {clinicDetails.address ? (
-                    <p>
-                      Dirección:{" "}
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        {clinicDetails.address}
-                      </a>
-                    </p>
+            <section
+              className="rounded-3xl border bg-white p-7 shadow-sm"
+              style={{
+                borderColor: clinicDetails.theme_color || "#e5e7eb",
+                backgroundColor: clinicDetails.theme_color
+                  ? `${clinicDetails.theme_color}12`
+                  : "#ffffff",
+              }}
+            >
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  {clinicDetails.logo_url && logoVisible ? (
+                    <img
+                      src={clinicDetails.logo_url}
+                      alt={clinicDetails.clinicName}
+                      className="mb-1 h-12 object-contain"
+                      onError={() => setLogoVisible(false)}
+                    />
                   ) : null}
-                  {clinicDetails.phone ? (
-                    <p>
-                      Teléfono:{" "}
-                      <a href={`tel:${clinicDetails.phone}`} className="underline">
-                        {clinicDetails.phone}
-                      </a>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-gray-500">
+                      Reserva tu cita
                     </p>
-                  ) : null}
+                    <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+                      {clinicDetails.clinicName}
+                    </h1>
+                    {clinicDetails.description ? (
+                      <p className="max-w-xl text-sm leading-6 text-gray-600">
+                        {clinicDetails.description}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              ) : null}
+
+                {(clinicDetails.address || clinicDetails.phone) ? (
+                  <div className="space-y-2 rounded-2xl bg-white/70 p-4 text-sm text-gray-600">
+                    {clinicDetails.address ? (
+                      <div className="flex items-start gap-3">
+                        <span className="pt-0.5 text-base" aria-hidden="true">
+                          📍
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-700">Dirección</p>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-words underline decoration-gray-300 underline-offset-2"
+                          >
+                            {clinicDetails.address}
+                          </a>
+                        </div>
+                      </div>
+                    ) : null}
+                    {clinicDetails.phone ? (
+                      <div className="flex items-start gap-3">
+                        <span className="pt-0.5 text-base" aria-hidden="true">
+                          📞
+                        </span>
+                        <div>
+                          <p className="font-medium text-gray-700">Teléfono</p>
+                          <a
+                            href={`tel:${clinicDetails.phone}`}
+                            className="underline decoration-gray-300 underline-offset-2"
+                          >
+                            {clinicDetails.phone}
+                          </a>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-gray-200 bg-white p-7 shadow-sm">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <label className="block">
                   <span className="text-sm font-medium text-gray-700">Servicio</span>
@@ -395,7 +429,7 @@ export default function PublicBookingPage() {
                 <button
                   type="submit"
                   disabled={submitting || !selectedService || !selectedSlot}
-                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                   style={{ backgroundColor: clinicDetails.theme_color ?? "#111827" }}
                 >
                   {submitting ? "Reservando..." : "Reservar cita"}
