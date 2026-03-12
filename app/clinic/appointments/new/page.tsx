@@ -3,7 +3,7 @@
 import type { CreateAppointmentInput } from "@/lib/appointments";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type ClinicData = {
   name: string;
@@ -47,7 +47,7 @@ function buildDateTimeLabel(dateInput: string, timeInput: string): string {
   return `${weekdayTitle} · ${timeInput}`;
 }
 
-export default function ClinicNewAppointmentPage() {
+function ClinicNewAppointmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clinicSlug = PANEL_CLINIC_SLUG;
@@ -364,5 +364,26 @@ export default function ClinicNewAppointmentPage() {
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
       </section>
     </div>
+  );
+}
+
+export default function ClinicNewAppointmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Nueva cita</h1>
+            <p className="mt-2 text-sm text-gray-600">Cargando clínica...</p>
+          </section>
+
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="text-sm text-gray-600">Cargando formulario...</p>
+          </section>
+        </div>
+      }
+    >
+      <ClinicNewAppointmentContent />
+    </Suspense>
   );
 }
