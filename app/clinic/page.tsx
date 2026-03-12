@@ -81,6 +81,7 @@ export default function ClinicDashboardPage() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -160,142 +161,177 @@ export default function ClinicDashboardPage() {
     [appointments],
   );
 
+  const handleDisconnectGoogle = async () => {
+    setDisconnectingGoogle(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/google/disconnect", {
+        method: "POST",
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo desconectar Google Calendar");
+      }
+
+      setGoogleConnected(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo desconectar Google Calendar",
+      );
+    } finally {
+      setDisconnectingGoogle(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          {loading ? (
-            <p className="text-sm text-gray-600">Cargando clínica...</p>
-          ) : clinic ? (
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-3">
-                {clinic.logo_url ? (
-                  <img src={clinic.logo_url} alt={clinic.name} className="h-14 object-contain" />
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        {loading ? (
+          <p className="text-sm text-gray-600">Cargando clínica...</p>
+        ) : clinic ? (
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-3">
+              {clinic.logo_url ? (
+                <img src={clinic.logo_url} alt={clinic.name} className="h-14 object-contain" />
+              ) : null}
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+                  {clinic.name}
+                </h1>
+                {clinic.description ? (
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+                    {clinic.description}
+                  </p>
                 ) : null}
-                <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
-                    {clinic.name}
-                  </h1>
-                  {clinic.description ? (
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-                      {clinic.description}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="space-y-1 text-sm text-gray-600">
-                  {clinic.address ? <p>{clinic.address}</p> : null}
-                  {clinic.phone ? <p>{clinic.phone}</p> : null}
-                </div>
               </div>
-
-              <div
-                className="h-20 w-20 rounded-2xl border"
-                style={{ backgroundColor: clinic.theme_color ?? "#f8fafc", borderColor: clinic.theme_color ?? "#e5e7eb" }}
-              />
+              <div className="space-y-1 text-sm text-gray-600">
+                {clinic.address ? <p>{clinic.address}</p> : null}
+                {clinic.phone ? <p>{clinic.phone}</p> : null}
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-red-600">{errorMessage ?? "No se pudo cargar la clínica"}</p>
-          )}
-        </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Servicios activos</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{activeServices}</p>
-          </article>
-          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Días activos</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{activeDays}</p>
-          </article>
-          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Citas de hoy</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{todayAppointments}</p>
-          </article>
-          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Google Calendar</p>
-            {googleConnected ? (
+            <div
+              className="h-20 w-20 rounded-2xl border"
+              style={{
+                backgroundColor: clinic.theme_color ?? "#f8fafc",
+                borderColor: clinic.theme_color ?? "#e5e7eb",
+              }}
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-red-600">{errorMessage ?? "No se pudo cargar la clínica"}</p>
+        )}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">Servicios activos</p>
+          <p className="mt-2 text-3xl font-semibold text-gray-900">{activeServices}</p>
+        </article>
+        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">Días activos</p>
+          <p className="mt-2 text-3xl font-semibold text-gray-900">{activeDays}</p>
+        </article>
+        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">Citas de hoy</p>
+          <p className="mt-2 text-3xl font-semibold text-gray-900">{todayAppointments}</p>
+        </article>
+        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">Google Calendar</p>
+          {googleConnected ? (
+            <>
               <p className="mt-2 text-lg font-semibold text-gray-900">Conectado ✓</p>
-            ) : (
-              <a
-                href="/api/google/connect"
-                className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+              <button
+                type="button"
+                onClick={() => void handleDisconnectGoogle()}
+                disabled={disconnectingGoogle}
+                className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Conectar Google Calendar
-              </a>
-            )}
-          </article>
-        </section>
-
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">Accesos rápidos</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/clinic/settings"
-              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+                {disconnectingGoogle ? "Desconectando..." : "Desconectar"}
+              </button>
+            </>
+          ) : (
+            <a
+              href="/api/google/connect"
+              className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
             >
-              Configuración
-            </Link>
-            <Link
-              href="/clinic/services"
-              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
-            >
-              Servicios
-            </Link>
-            <Link
-              href="/clinic/hours"
-              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
-            >
-              Horarios
-            </Link>
-          </div>
-        </section>
+              Conectar Google Calendar
+            </a>
+          )}
+        </article>
+      </section>
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-gray-900">Próximas citas</h2>
-            <p className="text-sm text-gray-500">{appointments.length} cargadas</p>
-          </div>
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Accesos rápidos</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/clinic/settings"
+            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+          >
+            Configuración
+          </Link>
+          <Link
+            href="/clinic/services"
+            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+          >
+            Servicios
+          </Link>
+          <Link
+            href="/clinic/hours"
+            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+          >
+            Horarios
+          </Link>
+        </div>
+      </section>
 
-          {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">Próximas citas</h2>
+          <p className="text-sm text-gray-500">{appointments.length} cargadas</p>
+        </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead>
-                <tr className="text-left text-gray-500">
-                  <th className="px-3 py-2 font-medium">Paciente</th>
-                  <th className="px-3 py-2 font-medium">Servicio</th>
-                  <th className="px-3 py-2 font-medium">Fecha/hora</th>
-                  <th className="px-3 py-2 font-medium">Estado</th>
+        {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th className="px-3 py-2 font-medium">Paciente</th>
+                <th className="px-3 py-2 font-medium">Servicio</th>
+                <th className="px-3 py-2 font-medium">Fecha/hora</th>
+                <th className="px-3 py-2 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {appointments.map((appointment) => (
+                <tr key={appointment.id} className="text-gray-700">
+                  <td className="px-3 py-3">
+                    <Link href={`/a/${appointment.token}`} className="text-blue-600 hover:underline">
+                      {appointment.patient_name}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-3">{appointment.service}</td>
+                  <td className="px-3 py-3">
+                    {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      {appointment.status}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {appointments.map((appointment) => (
-                  <tr key={appointment.id} className="text-gray-700">
-                    <td className="px-3 py-3">
-                      <Link href={`/a/${appointment.token}`} className="text-blue-600 hover:underline">
-                        {appointment.patient_name}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3">{appointment.service}</td>
-                    <td className="px-3 py-3">
-                      {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                        {appointment.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
 
-            {!loading && appointments.length === 0 ? (
-              <p className="px-3 py-6 text-sm text-gray-600">No hay citas próximas.</p>
-            ) : null}
-          </div>
-        </section>
-      </div>
+          {!loading && appointments.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-gray-600">No hay citas próximas.</p>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }
