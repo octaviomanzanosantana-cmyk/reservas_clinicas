@@ -162,9 +162,6 @@ export default function AppointmentHomePage() {
           onReschedule={() => {
             router.push(`/a/${token}/reschedule`);
           }}
-          onCancel={async () => {
-            router.push(`/a/${token}/cancel`);
-          }}
         />
 
         <footer className="pb-4 text-center text-xs text-gray-600">

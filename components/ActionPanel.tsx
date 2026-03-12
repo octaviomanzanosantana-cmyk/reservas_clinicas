@@ -1,16 +1,14 @@
 "use client";
 
-import ConfirmModal from "@/components/ConfirmModal";
 import { darkenHex } from "@/lib/color";
 import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 type ActionPanelProps = {
   primaryColor: string;
   accentColor: string;
   onConfirm: () => void;
   onReschedule: () => void;
-  onCancel: () => void;
 };
 
 export default function ActionPanel({
@@ -18,10 +16,7 @@ export default function ActionPanel({
   accentColor,
   onConfirm,
   onReschedule,
-  onCancel,
 }: ActionPanelProps) {
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-
   const themeVars = useMemo(
     () =>
       ({
@@ -53,33 +48,19 @@ export default function ActionPanel({
         >
           Cambiar cita
         </button>
-
-        <button
-          type="button"
-          onClick={() => setCancelModalOpen(true)}
-          className="w-full rounded-xl px-1 py-2 text-left text-sm font-medium text-red-600 transition-all duration-150 hover:text-red-700 active:translate-y-[1px]"
-        >
-          Cancelar cita
-        </button>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm" style={{ borderColor: accentColor }}>
+      <div
+        className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+        style={{ borderColor: accentColor }}
+      >
         <p className="text-sm text-gray-600">
           Evita esperas al teléfono: gestiona aquí tu cita en 10 segundos.
         </p>
-        <p className="mt-1 text-sm text-gray-600">La clínica recibirá el aviso automáticamente.</p>
+        <p className="mt-1 text-sm text-gray-600">
+          La clínica recibirá el aviso automáticamente.
+        </p>
       </div>
-
-      <ConfirmModal
-        open={cancelModalOpen}
-        title="¿Seguro que quieres cancelar?"
-        description="La clínica recibirá la cancelación en tiempo real."
-        onCancel={() => setCancelModalOpen(false)}
-        onConfirm={() => {
-          setCancelModalOpen(false);
-          onCancel();
-        }}
-      />
     </div>
   );
 }
