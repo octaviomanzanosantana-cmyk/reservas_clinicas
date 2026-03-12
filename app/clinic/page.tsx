@@ -213,9 +213,16 @@ export default function ClinicDashboardPage() {
           </article>
           <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Google Calendar</p>
-            <p className="mt-2 text-lg font-semibold text-gray-900">
-              {googleConnected ? "Conectado" : "No conectado"}
-            </p>
+            {googleConnected ? (
+              <p className="mt-2 text-lg font-semibold text-gray-900">Conectado ✓</p>
+            ) : (
+              <a
+                href="/api/google/connect"
+                className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+              >
+                Conectar Google Calendar
+              </a>
+            )}
           </article>
         </section>
 
