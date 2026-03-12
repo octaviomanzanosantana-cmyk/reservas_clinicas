@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { useEffect, useState } from "react";
 
 type ClinicHourRow = {
@@ -42,7 +43,7 @@ function getDefaultHours(clinicSlug: string): ClinicHourRow[] {
 }
 
 export default function ClinicHoursPage() {
-  const clinicSlug = "pilarcastillo";
+  const clinicSlug = PANEL_CLINIC_SLUG;
   const [hours, setHours] = useState<ClinicHourRow[]>(getDefaultHours(clinicSlug));
   const [loading, setLoading] = useState(true);
   const [savingDay, setSavingDay] = useState<number | null>(null);

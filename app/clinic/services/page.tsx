@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { useEffect, useState } from "react";
 
 type ServiceRow = {
@@ -21,7 +22,7 @@ type ServiceMutationResponse = {
 };
 
 export default function ClinicServicesPage() {
-  const clinicSlug = "pilarcastillo";
+  const clinicSlug = PANEL_CLINIC_SLUG;
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);

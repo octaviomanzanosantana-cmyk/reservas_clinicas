@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import Link from "next/link";
 import { buildDaySlotsFromTimeRange, formatTimeLabel } from "@/lib/availability";
 import { useEffect, useMemo, useState } from "react";
@@ -142,7 +143,7 @@ function getStatusMeta(status: string) {
 }
 
 export default function ClinicCalendarPage() {
-  const clinicSlug = "pilarcastillo";
+  const clinicSlug = PANEL_CLINIC_SLUG;
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const [clinic, setClinic] = useState<ClinicData | null>(null);
@@ -444,9 +445,12 @@ export default function ClinicCalendarPage() {
                         </div>
                       </Link>
                     ) : (
-                      <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400">
+                      <Link
+                        href={`/clinic/appointments/new?clinicSlug=${encodeURIComponent(clinicSlug)}&date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
+                        className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400 transition-colors hover:bg-gray-50"
+                      >
                         Libre
-                      </div>
+                      </Link>
                     )}
                   </div>
                 );
@@ -534,7 +538,12 @@ export default function ClinicCalendarPage() {
                               </div>
                             </Link>
                           ) : (
-                            <div className="px-2 py-3 text-center text-xs text-gray-300">Libre</div>
+                            <Link
+                              href={`/clinic/appointments/new?clinicSlug=${encodeURIComponent(clinicSlug)}&date=${item.dateKey}&time=${timeLabel}`}
+                              className="block px-2 py-3 text-center text-xs text-gray-300 transition-colors hover:bg-gray-50"
+                            >
+                              Libre
+                            </Link>
                           )}
                         </div>
                       );

@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -22,7 +23,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
             <p className="text-sm font-medium uppercase tracking-[0.16em] text-gray-500">
               Panel de clínica
             </p>
-            <p className="mt-1 text-lg font-semibold text-gray-900">pilarcastillo</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{PANEL_CLINIC_SLUG}</p>
           </div>
 
           <nav className="space-y-2">
@@ -47,7 +48,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
 
           <div className="mt-6 border-t border-gray-200 pt-4">
             <Link
-              href="/b/pilarcastillo"
+              href={`/b/${PANEL_CLINIC_SLUG}`}
               className="text-sm font-medium text-blue-600 hover:underline"
             >
               Ver página pública

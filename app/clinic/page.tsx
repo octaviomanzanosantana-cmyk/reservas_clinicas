@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -73,7 +74,7 @@ function formatAppointmentDate(value: string | null, fallback: string): string {
 }
 
 export default function ClinicDashboardPage() {
-  const clinicSlug = "pilarcastillo";
+  const clinicSlug = PANEL_CLINIC_SLUG;
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [clinicHours, setClinicHours] = useState<ClinicHourRow[]>([]);

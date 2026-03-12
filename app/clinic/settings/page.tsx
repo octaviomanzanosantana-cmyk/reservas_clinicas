@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { useEffect, useState } from "react";
 
 type ClinicResponse = {
@@ -15,7 +16,7 @@ type ClinicResponse = {
 };
 
 export default function ClinicSettingsPage() {
-  const clinicSlug = "pilarcastillo";
+  const clinicSlug = PANEL_CLINIC_SLUG;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
