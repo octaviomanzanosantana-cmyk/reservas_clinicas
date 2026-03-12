@@ -94,6 +94,25 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: existingAppointment, error: existingAppointmentError } = await supabaseAdmin
+      .from("appointments")
+      .select("id")
+      .eq("clinic_name", payload.clinic_name)
+      .eq("scheduled_at", scheduledAtValue)
+      .neq("status", "cancelled")
+      .maybeSingle();
+
+    if (existingAppointmentError) {
+      throw new Error(existingAppointmentError.message);
+    }
+
+    if (existingAppointment) {
+      return NextResponse.json(
+        { error: "Este horario ya no está disponible" },
+        { status: 409 },
+      );
+    }
+
     const appointment = await createAppointment(payload);
 
     let nextAppointment: AppointmentRow = appointment;
