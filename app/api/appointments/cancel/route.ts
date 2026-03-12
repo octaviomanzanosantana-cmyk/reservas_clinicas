@@ -20,6 +20,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
     }
 
+    if (current.scheduled_at) {
+      const scheduledAt = new Date(current.scheduled_at);
+
+      if (!Number.isNaN(scheduledAt.getTime())) {
+        const diffMs = scheduledAt.getTime() - Date.now();
+        const twoHoursMs = 2 * 60 * 60 * 1000;
+
+        if (diffMs < twoHoursMs) {
+          return NextResponse.json(
+            { error: "No se puede cancelar con menos de 2 horas de antelación" },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     const cancelled = (await updateAppointmentStatus(token, "cancelled")) ?? current;
     let calendarWarning: string | null = null;
 
