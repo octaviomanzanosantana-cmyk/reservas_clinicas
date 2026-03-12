@@ -444,12 +444,9 @@ export default function ClinicCalendarPage() {
                         </div>
                       </Link>
                     ) : (
-                      <Link
-                        href={`/clinic/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
-                        className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400 transition-colors hover:bg-gray-50"
-                      >
+                      <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400">
                         Libre
-                      </Link>
+                      </div>
                     )}
                   </div>
                 );
@@ -537,12 +534,7 @@ export default function ClinicCalendarPage() {
                               </div>
                             </Link>
                           ) : (
-                            <Link
-                              href={`/clinic/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
-                              className="block px-2 py-3 text-center text-xs text-gray-300 transition-colors hover:bg-gray-50"
-                            >
-                              Libre
-                            </Link>
+                            <div className="px-2 py-3 text-center text-xs text-gray-300">Libre</div>
                           )}
                         </div>
                       );
