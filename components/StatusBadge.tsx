@@ -9,6 +9,7 @@ const STATUS_META: Record<AppointmentStatus, { label: string; className: string 
   confirmed: { label: "Confirmada", className: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
   change_requested: { label: "Cambio solicitado", className: "bg-blue-50 text-blue-700 border border-blue-200" },
   cancelled: { label: "Cancelada", className: "bg-red-50 text-red-700 border border-red-200" },
+  completed: { label: "Completada", className: "bg-slate-100 text-slate-700 border border-slate-200" },
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
