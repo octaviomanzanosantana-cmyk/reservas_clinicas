@@ -33,27 +33,33 @@ const STATUS_META: Record<
   {
     label: string;
     className: string;
+    accentClassName: string;
   }
 > = {
   pending: {
     label: "Pendiente",
     className: "bg-amber-100 text-amber-700",
+    accentClassName: "bg-amber-400",
   },
   confirmed: {
     label: "Confirmada",
     className: "bg-emerald-100 text-emerald-700",
+    accentClassName: "bg-emerald-500",
   },
   cancelled: {
     label: "Cancelada",
     className: "bg-red-100 text-red-700",
+    accentClassName: "bg-red-500",
   },
   completed: {
     label: "Completada",
     className: "bg-slate-100 text-slate-700",
+    accentClassName: "bg-slate-400",
   },
   change_requested: {
     label: "Cambio solicitado",
     className: "bg-blue-100 text-blue-700",
+    accentClassName: "bg-blue-500",
   },
 };
 
@@ -130,6 +136,7 @@ function getStatusMeta(status: string) {
     STATUS_META[status] ?? {
       label: status,
       className: "bg-slate-100 text-slate-700",
+      accentClassName: "bg-slate-400",
     }
   );
 }
@@ -144,6 +151,13 @@ export default function ClinicCalendarPage() {
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const shiftSelectedDate = (days: number) => {
+    const baseDate = parseDateInput(selectedDate) ?? new Date();
+    const nextDate = new Date(baseDate);
+    nextDate.setDate(nextDate.getDate() + days);
+    setSelectedDate(formatDateInput(nextDate));
+  };
 
   useEffect(() => {
     let active = true;
@@ -327,6 +341,30 @@ export default function ClinicCalendarPage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => shiftSelectedDate(viewMode === "day" ? -1 : -7)}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(getTodayInputValue())}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => shiftSelectedDate(viewMode === "day" ? 1 : 7)}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Siguiente
+              </button>
+            </div>
+
             <div className="rounded-xl border border-gray-200 bg-white p-1">
               <button
                 type="button"
@@ -385,19 +423,25 @@ export default function ClinicCalendarPage() {
                     {appointment ? (
                       <Link
                         href={`/a/${appointment.token}`}
-                        className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-colors hover:bg-gray-50"
+                        title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                        className="flex rounded-xl border border-gray-200 bg-white shadow-sm transition-colors hover:bg-gray-50"
                       >
-                        <p className="text-sm font-semibold text-gray-900">
-                          {appointment.patient_name}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
-                        {statusMeta ? (
-                          <span
-                            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
-                          >
-                            {statusMeta.label}
-                          </span>
-                        ) : null}
+                        <div
+                          className={`w-1.5 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
+                        />
+                        <div className="block p-3">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {appointment.patient_name}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
+                          {statusMeta ? (
+                            <span
+                              className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                            >
+                              {statusMeta.label}
+                            </span>
+                          ) : null}
+                        </div>
                       </Link>
                     ) : (
                       <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400">
@@ -469,19 +513,25 @@ export default function ClinicCalendarPage() {
                           {!slotExists ? null : appointment ? (
                             <Link
                               href={`/a/${appointment.token}`}
-                              className="block rounded-xl border border-gray-200 bg-slate-50 p-2 shadow-sm transition-colors hover:bg-gray-50"
+                              title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                              className="flex rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
                             >
-                              <p className="text-xs font-semibold text-gray-900">
-                                {appointment.patient_name}
-                              </p>
-                              <p className="mt-1 text-xs text-gray-600">{appointment.service}</p>
-                              {statusMeta ? (
-                                <span
-                                  className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
-                                >
-                                  {statusMeta.label}
-                                </span>
-                              ) : null}
+                              <div
+                                className={`w-1 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
+                              />
+                              <div className="block p-2">
+                                <p className="text-xs font-semibold text-gray-900">
+                                  {appointment.patient_name}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-600">{appointment.service}</p>
+                                {statusMeta ? (
+                                  <span
+                                    className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                                  >
+                                    {statusMeta.label}
+                                  </span>
+                                ) : null}
+                              </div>
                             </Link>
                           ) : (
                             <div className="px-2 py-3 text-center text-xs text-gray-300">Libre</div>
