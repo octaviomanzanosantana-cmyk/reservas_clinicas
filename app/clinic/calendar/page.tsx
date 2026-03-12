@@ -28,6 +28,35 @@ type AppointmentRow = {
   updated_at: string;
 };
 
+const STATUS_META: Record<
+  string,
+  {
+    label: string;
+    className: string;
+  }
+> = {
+  pending: {
+    label: "Pendiente",
+    className: "bg-amber-100 text-amber-700",
+  },
+  confirmed: {
+    label: "Confirmada",
+    className: "bg-emerald-100 text-emerald-700",
+  },
+  cancelled: {
+    label: "Cancelada",
+    className: "bg-red-100 text-red-700",
+  },
+  completed: {
+    label: "Completada",
+    className: "bg-slate-100 text-slate-700",
+  },
+  change_requested: {
+    label: "Cambio solicitado",
+    className: "bg-blue-100 text-blue-700",
+  },
+};
+
 function getTodayInputValue(): string {
   const date = new Date();
   const year = date.getFullYear();
@@ -228,6 +257,12 @@ export default function ClinicCalendarPage() {
             {agendaSlots.map((slot) => {
               const slotLabel = formatTimeLabel(slot);
               const appointment = appointmentsBySlot.get(slotLabel);
+              const statusMeta = appointment
+                ? STATUS_META[appointment.status] ?? {
+                    label: appointment.status,
+                    className: "bg-slate-100 text-slate-700",
+                  }
+                : null;
 
               return (
                 <div
@@ -244,9 +279,13 @@ export default function ClinicCalendarPage() {
                         {appointment.patient_name}
                       </p>
                       <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
-                      <p className="mt-2 text-xs font-medium text-gray-500">
-                        Estado: {appointment.status}
-                      </p>
+                      {statusMeta ? (
+                        <span
+                          className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                        >
+                          {statusMeta.label}
+                        </span>
+                      ) : null}
                     </Link>
                   ) : (
                     <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400">
