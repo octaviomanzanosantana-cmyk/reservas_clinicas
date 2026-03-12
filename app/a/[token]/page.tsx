@@ -15,6 +15,7 @@ const STATUS_MESSAGE: Record<Appointment["status"], string> = {
   confirmed: "Tu cita está confirmada",
   cancelled: "Esta cita ha sido cancelada",
   change_requested: "Hemos recibido tu solicitud de cambio",
+  completed: "Esta cita ya ha sido completada",
 };
 
 function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
@@ -42,6 +43,9 @@ export default function AppointmentHomePage() {
   const theme = getClinicTheme(token);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -100,6 +104,54 @@ export default function AppointmentHomePage() {
         </section>
 
         <AppointmentCard appointment={appointment} />
+
+        {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
+          <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <button
+              type="button"
+              onClick={async () => {
+                setCancelLoading(true);
+                setCancelMessage(null);
+                setCancelError(null);
+
+                try {
+                  const response = await fetch("/api/appointments/cancel", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ token }),
+                  });
+
+                  if (!response.ok) {
+                    throw new Error("cancel_failed");
+                  }
+
+                  setAppointment((current) =>
+                    current
+                      ? {
+                          ...current,
+                          status: "cancelled",
+                        }
+                      : current,
+                  );
+                  setCancelMessage("Tu cita ha sido cancelada.");
+                } catch {
+                  setCancelError("No se pudo cancelar la cita. Inténtalo de nuevo.");
+                } finally {
+                  setCancelLoading(false);
+                }
+              }}
+              disabled={cancelLoading}
+              className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {cancelLoading ? "Cancelando..." : "Cancelar cita"}
+            </button>
+
+            {cancelMessage ? <p className="mt-3 text-sm text-emerald-700">{cancelMessage}</p> : null}
+            {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
+          </section>
+        ) : null}
 
         <ActionPanel
           primaryColor={theme.primary}

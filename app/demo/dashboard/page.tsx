@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   confirmed: "Confirmada",
   change_requested: "Cambio solicitado",
   cancelled: "Cancelada",
+  completed: "Completada",
 };
 
 const ACTION_LABEL: Record<AppointmentStatus, string> = {
@@ -26,6 +27,7 @@ const ACTION_LABEL: Record<AppointmentStatus, string> = {
   confirmed: "Confirmó cita",
   change_requested: "Solicitó cambio",
   cancelled: "Canceló cita",
+  completed: "Completó cita",
 };
 
 type CreateFormState = {

@@ -36,7 +36,7 @@ type AppointmentRow = {
   service: string;
   scheduled_at: string | null;
   datetime_label: string;
-  status: string;
+  status: "pending" | "confirmed" | "cancelled" | "completed" | string;
   updated_at: string;
 };
 
@@ -82,6 +82,7 @@ export default function ClinicDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
+  const [updatingAppointmentToken, setUpdatingAppointmentToken] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -182,6 +183,42 @@ export default function ClinicDashboardPage() {
       );
     } finally {
       setDisconnectingGoogle(false);
+    }
+  };
+
+  const handleAppointmentStatusUpdate = async (
+    token: string,
+    status: "confirmed" | "cancelled" | "completed",
+  ) => {
+    setUpdatingAppointmentToken(token);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/appointments/update-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          status,
+        }),
+      });
+      const data = (await response.json()) as { appointment?: AppointmentRow; error?: string };
+
+      if (!response.ok || !data.appointment) {
+        throw new Error(data.error ?? "No se pudo actualizar la cita");
+      }
+
+      setAppointments((current) =>
+        current.map((appointment) =>
+          appointment.token === token ? { ...appointment, status: data.appointment!.status } : appointment,
+        ),
+      );
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la cita");
+    } finally {
+      setUpdatingAppointmentToken(null);
     }
   };
 
@@ -298,16 +335,17 @@ export default function ClinicDashboardPage() {
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead>
-              <tr className="text-left text-gray-500">
-                <th className="px-3 py-2 font-medium">Paciente</th>
-                <th className="px-3 py-2 font-medium">Servicio</th>
-                <th className="px-3 py-2 font-medium">Fecha/hora</th>
-                <th className="px-3 py-2 font-medium">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {appointments.map((appointment) => (
-                <tr key={appointment.id} className="text-gray-700">
+                <tr className="text-left text-gray-500">
+                  <th className="px-3 py-2 font-medium">Paciente</th>
+                  <th className="px-3 py-2 font-medium">Servicio</th>
+                  <th className="px-3 py-2 font-medium">Fecha/hora</th>
+                  <th className="px-3 py-2 font-medium">Estado</th>
+                  <th className="px-3 py-2 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {appointments.map((appointment) => (
+                  <tr key={appointment.id} className="text-gray-700">
                   <td className="px-3 py-3">
                     <Link href={`/a/${appointment.token}`} className="text-blue-600 hover:underline">
                       {appointment.patient_name}
@@ -317,14 +355,62 @@ export default function ClinicDashboardPage() {
                   <td className="px-3 py-3">
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>
-                  <td className="px-3 py-3">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {appointment.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                    <td className="px-3 py-3">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {appointment.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      {appointment.status === "pending" ? (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "cancelled")}
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : null}
+                      {appointment.status === "confirmed" ? (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "completed")}
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Completar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "cancelled")}
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : null}
+                      {appointment.status === "completed" ? (
+                        <span className="text-xs font-medium text-gray-500">Completada</span>
+                      ) : null}
+                      {appointment.status === "cancelled" ? (
+                        <span className="text-xs font-medium text-gray-500">Cancelada</span>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
           </table>
 
           {!loading && appointments.length === 0 ? (

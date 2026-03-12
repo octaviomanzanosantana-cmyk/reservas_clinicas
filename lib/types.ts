@@ -1,4 +1,9 @@
-export type AppointmentStatus = "pending" | "confirmed" | "change_requested" | "cancelled";
+export type AppointmentStatus =
+  | "pending"
+  | "confirmed"
+  | "change_requested"
+  | "cancelled"
+  | "completed";
 export type ActivityAction = "confirmed" | "change_requested" | "cancelled";
 
 export type ActivityEvent = {
