@@ -514,19 +514,19 @@ export default function ClinicCalendarPage() {
                             <Link
                               href={`/a/${appointment.token}`}
                               title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                              className="flex rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
+                              className="flex min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
                             >
                               <div
                                 className={`w-1 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
                               />
-                              <div className="block p-2">
-                                <p className="text-xs font-semibold text-gray-900">
+                              <div className="block min-w-0 flex-1 p-2">
+                                <p className="truncate text-xs font-semibold text-gray-900">
                                   {appointment.patient_name}
                                 </p>
-                                <p className="mt-1 text-xs text-gray-600">{appointment.service}</p>
+                                <p className="mt-1 truncate text-xs text-gray-600">{appointment.service}</p>
                                 {statusMeta ? (
                                   <span
-                                    className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                                    className={`mt-2 inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
                                   >
                                     {statusMeta.label}
                                   </span>
