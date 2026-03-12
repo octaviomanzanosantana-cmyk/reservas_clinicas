@@ -458,8 +458,8 @@ export default function ClinicCalendarPage() {
             </div>
           )
         ) : (
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[980px] grid-cols-[90px_repeat(5,minmax(0,1fr))]">
+          <div className="min-w-0 overflow-x-auto">
+            <div className="grid min-w-0 w-full grid-cols-[80px_repeat(5,minmax(0,1fr))]">
               <div className="border-b border-gray-200 bg-white p-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Hora
               </div>
@@ -473,7 +473,7 @@ export default function ClinicCalendarPage() {
                 return (
                   <div
                     key={`${item.dateKey}-${index}`}
-                    className="border-b border-l border-gray-200 bg-white p-3 text-sm font-semibold text-gray-900"
+                    className="min-w-0 border-b border-l border-gray-200 bg-white p-3 text-sm font-semibold text-gray-900"
                   >
                     {formatter.format(item.date)}
                   </div>
@@ -508,13 +508,13 @@ export default function ClinicCalendarPage() {
                       return (
                         <div
                           key={`${item.dateKey}-${timeLabel}`}
-                          className="border-b border-l border-gray-200 bg-white p-2"
+                          className="min-w-0 border-b border-l border-gray-200 bg-white p-2"
                         >
                           {!slotExists ? null : appointment ? (
                             <Link
                               href={`/a/${appointment.token}`}
                               title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                              className="flex min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
+                              className="flex w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
                             >
                               <div
                                 className={`w-1 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
@@ -526,7 +526,7 @@ export default function ClinicCalendarPage() {
                                 <p className="mt-1 truncate text-xs text-gray-600">{appointment.service}</p>
                                 {statusMeta ? (
                                   <span
-                                    className={`mt-2 inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                                    className={`mt-2 inline-flex max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
                                   >
                                     {statusMeta.label}
                                   </span>
