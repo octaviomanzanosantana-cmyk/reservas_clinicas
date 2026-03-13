@@ -74,6 +74,12 @@ function formatAppointmentDate(value: string | null, fallback: string): string {
   }).format(date);
 }
 
+function getAppointmentTimestamp(appointment: AppointmentRow): number {
+  const date = new Date(appointment.scheduled_at ?? appointment.updated_at);
+  const timestamp = date.getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 export default function ClinicDashboardPage() {
   const clinicSlug = PANEL_CLINIC_SLUG;
   const [clinic, setClinic] = useState<ClinicData | null>(null);
@@ -161,6 +167,24 @@ export default function ClinicDashboardPage() {
   );
   const todayAppointments = useMemo(
     () => appointments.filter((appointment) => isTodayLocal(appointment.scheduled_at)).length,
+    [appointments],
+  );
+  const upcomingAppointments = useMemo(
+    () =>
+      appointments.filter(
+        (appointment) =>
+          appointment.status !== "completed" && appointment.status !== "cancelled",
+      ),
+    [appointments],
+  );
+  const recentHistoryAppointments = useMemo(
+    () =>
+      appointments
+        .filter(
+          (appointment) =>
+            appointment.status === "completed" || appointment.status === "cancelled",
+        )
+        .sort((left, right) => getAppointmentTimestamp(right) - getAppointmentTimestamp(left)),
     [appointments],
   );
 
@@ -372,7 +396,7 @@ export default function ClinicDashboardPage() {
             <h2 className="text-xl font-semibold tracking-tight text-slate-900">
               Próximas citas
             </h2>
-            <p className="mt-1 text-sm text-slate-500">{appointments.length} cargadas</p>
+            <p className="mt-1 text-sm text-slate-500">{upcomingAppointments.length} cargadas</p>
           </div>
         </div>
 
@@ -390,7 +414,7 @@ export default function ClinicDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
-              {appointments.map((appointment) => (
+              {upcomingAppointments.map((appointment) => (
                 <tr
                   key={appointment.id}
                   className="text-slate-700 transition-colors hover:bg-slate-50"
@@ -473,8 +497,57 @@ export default function ClinicDashboardPage() {
             </tbody>
           </table>
 
-          {!loading && appointments.length === 0 ? (
+          {!loading && upcomingAppointments.length === 0 ? (
             <p className="px-4 py-6 text-sm text-slate-600">No hay citas próximas.</p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+              Historial reciente
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">{recentHistoryAppointments.length} cargadas</p>
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-[24px] border border-slate-200 bg-slate-50/70">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead>
+              <tr className="text-left text-slate-500">
+                <th className="px-4 py-3 font-medium">Paciente</th>
+                <th className="px-4 py-3 font-medium">Servicio</th>
+                <th className="px-4 py-3 font-medium">Fecha/hora</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {recentHistoryAppointments.map((appointment) => (
+                <tr
+                  key={appointment.id}
+                  className="text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <td className="px-4 py-3">{appointment.patient_name}</td>
+                  <td className="px-4 py-3">{appointment.service}</td>
+                  <td className="px-4 py-3">
+                    {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      {appointment.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {!loading && recentHistoryAppointments.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-slate-600">
+              No hay citas recientes en el historial.
+            </p>
           ) : null}
         </div>
       </section>
