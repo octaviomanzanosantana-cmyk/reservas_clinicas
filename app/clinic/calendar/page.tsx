@@ -54,7 +54,7 @@ const STATUS_META: Record<
     accentClassName: "bg-red-500",
   },
   completed: {
-    label: "Completada",
+    label: "Asistió",
     className: "bg-slate-100 text-slate-700",
     accentClassName: "bg-slate-400",
   },

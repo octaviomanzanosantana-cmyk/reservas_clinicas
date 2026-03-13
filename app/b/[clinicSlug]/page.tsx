@@ -89,7 +89,24 @@ export default function PublicBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [createdAppointment, setCreatedAppointment] = useState<{
+    token: string;
+    clinicName: string;
+    service: string;
+    datetimeLabel: string;
+  } | null>(null);
   const [logoVisible, setLogoVisible] = useState(true);
+  const whatsappLink =
+    createdLink && createdAppointment
+      ? `https://wa.me/?text=${encodeURIComponent(
+          [
+            `Cita confirmada en ${createdAppointment.clinicName}.`,
+            `Servicio: ${createdAppointment.service}`,
+            `Fecha: ${createdAppointment.datetimeLabel}`,
+            `Gestiona tu cita aquí: ${createdLink}`,
+          ].join("\n"),
+        )}`
+      : null;
 
   useEffect(() => {
     let active = true;
@@ -240,7 +257,7 @@ export default function PublicBookingPage() {
         datetime_label: datetimeLabel,
         address: clinicDetails?.address ?? "",
         duration_label: `${selectedService.duration_minutes} min`,
-        status: "pending",
+        status: "confirmed",
       };
 
       const response = await fetch("/api/appointments/create", {
@@ -249,7 +266,15 @@ export default function PublicBookingPage() {
         body: JSON.stringify(payload),
       });
 
-      const result = (await response.json()) as { appointment?: { token: string }; error?: string };
+      const result = (await response.json()) as {
+        appointment?: {
+          token: string;
+          clinic_name: string;
+          service: string;
+          datetime_label: string;
+        };
+        error?: string;
+      };
 
       if (!response.ok || !result.appointment) {
         throw new Error(result.error ?? "No se pudo crear la cita");
@@ -262,6 +287,12 @@ export default function PublicBookingPage() {
 
       setErrorMessage(null);
       setCreatedLink(fullLink);
+      setCreatedAppointment({
+        token: result.appointment.token,
+        clinicName: result.appointment.clinic_name,
+        service: result.appointment.service,
+        datetimeLabel: result.appointment.datetime_label,
+      });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la cita");
     } finally {
@@ -494,18 +525,54 @@ export default function PublicBookingPage() {
 
                   {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
-                  {createdLink ? (
+                  {createdLink && createdAppointment ? (
                     <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4">
-                      <p className="text-sm font-semibold text-emerald-900">
-                        Cita creada correctamente
+                      <p className="text-sm font-semibold text-emerald-900">Cita confirmada</p>
+                      <div className="mt-3 grid gap-3 md:grid-cols-3">
+                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                            Clínica
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-emerald-950">
+                            {createdAppointment.clinicName}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                            Servicio
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-emerald-950">
+                            {createdAppointment.service}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                            Fecha y hora
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-emerald-950">
+                            {createdAppointment.datetimeLabel}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-sm text-emerald-700">
+                        Desde este enlace podrás gestionar tu cita y consultar sus datos cuando lo necesites.
                       </p>
-                      <p className="mt-1 text-sm text-emerald-700">Tu enlace de cita:</p>
                       <Link
                         href={createdLink}
-                        className="mt-2 block break-all text-sm font-medium text-emerald-900 underline"
+                        className="mt-3 block break-all text-sm font-medium text-emerald-900 underline"
                       >
                         {createdLink}
                       </Link>
+                      {whatsappLink ? (
+                        <a
+                          href={whatsappLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+                        >
+                          Enviar a WhatsApp
+                        </a>
+                      ) : null}
                     </div>
                   ) : null}
                 </form>

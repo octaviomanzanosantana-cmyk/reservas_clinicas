@@ -447,7 +447,7 @@ export default function ClinicDashboardPage() {
                           disabled={updatingAppointmentToken === appointment.token}
                           className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Completar
+                          Asistió
                         </button>
                         <button
                           type="button"
@@ -462,7 +462,7 @@ export default function ClinicDashboardPage() {
                       </div>
                     ) : null}
                     {appointment.status === "completed" ? (
-                      <span className="text-xs font-medium text-slate-500">Completada</span>
+                      <span className="text-xs font-medium text-slate-500">Asistió</span>
                     ) : null}
                     {appointment.status === "cancelled" ? (
                       <span className="text-xs font-medium text-slate-500">Cancelada</span>
