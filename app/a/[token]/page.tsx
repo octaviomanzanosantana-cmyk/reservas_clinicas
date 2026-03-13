@@ -109,7 +109,6 @@ export default function AppointmentHomePage() {
           <HeaderBar
             logoText={theme.logoText}
             clinicName={theme.brandName}
-            idLabel={appointment.idLabel}
             accentColor={theme.accent}
           />
 
@@ -221,8 +220,18 @@ export default function AppointmentHomePage() {
           </div>
 
           <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-600">
-            <p className="font-medium text-slate-700">No compartas este enlace</p>
-            <p className="mt-1">Soporte: {clinic.supportPhone}</p>
+            <p className="font-medium text-slate-700">¿Necesitas ayuda con tu cita?</p>
+
+            {clinic.supportPhone ? (
+              <a
+                href={`tel:${clinic.supportPhone}`}
+                className="mt-2 inline-block font-medium text-slate-900 underline"
+              >
+                {clinic.supportPhone}
+              </a>
+            ) : null}
+
+            <p className="mt-3 text-xs text-slate-500">No compartas este enlace</p>
           </footer>
         </div>
       </section>
