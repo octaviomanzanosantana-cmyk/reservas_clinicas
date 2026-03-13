@@ -159,7 +159,7 @@ export default function ReschedulePage() {
         throw new Error("No se pudo reprogramar la cita");
       }
 
-      router.push(`/a/${token}/confirm`);
+      router.push(`/a/${token}/confirm?changed=1`);
     } catch {
       setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
     } finally {

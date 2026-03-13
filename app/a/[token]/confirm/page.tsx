@@ -52,6 +52,29 @@ function buildGoogleCalendarUrl(appointment: Appointment): string | null {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; timeLabel: string } {
+  if (appointment.scheduledAt) {
+    const scheduledAt = new Date(appointment.scheduledAt);
+
+    if (!Number.isNaN(scheduledAt.getTime())) {
+      return {
+        dateLabel: new Intl.DateTimeFormat("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(scheduledAt),
+        timeLabel: new Intl.DateTimeFormat("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(scheduledAt),
+      };
+    }
+  }
+
+  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
+  return { dateLabel, timeLabel };
+}
+
 export default function ConfirmPage() {
   const params = useParams();
   const token = params.token as string;
@@ -61,6 +84,7 @@ export default function ConfirmPage() {
   const [loading, setLoading] = useState(true);
   const [toastVisible, setToastVisible] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -102,6 +126,12 @@ export default function ConfirmPage() {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const currentSearchParams = new URLSearchParams(window.location.search);
+    setChanged(currentSearchParams.get("changed") === "1");
+  }, []);
+
   const content = useMemo(() => {
     if (loading) {
       return (
@@ -126,6 +156,25 @@ export default function ConfirmPage() {
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : `La clínica ha recibido tu confirmación. Te esperamos ${appointment.datetimeLabel}.`;
     const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
+    const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
+    const whatsappUrl =
+      changed && appointment.status === "confirmed" && dateLabel && timeLabel
+        ? `https://wa.me/?text=${encodeURIComponent(
+            [
+              "Hola, esta es mi nueva cita:",
+              "",
+              appointment.clinicName,
+              appointment.service,
+              `${dateLabel} · ${timeLabel}`,
+              "",
+              `Gestionar cita: ${
+                typeof window !== "undefined"
+                  ? `${window.location.origin}/a/${token}`
+                  : `/a/${token}`
+              }`,
+            ].join("\n"),
+          )}`
+        : null;
 
     return (
       <>
@@ -163,6 +212,17 @@ export default function ConfirmPage() {
           </a>
         ) : null}
 
+        {whatsappUrl ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm transition-all duration-150 hover:bg-emerald-100"
+          >
+            Enviar a WhatsApp
+          </a>
+        ) : null}
+
         <Link
           href={`/a/${token}`}
           className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
@@ -187,7 +247,14 @@ export default function ConfirmPage() {
             Cita confirmada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}
-        <p className="text-xs text-center text-gray-500">Soporte: {clinic.supportPhone}</p>
+        {clinic.supportPhone ? (
+          <p className="text-xs text-center text-gray-500">
+            Soporte:{" "}
+            <a href={`tel:${clinic.supportPhone}`} className="font-medium text-gray-700 underline">
+              {clinic.supportPhone}
+            </a>
+          </p>
+        ) : null}
       </>
     );
   }, [
@@ -201,6 +268,7 @@ export default function ConfirmPage() {
     theme.primary,
     toastVisible,
     token,
+    changed,
   ]);
 
   return <div className="space-y-4">{content}</div>;

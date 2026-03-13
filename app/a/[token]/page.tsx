@@ -34,6 +34,7 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
     clinicName: row.clinic_name,
     service: row.service,
     datetimeLabel: row.datetime_label,
+    scheduledAt: row.scheduled_at,
     patientName: row.patient_name,
     address: row.address,
     durationLabel: row.duration_label,
@@ -41,6 +42,32 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
     lastUpdateLabel: row.updated_at,
     idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
   };
+}
+
+function getDateAndTimeLabels(appointment: Appointment) {
+  if (appointment.scheduledAt) {
+    const scheduledAt = new Date(appointment.scheduledAt);
+
+    if (!Number.isNaN(scheduledAt.getTime())) {
+      return {
+        dateLabel: new Intl.DateTimeFormat("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(scheduledAt),
+        timeLabel: new Intl.DateTimeFormat("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(scheduledAt),
+      };
+    }
+  }
+
+  const [dateLabel, timeLabel] = appointment.datetimeLabel.includes("·")
+    ? appointment.datetimeLabel.split("·").map((value) => value.trim())
+    : [appointment.datetimeLabel, appointment.durationLabel];
+
+  return { dateLabel, timeLabel };
 }
 
 export default function AppointmentHomePage() {
@@ -99,9 +126,7 @@ export default function AppointmentHomePage() {
       );
     }
 
-    const [dateLabel, timeLabel] = appointment.datetimeLabel.includes("·")
-      ? appointment.datetimeLabel.split("·").map((value) => value.trim())
-      : [appointment.datetimeLabel, appointment.durationLabel];
+    const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
 
     return (
       <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
