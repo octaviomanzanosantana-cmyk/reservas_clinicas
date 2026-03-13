@@ -50,7 +50,7 @@ export default function ActionPanel({
         <button
           type="button"
           onClick={onReschedule}
-          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+          className="w-full rounded-2xl border border-slate-900 px-5 py-3 text-sm font-semibold text-slate-900 transition-all duration-150 hover:bg-slate-900 hover:text-white"
         >
           Cambiar cita
         </button>
