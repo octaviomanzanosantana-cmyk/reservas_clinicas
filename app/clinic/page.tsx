@@ -301,14 +301,20 @@ export default function ClinicDashboardPage() {
         </article>
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Accesos rápidos</h2>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/clinic/settings"
-            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
-          >
-            Configuración
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Accesos rápidos</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/clinic/appointments/new"
+              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+            >
+              Nueva cita
+            </Link>
+            <Link
+              href="/clinic/settings"
+              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+            >
+              Configuración
           </Link>
           <Link
             href="/clinic/services"
