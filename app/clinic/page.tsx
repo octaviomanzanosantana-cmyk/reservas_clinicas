@@ -48,6 +48,14 @@ type GoogleStatusResponse = {
   error?: string;
 };
 
+const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  confirmed: "Confirmada",
+  cancelled: "Cancelada",
+  completed: "Asistió",
+  change_requested: "Cambio solicitado",
+};
+
 function isTodayLocal(value: string | null): boolean {
   if (!value) return false;
 
@@ -78,6 +86,19 @@ function getAppointmentTimestamp(appointment: AppointmentRow): number {
   const date = new Date(appointment.scheduled_at ?? appointment.updated_at);
   const timestamp = date.getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function getClinicInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getAppointmentStatusLabel(status: string): string {
+  return APPOINTMENT_STATUS_LABELS[status] ?? status;
 }
 
 export default function ClinicDashboardPage() {
@@ -289,16 +310,29 @@ export default function ClinicDashboardPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <div
-                className="h-20 w-20 rounded-[22px] border shadow-sm"
-                style={{
-                  backgroundColor: clinic.theme_color ?? "#f8fafc",
-                  borderColor: clinic.theme_color ?? "#e5e7eb",
-                }}
-              />
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <p className="font-medium text-slate-900">Resumen</p>
-                <p className="mt-1">Estado operativo del panel y agenda diaria.</p>
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  Marca clínica
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div
+                    className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[20px] border text-lg font-semibold text-slate-900 shadow-sm"
+                    style={{
+                      backgroundColor: clinic.theme_color ?? "#f8fafc",
+                      borderColor: `${clinic.theme_color ?? "#e5e7eb"}55`,
+                    }}
+                  >
+                    {clinic.logo_url ? (
+                      <img src={clinic.logo_url} alt={clinic.name} className="h-10 w-10 object-contain" />
+                    ) : (
+                      getClinicInitials(clinic.name)
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{clinic.name}</p>
+                    <p className="mt-1 text-sm text-slate-500">Identidad visible de la clínica</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -536,7 +570,7 @@ export default function ClinicDashboardPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {appointment.status}
+                      {getAppointmentStatusLabel(appointment.status)}
                     </span>
                   </td>
                 </tr>

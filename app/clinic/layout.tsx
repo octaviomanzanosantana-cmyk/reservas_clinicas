@@ -55,9 +55,9 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
           <div className="mt-6 border-t border-slate-200 pt-5">
             <Link
               href={`/b/${PANEL_CLINIC_SLUG}`}
-              className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-900"
             >
-              Ver página pública
+              Abrir página pública
             </Link>
           </div>
         </aside>
