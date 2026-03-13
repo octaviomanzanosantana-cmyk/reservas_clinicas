@@ -210,6 +210,7 @@ export default function AppointmentHomePage() {
             <ActionPanel
               primaryColor={theme.primary}
               accentColor={theme.accent}
+              showConfirm={appointment.status === "pending"}
               onConfirm={async () => {
                 router.push(`/a/${token}/confirm`);
               }}

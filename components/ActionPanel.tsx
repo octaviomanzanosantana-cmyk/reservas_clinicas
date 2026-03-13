@@ -7,6 +7,7 @@ import { useMemo } from "react";
 type ActionPanelProps = {
   primaryColor: string;
   accentColor: string;
+  showConfirm?: boolean;
   onConfirm: () => void;
   onReschedule: () => void;
 };
@@ -14,6 +15,7 @@ type ActionPanelProps = {
 export default function ActionPanel({
   primaryColor,
   accentColor,
+  showConfirm = true,
   onConfirm,
   onReschedule,
 }: ActionPanelProps) {
@@ -30,16 +32,20 @@ export default function ActionPanel({
   return (
     <div className="space-y-6" style={themeVars}>
       <div className="space-y-3">
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="w-full rounded-xl bg-[var(--theme-color)] px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-[var(--theme-color-dark)] active:translate-y-[1px]"
-        >
-          Confirmar cita
-        </button>
-        <p className="text-sm text-gray-500">
-          Confirmación instantánea. La clínica recibirá el aviso automáticamente.
-        </p>
+        {showConfirm ? (
+          <>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="w-full rounded-xl bg-[var(--theme-color)] px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-[var(--theme-color-dark)] active:translate-y-[1px]"
+            >
+              Confirmar cita
+            </button>
+            <p className="text-sm text-gray-500">
+              Confirmación instantánea. La clínica recibirá el aviso automáticamente.
+            </p>
+          </>
+        ) : null}
 
         <button
           type="button"
