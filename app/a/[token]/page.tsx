@@ -44,32 +44,6 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
   };
 }
 
-function getDateAndTimeLabels(appointment: Appointment) {
-  if (appointment.scheduledAt) {
-    const scheduledAt = new Date(appointment.scheduledAt);
-
-    if (!Number.isNaN(scheduledAt.getTime())) {
-      return {
-        dateLabel: new Intl.DateTimeFormat("es-ES", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }).format(scheduledAt),
-        timeLabel: new Intl.DateTimeFormat("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(scheduledAt),
-      };
-    }
-  }
-
-  const [dateLabel, timeLabel] = appointment.datetimeLabel.includes("·")
-    ? appointment.datetimeLabel.split("·").map((value) => value.trim())
-    : [appointment.datetimeLabel, appointment.durationLabel];
-
-  return { dateLabel, timeLabel };
-}
-
 export default function AppointmentHomePage() {
   const router = useRouter();
   const params = useParams();
@@ -126,8 +100,6 @@ export default function AppointmentHomePage() {
       );
     }
 
-    const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
-
     return (
       <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
         <div className="space-y-6">
@@ -149,33 +121,6 @@ export default function AppointmentHomePage() {
               {STATUS_TITLE[appointment.status]}
             </h1>
             <p className="mt-2 text-sm text-slate-600">{STATUS_MESSAGE[appointment.status]}</p>
-          </section>
-
-          <section className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Servicio
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{appointment.service}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Fecha
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{dateLabel}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Hora
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{timeLabel}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Clínica
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{appointment.clinicName}</p>
-            </div>
           </section>
 
           <AppointmentCard appointment={appointment} />
@@ -230,19 +175,23 @@ export default function AppointmentHomePage() {
             </section>
           ) : null}
 
-          <div className="[&_button]:rounded-2xl [&_button]:px-5 [&_button]:py-3 [&_button]:text-sm [&_button]:font-semibold [&_.primary]:bg-slate-950 [&_.primary]:text-white [&_.secondary]:border [&_.secondary]:border-slate-200 [&_.secondary]:bg-white [&_.secondary]:text-slate-900">
-            <ActionPanel
-              primaryColor={theme.primary}
-              accentColor={theme.accent}
-              showConfirm={appointment.status === "pending"}
-              onConfirm={async () => {
-                router.push(`/a/${token}/confirm`);
-              }}
-              onReschedule={() => {
-                router.push(`/a/${token}/reschedule`);
-              }}
-            />
-          </div>
+          {appointment.status === "pending" ||
+          appointment.status === "confirmed" ||
+          appointment.status === "change_requested" ? (
+            <div className="[&_button]:rounded-2xl [&_button]:px-5 [&_button]:py-3 [&_button]:text-sm [&_button]:font-semibold [&_.primary]:bg-slate-950 [&_.primary]:text-white [&_.secondary]:border [&_.secondary]:border-slate-200 [&_.secondary]:bg-white [&_.secondary]:text-slate-900">
+              <ActionPanel
+                primaryColor={theme.primary}
+                accentColor={theme.accent}
+                showConfirm={appointment.status === "pending"}
+                onConfirm={async () => {
+                  router.push(`/a/${token}/confirm`);
+                }}
+                onReschedule={() => {
+                  router.push(`/a/${token}/reschedule`);
+                }}
+              />
+            </div>
+          ) : null}
 
           <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-600">
             <p className="font-medium text-slate-700">¿Necesitas ayuda con tu cita?</p>
