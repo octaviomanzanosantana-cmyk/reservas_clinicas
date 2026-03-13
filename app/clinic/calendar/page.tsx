@@ -446,6 +446,8 @@ export default function ClinicCalendarPage() {
                         </div>
                       </Link>
                     ) : (
+                      // Nota: no añadimos manejo específico de doble click aquí porque el slot libre
+                      // ya navega al mismo destino con click simple.
                       <Link
                         href={`/clinic/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
                         className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400 transition-colors hover:bg-gray-50"
@@ -540,6 +542,8 @@ export default function ClinicCalendarPage() {
                               </div>
                             </Link>
                           ) : (
+                            // Nota: no añadimos manejo específico de doble click aquí porque el slot libre
+                            // ya navega al mismo destino con click simple.
                             <Link
                               href={`/clinic/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
                               className="block px-2 py-3 text-center text-xs text-gray-300 transition-colors hover:bg-gray-50"
