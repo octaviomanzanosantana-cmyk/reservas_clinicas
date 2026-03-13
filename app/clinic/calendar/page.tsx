@@ -1,8 +1,8 @@
 "use client";
 
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
-import Link from "next/link";
 import { buildDaySlotsFromTimeRange, formatTimeLabel } from "@/lib/availability";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type ClinicData = {
@@ -149,7 +149,9 @@ export default function ClinicCalendarPage() {
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [clinicHours, setClinicHours] = useState<ClinicHourRow[]>([]);
-  const [appointmentsByDate, setAppointmentsByDate] = useState<Record<string, AppointmentRow[]>>({});
+  const [appointmentsByDate, setAppointmentsByDate] = useState<Record<string, AppointmentRow[]>>(
+    {},
+  );
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -205,7 +207,7 @@ export default function ClinicCalendarPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [clinicSlug]);
 
   const selectedDateObject = useMemo(() => parseDateInput(selectedDate), [selectedDate]);
   const currentDaySchedule = useMemo(() => {
@@ -321,7 +323,9 @@ export default function ClinicCalendarPage() {
       );
     });
 
-    const uniqueSlotLabels = Array.from(new Set(allSlots.map((slot) => formatTimeLabel(slot)))).sort();
+    const uniqueSlotLabels = Array.from(
+      new Set(allSlots.map((slot) => formatTimeLabel(slot))),
+    ).sort();
 
     return {
       schedules,
@@ -330,239 +334,281 @@ export default function ClinicCalendarPage() {
   }, [clinicHours, weekDates]);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              Calendario {viewMode === "day" ? "diario" : "semanal"}
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              {clinic?.name ?? "Cargando clínica..."}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => shiftSelectedDate(viewMode === "day" ? -1 : -7)}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(getTodayInputValue())}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Hoy
-              </button>
-              <button
-                type="button"
-                onClick={() => shiftSelectedDate(viewMode === "day" ? 1 : 7)}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Siguiente
-              </button>
+    <div className="space-y-8">
+      <section className="overflow-hidden rounded-[30px] border border-white/70 bg-white/90 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)]">
+        <div className="bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,0.98))] p-7 md:p-8">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Agenda clínica
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-[2rem]">
+                Calendario {viewMode === "day" ? "diario" : "semanal"}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Revisa tu agenda, detecta huecos libres y accede rápido a cada cita desde una vista
+                más limpia y legible.
+              </p>
+              <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-white/85 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                {clinic?.name ?? "Cargando clínica..."}
+              </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-1">
-              <button
-                type="button"
-                onClick={() => setViewMode("day")}
-                className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                  viewMode === "day" ? "bg-gray-900 text-white" : "text-gray-700"
-                }`}
-              >
-                Día
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("week")}
-                className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                  viewMode === "week" ? "bg-gray-900 text-white" : "text-gray-700"
-                }`}
-              >
-                Semana
-              </button>
-            </div>
+            <div className="grid gap-3 sm:grid-cols-[auto_auto] xl:min-w-[420px]">
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/85 p-2 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => shiftSelectedDate(viewMode === "day" ? -1 : -7)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  ← Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(getTodayInputValue())}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shiftSelectedDate(viewMode === "day" ? 1 : 7)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  Siguiente →
+                </button>
+              </div>
 
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Fecha</span>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-              />
-            </label>
+              <div className="flex flex-col gap-3 sm:items-end">
+                <div className="rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("day")}
+                    className={`rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                      viewMode === "day"
+                        ? "bg-slate-950 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Día
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("week")}
+                    className={`rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                      viewMode === "week"
+                        ? "bg-slate-950 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Semana
+                  </button>
+                </div>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">Fecha</span>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(event) => setSelectedDate(event.target.value)}
+                    className="mt-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        {loadingBase || loadingAppointments ? (
-          <p className="text-sm text-gray-600">Cargando agenda...</p>
-        ) : errorMessage ? (
-          <p className="text-sm text-red-600">{errorMessage}</p>
-        ) : viewMode === "day" ? (
-          !currentDaySchedule || !currentDaySchedule.active ? (
-            <p className="text-sm text-gray-600">La clínica no atiende ese día.</p>
-          ) : (
-            <div className="space-y-3">
-              {agendaSlots.map((slot) => {
-                const slotLabel = formatTimeLabel(slot);
-                const appointment = appointmentsBySlot.get(slotLabel);
-                const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
-
-                return (
-                  <div
-                    key={slot.toISOString()}
-                    className="grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-4 md:grid-cols-[100px_1fr] md:items-center"
-                  >
-                    <div className="text-sm font-semibold text-gray-900">{slotLabel}</div>
-                    {appointment ? (
-                      <Link
-                        href={`/a/${appointment.token}`}
-                        title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                        className="flex rounded-xl border border-gray-200 bg-white shadow-sm transition-colors hover:bg-gray-50"
-                      >
-                        <div
-                          className={`w-1.5 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
-                        />
-                        <div className="block p-3">
-                          <p className="text-sm font-semibold text-gray-900">
-                            {appointment.patient_name}
-                          </p>
-                          <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
-                          {statusMeta ? (
-                            <span
-                              className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
-                            >
-                              {statusMeta.label}
-                            </span>
-                          ) : null}
-                        </div>
-                      </Link>
-                    ) : (
-                      // Nota: no añadimos manejo específico de doble click aquí porque el slot libre
-                      // ya navega al mismo destino con click simple.
-                      <Link
-                        href={`/clinic/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
-                        className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-400 transition-colors hover:bg-gray-50"
-                      >
-                        Libre
-                      </Link>
-                    )}
-                  </div>
-                );
-              })}
-
-              {agendaSlots.length === 0 ? (
-                <p className="text-sm text-gray-600">La clínica no atiende ese día.</p>
-              ) : null}
+      <section className="overflow-hidden rounded-[30px] border border-white/70 bg-white/90 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)]">
+        <div className="border-b border-slate-200/80 bg-slate-50/70 px-6 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                {viewMode === "day" ? "Vista del día" : "Vista de la semana"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Mantén el foco en la agenda sin perder el contexto de horarios y estados.
+              </p>
             </div>
-          )
-        ) : (
-          <div className="min-w-0 overflow-x-auto">
-            <div className="grid min-w-0 w-full grid-cols-[80px_repeat(5,minmax(0,1fr))]">
-              <div className="border-b border-gray-200 bg-white p-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Hora
-              </div>
-              {weekAgendaData.schedules.map((item, index) => {
-                const formatter = new Intl.DateTimeFormat("es-ES", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "2-digit",
-                });
-
-                return (
-                  <div
-                    key={`${item.dateKey}-${index}`}
-                    className="min-w-0 border-b border-l border-gray-200 bg-white p-3 text-sm font-semibold text-gray-900"
-                  >
-                    {formatter.format(item.date)}
-                  </div>
-                );
-              })}
-
-              {weekAgendaData.timeLabels.length > 0 ? (
-                weekAgendaData.timeLabels.map((timeLabel) => (
-                  <div key={timeLabel} className="contents">
-                    <div className="border-b border-gray-200 bg-slate-50 p-3 text-sm font-medium text-gray-700">
-                      {timeLabel}
-                    </div>
-                    {weekAgendaData.schedules.map((item) => {
-                      const daySlots =
-                        item.schedule && item.schedule.active
-                          ? buildDaySlotsFromTimeRange(
-                              item.date,
-                              item.schedule.start_time,
-                              item.schedule.end_time,
-                              15,
-                            )
-                          : [];
-                      const slotExists = daySlots.some((slot) => formatTimeLabel(slot) === timeLabel);
-                      const appointment =
-                        (appointmentsByDate[item.dateKey] ?? []).find((entry) => {
-                          if (!entry.scheduled_at) return false;
-                          const scheduledAt = new Date(entry.scheduled_at);
-                          return !Number.isNaN(scheduledAt.getTime()) && getSlotKey(scheduledAt) === timeLabel;
-                        }) ?? null;
-                      const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
-
-                      return (
-                        <div
-                          key={`${item.dateKey}-${timeLabel}`}
-                          className="min-w-0 border-b border-l border-gray-200 bg-white p-2"
-                        >
-                          {!slotExists ? null : appointment ? (
-                            <Link
-                              href={`/a/${appointment.token}`}
-                              title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                              className="flex w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
-                            >
-                              <div
-                                className={`w-1 shrink-0 rounded-l-xl ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
-                              />
-                              <div className="block min-w-0 flex-1 p-2">
-                                <p className="truncate text-xs font-semibold text-gray-900">
-                                  {appointment.patient_name}
-                                </p>
-                                <p className="mt-1 truncate text-xs text-gray-600">{appointment.service}</p>
-                                {statusMeta ? (
-                                  <span
-                                    className={`mt-2 inline-flex max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
-                                  >
-                                    {statusMeta.label}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </Link>
-                          ) : (
-                            // Nota: no añadimos manejo específico de doble click aquí porque el slot libre
-                            // ya navega al mismo destino con click simple.
-                            <Link
-                              href={`/clinic/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
-                              className="block px-2 py-3 text-center text-xs text-gray-300 transition-colors hover:bg-gray-50"
-                            >
-                              Libre
-                            </Link>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-6 p-4 text-sm text-gray-600">
-                  La clínica no atiende en esta semana.
-                </div>
-              )}
+            <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+              {viewMode === "day" ? "Agenda puntual" : "Semana laboral"}
             </div>
           </div>
-        )}
+        </div>
+
+        <div className="p-6">
+          {loadingBase || loadingAppointments ? (
+            <p className="text-sm text-slate-600">Cargando agenda...</p>
+          ) : errorMessage ? (
+            <p className="text-sm text-red-600">{errorMessage}</p>
+          ) : viewMode === "day" ? (
+            !currentDaySchedule || !currentDaySchedule.active ? (
+              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 px-5 py-10 text-center text-sm text-slate-600">
+                La clínica no atiende ese día.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {agendaSlots.map((slot) => {
+                  const slotLabel = formatTimeLabel(slot);
+                  const appointment = appointmentsBySlot.get(slotLabel);
+                  const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
+
+                  return (
+                    <div
+                      key={slot.toISOString()}
+                      className="grid gap-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 md:grid-cols-[112px_1fr] md:items-center"
+                    >
+                      <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold tracking-tight text-slate-900 shadow-sm">
+                        {slotLabel}
+                      </div>
+                      {appointment ? (
+                        <Link
+                          href={`/a/${appointment.token}`}
+                          title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                          className="flex rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_32px_-26px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+                        >
+                          <div
+                            className={`w-1.5 shrink-0 rounded-l-[22px] ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
+                          />
+                          <div className="min-w-0 p-4">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {appointment.patient_name}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">{appointment.service}</p>
+                            {statusMeta ? (
+                              <span
+                                className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                              >
+                                {statusMeta.label}
+                              </span>
+                            ) : null}
+                          </div>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/clinic/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
+                          className="rounded-[22px] border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-400 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
+                        >
+                          Libre
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {agendaSlots.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 px-5 py-10 text-center text-sm text-slate-600">
+                    La clínica no atiende ese día.
+                  </div>
+                ) : null}
+              </div>
+            )
+          ) : (
+            <div className="min-w-0 overflow-x-auto rounded-[24px] border border-slate-200 bg-slate-50/60">
+              <div className="grid min-w-0 w-full grid-cols-[88px_repeat(5,minmax(0,1fr))]">
+                <div className="border-b border-slate-200 bg-white/90 p-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Hora
+                </div>
+                {weekAgendaData.schedules.map((item, index) => {
+                  const formatter = new Intl.DateTimeFormat("es-ES", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "2-digit",
+                  });
+
+                  return (
+                    <div
+                      key={`${item.dateKey}-${index}`}
+                      className="min-w-0 border-b border-l border-slate-200 bg-white/90 p-3 text-sm font-semibold text-slate-900"
+                    >
+                      {formatter.format(item.date)}
+                    </div>
+                  );
+                })}
+
+                {weekAgendaData.timeLabels.length > 0 ? (
+                  weekAgendaData.timeLabels.map((timeLabel) => (
+                    <div key={timeLabel} className="contents">
+                      <div className="border-b border-slate-200 bg-slate-50/90 p-3 text-sm font-medium text-slate-700">
+                        {timeLabel}
+                      </div>
+                      {weekAgendaData.schedules.map((item) => {
+                        const daySlots =
+                          item.schedule && item.schedule.active
+                            ? buildDaySlotsFromTimeRange(
+                                item.date,
+                                item.schedule.start_time,
+                                item.schedule.end_time,
+                                15,
+                              )
+                            : [];
+                        const slotExists = daySlots.some(
+                          (slot) => formatTimeLabel(slot) === timeLabel,
+                        );
+                        const appointment =
+                          (appointmentsByDate[item.dateKey] ?? []).find((entry) => {
+                            if (!entry.scheduled_at) return false;
+                            const scheduledAt = new Date(entry.scheduled_at);
+                            return (
+                              !Number.isNaN(scheduledAt.getTime()) &&
+                              getSlotKey(scheduledAt) === timeLabel
+                            );
+                          }) ?? null;
+                        const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
+
+                        return (
+                          <div
+                            key={`${item.dateKey}-${timeLabel}`}
+                            className="min-w-0 border-b border-l border-slate-200 bg-white p-2"
+                          >
+                            {!slotExists ? null : appointment ? (
+                              <Link
+                                href={`/a/${appointment.token}`}
+                                title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                                className="flex w-full min-w-0 max-w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                              >
+                                <div
+                                  className={`w-1 shrink-0 rounded-l-[20px] ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
+                                />
+                                <div className="min-w-0 flex-1 p-2.5">
+                                  <p className="truncate text-xs font-semibold text-slate-900">
+                                    {appointment.patient_name}
+                                  </p>
+                                  <p className="mt-1 truncate text-xs text-slate-600">
+                                    {appointment.service}
+                                  </p>
+                                  {statusMeta ? (
+                                    <span
+                                      className={`mt-2 inline-flex max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
+                                    >
+                                      {statusMeta.label}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/clinic/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
+                                className="block rounded-[18px] border border-dashed border-transparent px-2 py-3 text-center text-xs text-slate-300 transition-all duration-150 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500"
+                              >
+                                Libre
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-6 p-5 text-sm text-slate-600">
+                    La clínica no atiende en esta semana.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -34,6 +34,7 @@ type AppointmentRow = {
   id: number;
   token: string;
   patient_name: string;
+  patient_phone?: string | null;
   service: string;
   scheduled_at: string | null;
   datetime_label: string;
@@ -148,7 +149,7 @@ export default function ClinicDashboardPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [clinicSlug]);
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active).length,
@@ -213,7 +214,9 @@ export default function ClinicDashboardPage() {
 
       setAppointments((current) =>
         current.map((appointment) =>
-          appointment.token === token ? { ...appointment, status: data.appointment!.status } : appointment,
+          appointment.token === token
+            ? { ...appointment, status: data.appointment!.status }
+            : appointment,
         ),
       );
     } catch (error) {
@@ -224,39 +227,56 @@ export default function ClinicDashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="space-y-8">
+      <section className="rounded-[28px] border border-white/70 bg-white/90 p-7 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
         {loading ? (
-          <p className="text-sm text-gray-600">Cargando clínica...</p>
+          <p className="text-sm text-slate-600">Cargando clínica...</p>
         ) : clinic ? (
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-3">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-4">
               {clinic.logo_url ? (
                 <img src={clinic.logo_url} alt={clinic.name} className="h-14 object-contain" />
               ) : null}
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  Vista general
+                </p>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                   {clinic.name}
                 </h1>
                 {clinic.description ? (
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+                  <p className="max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
                     {clinic.description}
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-1 text-sm text-gray-600">
-                {clinic.address ? <p>{clinic.address}</p> : null}
-                {clinic.phone ? <p>{clinic.phone}</p> : null}
+              <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                {clinic.address ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    {clinic.address}
+                  </div>
+                ) : null}
+                {clinic.phone ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    {clinic.phone}
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div
-              className="h-20 w-20 rounded-2xl border"
-              style={{
-                backgroundColor: clinic.theme_color ?? "#f8fafc",
-                borderColor: clinic.theme_color ?? "#e5e7eb",
-              }}
-            />
+            <div className="flex items-start gap-3">
+              <div
+                className="h-20 w-20 rounded-[22px] border shadow-sm"
+                style={{
+                  backgroundColor: clinic.theme_color ?? "#f8fafc",
+                  borderColor: clinic.theme_color ?? "#e5e7eb",
+                }}
+              />
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Resumen</p>
+                <p className="mt-1">Estado operativo del panel y agenda diaria.</p>
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-red-600">{errorMessage ?? "No se pudo cargar la clínica"}</p>
@@ -264,28 +284,34 @@ export default function ClinicDashboardPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">Servicios activos</p>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">{activeServices}</p>
+        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
+          <p className="text-sm text-slate-500">Servicios activos</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+            {activeServices}
+          </p>
         </article>
-        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">Días activos</p>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">{activeDays}</p>
+        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
+          <p className="text-sm text-slate-500">Días activos</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+            {activeDays}
+          </p>
         </article>
-        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">Citas de hoy</p>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">{todayAppointments}</p>
+        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
+          <p className="text-sm text-slate-500">Citas de hoy</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+            {todayAppointments}
+          </p>
         </article>
-        <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500">Google Calendar</p>
+        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
+          <p className="text-sm text-slate-500">Google Calendar</p>
           {googleConnected ? (
             <>
-              <p className="mt-2 text-lg font-semibold text-gray-900">Conectado ✓</p>
+              <p className="mt-3 text-lg font-semibold text-slate-900">Conectado ✓</p>
               <button
                 type="button"
                 onClick={() => void handleDisconnectGoogle()}
                 disabled={disconnectingGoogle}
-                className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex rounded-xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {disconnectingGoogle ? "Desconectando..." : "Desconectar"}
               </button>
@@ -293,7 +319,7 @@ export default function ClinicDashboardPage() {
           ) : (
             <a
               href="/api/google/connect"
-              className="mt-3 inline-block rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+              className="mt-4 inline-flex rounded-xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-black"
             >
               Conectar Google Calendar
             </a>
@@ -301,127 +327,154 @@ export default function ClinicDashboardPage() {
         </article>
       </section>
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">Accesos rápidos</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
+      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+              Accesos rápidos
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Atajos para las tareas más frecuentes del día.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
             <Link
               href="/clinic/appointments/new"
-              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+              className="rounded-2xl border border-slate-900 bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(15,23,42,0.8)] transition-all duration-150 hover:bg-black"
             >
               Nueva cita
             </Link>
             <Link
               href="/clinic/settings"
-              className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
             >
               Configuración
-          </Link>
-          <Link
-            href="/clinic/services"
-            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
-          >
-            Servicios
-          </Link>
-          <Link
-            href="/clinic/hours"
-            className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
-          >
-            Horarios
-          </Link>
+            </Link>
+            <Link
+              href="/clinic/services"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+            >
+              Servicios
+            </Link>
+            <Link
+              href="/clinic/hours"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+            >
+              Horarios
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">Próximas citas</h2>
-          <p className="text-sm text-gray-500">{appointments.length} cargadas</p>
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+              Próximas citas
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">{appointments.length} cargadas</p>
+          </div>
         </div>
 
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <div className="mt-5 overflow-x-auto rounded-[24px] border border-slate-200 bg-slate-50/70">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead>
-                <tr className="text-left text-gray-500">
-                  <th className="px-3 py-2 font-medium">Paciente</th>
-                  <th className="px-3 py-2 font-medium">Servicio</th>
-                  <th className="px-3 py-2 font-medium">Fecha/hora</th>
-                  <th className="px-3 py-2 font-medium">Estado</th>
-                  <th className="px-3 py-2 font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {appointments.map((appointment) => (
-                  <tr key={appointment.id} className="text-gray-700">
-                  <td className="px-3 py-3">
-                    <Link href={`/a/${appointment.token}`} className="text-blue-600 hover:underline">
+              <tr className="text-left text-slate-500">
+                <th className="px-4 py-3 font-medium">Paciente</th>
+                <th className="px-4 py-3 font-medium">Servicio</th>
+                <th className="px-4 py-3 font-medium">Fecha/hora</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {appointments.map((appointment) => (
+                <tr
+                  key={appointment.id}
+                  className="text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/a/${appointment.token}`}
+                      className="font-medium text-sky-700 hover:underline"
+                    >
                       {appointment.patient_name}
                     </Link>
                   </td>
-                  <td className="px-3 py-3">{appointment.service}</td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">{appointment.service}</td>
+                  <td className="px-4 py-3">
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>
-                    <td className="px-3 py-3">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                        {appointment.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      {appointment.status === "pending" ? (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
-                            disabled={updatingAppointmentToken === appointment.token}
-                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Confirmar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "cancelled")}
-                            disabled={updatingAppointmentToken === appointment.token}
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      ) : null}
-                      {appointment.status === "confirmed" ? (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "completed")}
-                            disabled={updatingAppointmentToken === appointment.token}
-                            className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Completar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleAppointmentStatusUpdate(appointment.token, "cancelled")}
-                            disabled={updatingAppointmentToken === appointment.token}
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      ) : null}
-                      {appointment.status === "completed" ? (
-                        <span className="text-xs font-medium text-gray-500">Completada</span>
-                      ) : null}
-                      {appointment.status === "cancelled" ? (
-                        <span className="text-xs font-medium text-gray-500">Cancelada</span>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      {appointment.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {appointment.status === "pending" ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(appointment.token, "confirmed")
+                          }
+                          disabled={updatingAppointmentToken === appointment.token}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(appointment.token, "cancelled")
+                          }
+                          disabled={updatingAppointmentToken === appointment.token}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : null}
+                    {appointment.status === "confirmed" ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(appointment.token, "completed")
+                          }
+                          disabled={updatingAppointmentToken === appointment.token}
+                          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Completar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(appointment.token, "cancelled")
+                          }
+                          disabled={updatingAppointmentToken === appointment.token}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : null}
+                    {appointment.status === "completed" ? (
+                      <span className="text-xs font-medium text-slate-500">Completada</span>
+                    ) : null}
+                    {appointment.status === "cancelled" ? (
+                      <span className="text-xs font-medium text-slate-500">Cancelada</span>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
 
           {!loading && appointments.length === 0 ? (
-            <p className="px-3 py-6 text-sm text-gray-600">No hay citas próximas.</p>
+            <p className="px-4 py-6 text-sm text-slate-600">No hay citas próximas.</p>
           ) : null}
         </div>
       </section>

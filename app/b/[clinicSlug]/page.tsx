@@ -1,7 +1,7 @@
 "use client";
 
-import { DEMO_CLINICS } from "@/lib/demoClinics";
 import type { CreateAppointmentInput } from "@/lib/appointments";
+import { DEMO_CLINICS } from "@/lib/demoClinics";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,12 +35,12 @@ function getTodayInputValue(): string {
 function buildDateTimeLabel(dateInput: string, timeInput: string): string {
   const date = new Date(`${dateInput}T${timeInput}:00`);
   if (Number.isNaN(date.getTime())) {
-    return `${dateInput} Â· ${timeInput}`;
+    return `${dateInput} · ${timeInput}`;
   }
 
   const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(date);
   const weekdayTitle = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`;
-  return `${weekdayTitle} Â· ${timeInput}`;
+  return `${weekdayTitle} · ${timeInput}`;
 }
 
 function getClinicDetails(clinicSlug: string) {
@@ -115,6 +115,7 @@ export default function PublicBookingPage() {
           setClinicDetails(fallback);
         }
       } catch {
+        if (!active) return;
         const fallback = getClinicDetails(clinicSlug);
         setClinicDetails(fallback);
       }
@@ -269,184 +270,269 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-2xl space-y-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f7_100%)] px-4 py-8 md:px-6 md:py-12">
+      <div className="mx-auto max-w-6xl space-y-8">
         {clinicDetails && (
           <>
-            <section
-              className="rounded-3xl border bg-white p-7 shadow-sm"
-              style={{
-                borderColor: clinicDetails.theme_color || "#e5e7eb",
-              }}
-            >
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  {clinicDetails.logo_url && logoVisible ? (
-                    <img
-                      src={clinicDetails.logo_url}
-                      alt={clinicDetails.clinicName}
-                      className="mb-1 h-12 object-contain"
-                      onError={() => setLogoVisible(false)}
-                    />
-                  ) : null}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-gray-500">
-                      Reserva tu cita
-                    </p>
-                    <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
-                      {clinicDetails.clinicName}
-                    </h1>
-                    {clinicDetails.description ? (
-                      <p className="max-w-xl text-sm leading-6 text-gray-600">
-                        {clinicDetails.description}
-                      </p>
+            <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+              <div className="grid gap-8 px-6 py-8 md:px-8 md:py-9 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    {clinicDetails.logo_url && logoVisible ? (
+                      <img
+                        src={clinicDetails.logo_url}
+                        alt={clinicDetails.clinicName}
+                        className="h-12 object-contain"
+                        onError={() => setLogoVisible(false)}
+                      />
                     ) : null}
+
+                    <div className="space-y-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                        Reserva online
+                      </p>
+                      <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 md:text-[2.75rem]">
+                        {clinicDetails.clinicName}
+                      </h1>
+                      <p className="max-w-2xl text-base leading-7 text-slate-600">
+                        {clinicDetails.description ||
+                          "Reserva tu próxima cita en una experiencia clara, rápida y diseñada para una atención clínica moderna."}
+                      </p>
+                    </div>
                   </div>
+
+                  {(clinicDetails.address || clinicDetails.phone) ? (
+                    <div className="grid gap-3 md:max-w-xl md:grid-cols-2">
+                      {clinicDetails.address ? (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Dirección
+                          </p>
+                          <p className="mt-3 text-sm leading-6 text-slate-700">
+                            {clinicDetails.address}
+                          </p>
+                        </a>
+                      ) : null}
+
+                      {clinicDetails.phone ? (
+                        <a
+                          href={`tel:${clinicDetails.phone}`}
+                          className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Teléfono
+                          </p>
+                          <p className="mt-3 text-sm leading-6 text-slate-700">
+                            {clinicDetails.phone}
+                          </p>
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
-                {(clinicDetails.address || clinicDetails.phone) ? (
-                  <div className="space-y-2 rounded-2xl bg-white/70 p-4 text-sm text-gray-600">
-                    {clinicDetails.address ? (
-                      <div className="flex items-start gap-3">
-                        <span className="pt-0.5 text-base" aria-hidden="true">
-                          📍
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-700">Dirección</p>
-                          <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="break-words underline decoration-gray-300 underline-offset-2"
-                          >
-                            {clinicDetails.address}
-                          </a>
-                        </div>
-                      </div>
-                    ) : null}
-                    {clinicDetails.phone ? (
-                      <div className="flex items-start gap-3">
-                        <span className="pt-0.5 text-base" aria-hidden="true">
-                          📞
-                        </span>
-                        <div>
-                          <p className="font-medium text-gray-700">Teléfono</p>
-                          <a
-                            href={`tel:${clinicDetails.phone}`}
-                            className="underline decoration-gray-300 underline-offset-2"
-                          >
-                            {clinicDetails.phone}
-                          </a>
-                        </div>
-                      </div>
-                    ) : null}
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 md:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Reserva en pocos pasos</p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                        Elige servicio, fecha y hora
+                      </h2>
+                    </div>
+                    <div
+                      className="hidden h-12 w-12 rounded-2xl border md:block"
+                      style={{
+                        borderColor: clinicDetails.theme_color || "#cbd5e1",
+                        backgroundColor: clinicDetails.theme_color || "#e2e8f0",
+                      }}
+                    />
                   </div>
-                ) : null}
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        1
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700">Selecciona el servicio.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        2
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700">Escoge fecha y franja libre.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        3
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700">Confirma con tu nombre.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
-            <section className="rounded-3xl border border-gray-200 bg-white p-7 shadow-sm">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">Servicio</span>
-                  <select
-                    value={selectedService?.id ?? ""}
-                    onChange={(event) => {
-                      const nextService = services.find((item) => item.id === event.target.value) ?? null;
-                      setSelectedService(nextService);
-                      setSelectedSlot(null);
-                    }}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-                    disabled={loadingServices || services.length === 0}
-                  >
-                    {services.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+              <div className="border-b border-slate-200/80 bg-slate-50/70 px-6 py-5 md:px-8">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+                  Reserva tu cita
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  La disponibilidad se actualiza en tiempo real según la agenda de la clínica.
+                </p>
+              </div>
 
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">Fecha</span>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    min={getTodayInputValue()}
-                    onChange={(event) => {
-                      setSelectedDate(event.target.value);
-                      setSelectedSlot(null);
-                    }}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-                  />
-                </label>
+              <div className="grid gap-8 px-6 py-6 md:px-8 md:py-8 lg:grid-cols-[1fr_320px]">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">Servicio</span>
+                      <select
+                        value={selectedService?.id ?? ""}
+                        onChange={(event) => {
+                          const nextService =
+                            services.find((item) => item.id === event.target.value) ?? null;
+                          setSelectedService(nextService);
+                          setSelectedSlot(null);
+                        }}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+                        disabled={loadingServices || services.length === 0}
+                      >
+                        {services.map((service) => (
+                          <option key={service.id} value={service.id}>
+                            {service.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Horas disponibles</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {loadingSlots ? (
-                      <p className="text-sm text-gray-600">Cargando disponibilidad...</p>
-                    ) : slots.length > 0 ? (
-                      slots.map((slot) => (
-                        <button
-                          key={slot.value}
-                          type="button"
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm transition-all duration-150 ${
-                            selectedSlot?.value === slot.value
-                              ? "border-transparent text-white"
-                              : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
-                          }`}
-                          style={
-                            selectedSlot?.value === slot.value && clinicDetails.theme_color
-                              ? { backgroundColor: clinicDetails.theme_color }
-                              : undefined
-                          }
-                        >
-                          {slot.label}
-                        </button>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-600">No hay horarios disponibles para este dÃ­a.</p>
-                    )}
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">Fecha</span>
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        min={getTodayInputValue()}
+                        onChange={(event) => {
+                          setSelectedDate(event.target.value);
+                          setSelectedSlot(null);
+                        }}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+                      />
+                    </label>
                   </div>
-                </div>
 
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">Nombre y apellidos</span>
-                  <input
-                    type="text"
-                    value={patientName}
-                    onChange={(event) => setPatientName(event.target.value)}
-                    placeholder="Ej: Marta GarcÃ­a"
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
-                  />
-                </label>
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Horas disponibles</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Selecciona el hueco que mejor te encaje.
+                        </p>
+                      </div>
+                      {loadingSlots ? (
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
+                          Cargando
+                        </span>
+                      ) : null}
+                    </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting || !selectedService || !selectedSlot}
-                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{ backgroundColor: clinicDetails.theme_color ?? "#111827" }}
-                >
-                  {submitting ? "Reservando..." : "Reservar cita"}
-                </button>
-              </form>
+                    <div className="mt-4 flex flex-wrap gap-2.5">
+                      {loadingSlots ? (
+                        <p className="text-sm text-slate-600">Cargando disponibilidad...</p>
+                      ) : slots.length > 0 ? (
+                        slots.map((slot) => (
+                          <button
+                            key={slot.value}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`rounded-2xl border px-4 py-3 text-sm font-medium shadow-sm transition-all duration-150 ${
+                              selectedSlot?.value === slot.value
+                                ? "border-transparent text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.6)]"
+                                : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                            }`}
+                            style={
+                              selectedSlot?.value === slot.value && clinicDetails.theme_color
+                                ? { backgroundColor: clinicDetails.theme_color }
+                                : undefined
+                            }
+                          >
+                            {slot.label}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-600">
+                          No hay horarios disponibles para este día.
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-              {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700">Nombre y apellidos</span>
+                    <input
+                      type="text"
+                      value={patientName}
+                      onChange={(event) => setPatientName(event.target.value)}
+                      placeholder="Ej: Marta García"
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                    />
+                  </label>
 
-              {createdLink ? (
-                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="text-sm font-semibold text-emerald-900">Cita creada correctamente</p>
-                  <p className="mt-1 text-sm text-emerald-700">Tu enlace de cita:</p>
-                  <Link
-                    href={createdLink}
-                    className="mt-2 block break-all text-sm font-medium text-emerald-900 underline"
+                  <button
+                    type="submit"
+                    disabled={submitting || !selectedService || !selectedSlot}
+                    className="rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ backgroundColor: clinicDetails.theme_color ?? "#0f172a" }}
                   >
-                    {createdLink}
-                  </Link>
-                </div>
-              ) : null}
+                    {submitting ? "Reservando..." : "Reservar cita"}
+                  </button>
+
+                  {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+
+                  {createdLink ? (
+                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4">
+                      <p className="text-sm font-semibold text-emerald-900">
+                        Cita creada correctamente
+                      </p>
+                      <p className="mt-1 text-sm text-emerald-700">Tu enlace de cita:</p>
+                      <Link
+                        href={createdLink}
+                        className="mt-2 block break-all text-sm font-medium text-emerald-900 underline"
+                      >
+                        {createdLink}
+                      </Link>
+                    </div>
+                  ) : null}
+                </form>
+
+                <aside className="space-y-4">
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Qué incluye
+                    </p>
+                    <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                      <li>Disponibilidad actualizada con la agenda real.</li>
+                      <li>Confirmación inmediata al completar la reserva.</li>
+                      <li>Enlace individual para gestionar la cita.</li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Confianza
+                    </p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                      Experiencia clara, directa y pensada para reservar sin fricción desde móvil o
+                      escritorio.
+                    </p>
+                  </div>
+                </aside>
+              </div>
             </section>
           </>
         )}
