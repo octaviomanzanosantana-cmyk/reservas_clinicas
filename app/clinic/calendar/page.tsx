@@ -422,6 +422,7 @@ export default function ClinicCalendarPage() {
                   >
                     <div className="text-sm font-semibold text-gray-900">{slotLabel}</div>
                     {appointment ? (
+                      // TODO: Exponer `phone` en los datos del calendario para incluirlo en el hover.
                       <Link
                         href={`/a/${appointment.token}`}
                         title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
@@ -515,6 +516,7 @@ export default function ClinicCalendarPage() {
                           className="min-w-0 border-b border-l border-gray-200 bg-white p-2"
                         >
                           {!slotExists ? null : appointment ? (
+                            // TODO: Exponer `phone` en los datos del calendario para incluirlo en el hover.
                             <Link
                               href={`/a/${appointment.token}`}
                               title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
