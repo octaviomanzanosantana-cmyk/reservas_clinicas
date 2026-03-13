@@ -306,8 +306,8 @@ export default function PublicBookingPage() {
         {clinicDetails && (
           <>
             <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
-              <div className="grid gap-8 px-6 py-8 md:px-8 md:py-9 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-                <div className="space-y-6">
+              <div className="px-6 py-8 md:px-8 md:py-9">
+                <div className="max-w-3xl space-y-6">
                   <div className="space-y-4">
                     {clinicDetails.logo_url && logoVisible ? (
                       <img
@@ -367,62 +367,29 @@ export default function PublicBookingPage() {
                   ) : null}
                 </div>
 
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 md:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">Reserva en pocos pasos</p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                        Elige servicio, fecha y hora
-                      </h2>
-                    </div>
-                    <div
-                      className="hidden h-12 w-12 rounded-2xl border md:block"
-                      style={{
-                        borderColor: clinicDetails.theme_color || "#cbd5e1",
-                        backgroundColor: clinicDetails.theme_color || "#e2e8f0",
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        1
-                      </p>
-                      <p className="mt-2 text-sm text-slate-700">Selecciona el servicio.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        2
-                      </p>
-                      <p className="mt-2 text-sm text-slate-700">Escoge fecha y franja libre.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        3
-                      </p>
-                      <p className="mt-2 text-sm text-slate-700">Confirma con tu nombre.</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </section>
 
             <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
               <div className="border-b border-slate-200/80 bg-slate-50/70 px-6 py-5 md:px-8">
-                <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                   Reserva tu cita
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  Completa tu reserva
                 </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  La disponibilidad se actualiza en tiempo real según la agenda de la clínica.
+                <p className="mt-2 text-sm text-slate-600">
+                  Elige servicio, fecha, hora y confirma tu cita.
                 </p>
               </div>
 
-              <div className="grid gap-8 px-6 py-6 md:px-8 md:py-8 lg:grid-cols-[1fr_320px]">
-                <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="px-6 py-6 md:px-8 md:py-8">
+                <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
                   <div className="grid gap-4 md:grid-cols-2">
-                    <label className="block">
-                      <span className="text-sm font-medium text-slate-700">Servicio</span>
+                    <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        1. Servicio
+                      </span>
                       <select
                         value={selectedService?.id ?? ""}
                         onChange={(event) => {
@@ -442,8 +409,10 @@ export default function PublicBookingPage() {
                       </select>
                     </label>
 
-                    <label className="block">
-                      <span className="text-sm font-medium text-slate-700">Fecha</span>
+                    <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        2. Fecha
+                      </span>
                       <input
                         type="date"
                         value={selectedDate}
@@ -457,13 +426,13 @@ export default function PublicBookingPage() {
                     </label>
                   </div>
 
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
+                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 shadow-sm md:p-6">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium text-slate-900">Horas disponibles</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Selecciona el hueco que mejor te encaje.
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          3. Hora disponible
                         </p>
+                        <p className="mt-2 text-lg font-semibold text-slate-950">Horas disponibles</p>
                       </div>
                       {loadingSlots ? (
                         <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
@@ -503,8 +472,10 @@ export default function PublicBookingPage() {
                     </div>
                   </div>
 
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-700">Nombre y apellidos</span>
+                  <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      4. Nombre y apellidos
+                    </span>
                     <input
                       type="text"
                       value={patientName}
@@ -514,20 +485,28 @@ export default function PublicBookingPage() {
                     />
                   </label>
 
-                  <button
-                    type="submit"
-                    disabled={submitting || !selectedService || !selectedSlot}
-                    className="rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ backgroundColor: clinicDetails.theme_color ?? "#0f172a" }}
-                  >
-                    {submitting ? "Reservando..." : "Reservar cita"}
-                  </button>
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      5. Confirmar reserva
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={submitting || !selectedService || !selectedSlot}
+                      className="mt-3 w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                      style={{ backgroundColor: clinicDetails.theme_color ?? "#0f172a" }}
+                    >
+                      {submitting ? "Reservando..." : "Confirmar reserva"}
+                    </button>
+                  </div>
 
                   {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
                   {createdLink && createdAppointment ? (
-                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4">
-                      <p className="text-sm font-semibold text-emerald-900">Cita confirmada</p>
+                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                        Reserva completada
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-emerald-900">Cita confirmada</p>
                       <div className="mt-3 grid gap-3 md:grid-cols-3">
                         <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
@@ -577,28 +556,6 @@ export default function PublicBookingPage() {
                   ) : null}
                 </form>
 
-                <aside className="space-y-4">
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Qué incluye
-                    </p>
-                    <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                      <li>Disponibilidad actualizada con la agenda real.</li>
-                      <li>Confirmación inmediata al completar la reserva.</li>
-                      <li>Enlace individual para gestionar la cita.</li>
-                    </ul>
-                  </div>
-
-                  <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Confianza
-                    </p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      Experiencia clara, directa y pensada para reservar sin fricción desde móvil o
-                      escritorio.
-                    </p>
-                  </div>
-                </aside>
               </div>
             </section>
           </>
