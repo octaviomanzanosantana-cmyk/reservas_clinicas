@@ -219,6 +219,7 @@ function ClinicNewAppointmentContent() {
         clinic_id: null,
         clinic_name: clinic.name,
         patient_name: patientName.trim(),
+        patient_phone: phone.trim() || null,
         service: selectedService.name,
         scheduled_at: selectedSlot.value,
         datetime_label: buildDateTimeLabel(selectedDate, selectedSlot.label),

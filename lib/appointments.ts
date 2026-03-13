@@ -7,6 +7,7 @@ export type AppointmentRow = {
   clinic_id: string | null;
   clinic_name: string;
   patient_name: string;
+  patient_phone: string | null;
   service: string;
   scheduled_at: string | null;
   datetime_label: string;
@@ -21,8 +22,9 @@ export type AppointmentRow = {
 
 export type CreateAppointmentInput = Omit<
   AppointmentRow,
-  "id" | "created_at" | "updated_at" | "google_event_id" | "calendar_id"
+  "id" | "created_at" | "updated_at" | "google_event_id" | "calendar_id" | "patient_phone"
 > & {
+  patient_phone?: string | null;
   google_event_id?: string | null;
   calendar_id?: string | null;
 };
@@ -85,6 +87,8 @@ export async function createAppointment(data: CreateAppointmentInput): Promise<A
   const payload: CreateAppointmentInput = {
     ...data,
     token: normalizeToken(data.token),
+    patient_phone:
+      typeof data.patient_phone === "string" ? data.patient_phone.trim() || null : null,
   };
 
   const { data: created, error } = await supabase

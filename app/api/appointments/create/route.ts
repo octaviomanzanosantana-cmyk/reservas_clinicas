@@ -31,8 +31,13 @@ type CreateAppointmentRequest = CreateAppointmentInput & {
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as CreateAppointmentRequest;
+    const normalizedPayload: CreateAppointmentRequest = {
+      ...payload,
+      patient_phone:
+        typeof payload.patient_phone === "string" ? payload.patient_phone.trim() || null : null,
+    };
     const scheduledAtValue =
-      typeof payload.scheduled_at === "string" ? payload.scheduled_at.trim() : "";
+      typeof normalizedPayload.scheduled_at === "string" ? normalizedPayload.scheduled_at.trim() : "";
 
     if (!scheduledAtValue) {
       return NextResponse.json({ error: "scheduled_at es requerido" }, { status: 400 });
@@ -97,7 +102,7 @@ export async function POST(request: Request) {
     const { data: existingAppointment, error: existingAppointmentError } = await supabaseAdmin
       .from("appointments")
       .select("id")
-      .eq("clinic_name", payload.clinic_name)
+      .eq("clinic_name", normalizedPayload.clinic_name)
       .eq("scheduled_at", scheduledAtValue)
       .neq("status", "cancelled")
       .maybeSingle();
@@ -113,7 +118,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const appointment = await createAppointment(payload);
+    const appointment = await createAppointment(normalizedPayload);
 
     let nextAppointment: AppointmentRow = appointment;
     let calendarWarning: string | null = null;

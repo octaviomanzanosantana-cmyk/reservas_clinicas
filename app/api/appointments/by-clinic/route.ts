@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("appointments")
-      .select("id, token, patient_name, service, scheduled_at, datetime_label, status, updated_at")
+      .select("id, token, patient_name, patient_phone, service, scheduled_at, datetime_label, status, updated_at")
       .eq("clinic_name", clinicName)
       .order("scheduled_at", { ascending: true })
       .limit(50);
