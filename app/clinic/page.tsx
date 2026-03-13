@@ -88,15 +88,6 @@ function getAppointmentTimestamp(appointment: AppointmentRow): number {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function getClinicInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 function getAppointmentStatusLabel(status: string): string {
   return APPOINTMENT_STATUS_LABELS[status] ?? status;
 }
@@ -277,7 +268,7 @@ export default function ClinicDashboardPage() {
         {loading ? (
           <p className="text-sm text-slate-600">Cargando clínica...</p>
         ) : clinic ? (
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-3xl space-y-4">
             <div className="space-y-4">
               {clinic.logo_url ? (
                 <img src={clinic.logo_url} alt={clinic.name} className="h-14 object-contain" />
@@ -306,33 +297,6 @@ export default function ClinicDashboardPage() {
                     {clinic.phone}
                   </div>
                 ) : null}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                  Marca clínica
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <div
-                    className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[20px] border text-lg font-semibold text-slate-900 shadow-sm"
-                    style={{
-                      backgroundColor: clinic.theme_color ?? "#f8fafc",
-                      borderColor: `${clinic.theme_color ?? "#e5e7eb"}55`,
-                    }}
-                  >
-                    {clinic.logo_url ? (
-                      <img src={clinic.logo_url} alt={clinic.name} className="h-10 w-10 object-contain" />
-                    ) : (
-                      getClinicInitials(clinic.name)
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{clinic.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">Identidad visible de la clínica</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
