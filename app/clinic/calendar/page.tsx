@@ -22,6 +22,7 @@ type AppointmentRow = {
   id: number;
   token: string;
   patient_name: string;
+  patient_phone: string | null;
   service: string;
   scheduled_at: string | null;
   datetime_label: string;
@@ -422,10 +423,9 @@ export default function ClinicCalendarPage() {
                   >
                     <div className="text-sm font-semibold text-gray-900">{slotLabel}</div>
                     {appointment ? (
-                      // TODO: Exponer `phone` en los datos del calendario para incluirlo en el hover.
                       <Link
                         href={`/a/${appointment.token}`}
-                        title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                        title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
                         className="flex rounded-xl border border-gray-200 bg-white shadow-sm transition-colors hover:bg-gray-50"
                       >
                         <div
@@ -518,10 +518,9 @@ export default function ClinicCalendarPage() {
                           className="min-w-0 border-b border-l border-gray-200 bg-white p-2"
                         >
                           {!slotExists ? null : appointment ? (
-                            // TODO: Exponer `phone` en los datos del calendario para incluirlo en el hover.
                             <Link
                               href={`/a/${appointment.token}`}
-                              title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                              title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
                               className="flex w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-50 shadow-sm transition-colors hover:bg-gray-50"
                             >
                               <div
