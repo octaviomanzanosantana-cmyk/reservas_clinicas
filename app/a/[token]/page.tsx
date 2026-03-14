@@ -7,6 +7,7 @@ import { getAppointmentByToken } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
 import { getClinicConfig } from "@/lib/demoClinics";
 import type { Appointment } from "@/lib/types";
+import { MessageCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -218,7 +219,7 @@ export default function AppointmentHomePage() {
           ) : null}
 
           <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-600">
-            <p className="font-medium text-slate-700">Contactar con la clínica</p>
+            <p className="font-medium text-slate-700">¿Necesitas ayuda con tu cita?</p>
 
             {clinicPhone ? (
               <a
@@ -234,9 +235,10 @@ export default function AppointmentHomePage() {
                 href={clinicWhatsAppUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+                className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
               >
-                WhatsApp de la clínica
+                <MessageCircle size={16} />
+                WhatsApp
               </a>
             ) : null}
 

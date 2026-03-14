@@ -14,7 +14,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
   const [day = appointment.datetimeLabel, hour = ""] = appointment.datetimeLabel.split("·").map((v) => v.trim());
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-gray-200 bg-slate-50/80 p-6 shadow-sm">
       <div className="mb-5 flex items-start justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">Tu cita</h1>
         <StatusBadge status={appointment.status} />
