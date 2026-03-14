@@ -44,6 +44,12 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
   };
 }
 
+function toWhatsAppPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "").replace(/^00/, "");
+  return digits || null;
+}
+
 export default function AppointmentHomePage() {
   const router = useRouter();
   const params = useParams();
@@ -99,6 +105,24 @@ export default function AppointmentHomePage() {
         </section>
       );
     }
+
+    const clinicPhone = clinic.supportPhone ?? null;
+    const whatsappPhone = toWhatsAppPhone(clinicPhone);
+    const clinicWhatsAppUrl = whatsappPhone
+      ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+          [
+            "Hola, necesito ayuda con mi cita.",
+            "",
+            `Clínica: ${appointment.clinicName}`,
+            `Servicio: ${appointment.service}`,
+            `Cita: ${appointment.datetimeLabel}`,
+            "",
+            `Gestionar cita: ${
+              typeof window !== "undefined" ? `${window.location.origin}/a/${token}` : `/a/${token}`
+            }`,
+          ].join("\n"),
+        )}`
+      : null;
 
     return (
       <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
@@ -194,14 +218,25 @@ export default function AppointmentHomePage() {
           ) : null}
 
           <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-600">
-            <p className="font-medium text-slate-700">¿Necesitas ayuda con tu cita?</p>
+            <p className="font-medium text-slate-700">Contactar con la clínica</p>
 
-            {clinic.supportPhone ? (
+            {clinicPhone ? (
               <a
-                href={`tel:${clinic.supportPhone}`}
+                href={`tel:${clinicPhone}`}
                 className="mt-2 inline-block font-medium text-slate-900 underline"
               >
-                {clinic.supportPhone}
+                {clinicPhone}
+              </a>
+            ) : null}
+
+            {clinicWhatsAppUrl ? (
+              <a
+                href={clinicWhatsAppUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+              >
+                WhatsApp de la clínica
               </a>
             ) : null}
 

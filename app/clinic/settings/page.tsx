@@ -151,13 +151,16 @@ export default function ClinicSettingsPage() {
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">Teléfono</span>
+                <span className="text-sm font-medium text-gray-700">Teléfono de contacto de la clínica</span>
                 <input
                   type="text"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 />
+                <p className="mt-2 text-xs text-gray-500">
+                  Este número se mostrará a los pacientes en sus páginas de cita y reserva.
+                </p>
               </label>
 
               <label className="block">
