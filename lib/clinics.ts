@@ -43,6 +43,39 @@ export async function listClinics(): Promise<ClinicRow[]> {
   return data ?? [];
 }
 
+export async function createClinic(
+  input: Pick<
+    ClinicRow,
+    "slug" | "name" | "description" | "address" | "phone" | "theme_color" | "booking_enabled"
+  > & {
+    logo_url?: string | null;
+  },
+): Promise<ClinicRow> {
+  const slug = input.slug.trim().toLowerCase();
+  const name = input.name.trim();
+
+  const { data, error } = await supabaseAdmin
+    .from("clinics")
+    .insert({
+      slug,
+      name,
+      description: input.description?.trim() || null,
+      address: input.address?.trim() || null,
+      phone: input.phone?.trim() || null,
+      logo_url: input.logo_url?.trim() || null,
+      theme_color: input.theme_color?.trim() || null,
+      booking_enabled: input.booking_enabled,
+    })
+    .select("*")
+    .single<ClinicRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "No se pudo crear la clínica");
+  }
+
+  return data;
+}
+
 export async function updateClinicBySlug(
   slug: string,
   input: Partial<
