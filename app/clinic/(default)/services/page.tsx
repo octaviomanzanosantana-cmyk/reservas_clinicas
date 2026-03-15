@@ -21,8 +21,11 @@ type ServiceMutationResponse = {
   error?: string;
 };
 
-export default function ClinicServicesPage() {
-  const clinicSlug = PANEL_CLINIC_SLUG;
+type ClinicServicesPageProps = {
+  clinicSlug?: string;
+};
+
+export function ClinicServicesPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicServicesPageProps) {
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -287,4 +290,8 @@ export default function ClinicServicesPage() {
       </div>
     </div>
   );
+}
+
+export default function ClinicServicesRoute() {
+  return <ClinicServicesPage />;
 }

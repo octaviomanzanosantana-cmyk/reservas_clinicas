@@ -42,8 +42,11 @@ function getDefaultHours(clinicSlug: string): ClinicHourRow[] {
   }));
 }
 
-export default function ClinicHoursPage() {
-  const clinicSlug = PANEL_CLINIC_SLUG;
+type ClinicHoursPageProps = {
+  clinicSlug?: string;
+};
+
+export function ClinicHoursPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicHoursPageProps) {
   const [hours, setHours] = useState<ClinicHourRow[]>(getDefaultHours(clinicSlug));
   const [loading, setLoading] = useState(true);
   const [savingDay, setSavingDay] = useState<number | null>(null);
@@ -226,4 +229,8 @@ export default function ClinicHoursPage() {
       </div>
     </div>
   );
+}
+
+export default function ClinicHoursRoute() {
+  return <ClinicHoursPage />;
 }

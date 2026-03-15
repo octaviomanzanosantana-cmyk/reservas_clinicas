@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clinic:create": "node scripts/create-clinic.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",

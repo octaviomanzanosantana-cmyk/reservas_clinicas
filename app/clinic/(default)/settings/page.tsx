@@ -15,8 +15,11 @@ type ClinicResponse = {
   error?: string;
 };
 
-export default function ClinicSettingsPage() {
-  const clinicSlug = PANEL_CLINIC_SLUG;
+type ClinicSettingsPageProps = {
+  clinicSlug?: string;
+};
+
+export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSettingsPageProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
@@ -215,4 +218,8 @@ export default function ClinicSettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function ClinicSettingsRoute() {
+  return <ClinicSettingsPage />;
 }

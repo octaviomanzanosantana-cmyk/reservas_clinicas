@@ -73,6 +73,11 @@ const WEEK_DAYS = [
   { dayOfWeek: 5, label: "Viernes" },
 ] as const;
 
+type ClinicCalendarPageProps = {
+  clinicSlug?: string;
+  basePath?: string;
+};
+
 function getTodayInputValue(): string {
   const date = new Date();
   const year = date.getFullYear();
@@ -143,8 +148,10 @@ function getStatusMeta(status: string) {
   );
 }
 
-export default function ClinicCalendarPage() {
-  const clinicSlug = PANEL_CLINIC_SLUG;
+export function ClinicCalendarPage({
+  clinicSlug = PANEL_CLINIC_SLUG,
+  basePath = "/clinic",
+}: ClinicCalendarPageProps) {
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const [clinic, setClinic] = useState<ClinicData | null>(null);
@@ -487,7 +494,7 @@ export default function ClinicCalendarPage() {
                         </Link>
                       ) : (
                         <Link
-                          href={`/clinic/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
+                          href={`${basePath}/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
                           className="rounded-[22px] border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-400 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
                         >
                           Libre
@@ -589,7 +596,7 @@ export default function ClinicCalendarPage() {
                               </Link>
                             ) : (
                               <Link
-                                href={`/clinic/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
+                                href={`${basePath}/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
                                 className="block rounded-[18px] border border-dashed border-transparent px-2 py-3 text-center text-xs text-slate-300 transition-all duration-150 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-500"
                               >
                                 Libre
@@ -612,4 +619,8 @@ export default function ClinicCalendarPage() {
       </section>
     </div>
   );
+}
+
+export default function ClinicCalendarRoute() {
+  return <ClinicCalendarPage />;
 }

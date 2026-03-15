@@ -48,6 +48,11 @@ type GoogleStatusResponse = {
   error?: string;
 };
 
+type ClinicDashboardPageProps = {
+  clinicSlug?: string;
+  basePath?: string;
+};
+
 const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   confirmed: "Confirmada",
@@ -92,8 +97,10 @@ function getAppointmentStatusLabel(status: string): string {
   return APPOINTMENT_STATUS_LABELS[status] ?? status;
 }
 
-export default function ClinicDashboardPage() {
-  const clinicSlug = PANEL_CLINIC_SLUG;
+export function ClinicDashboardPage({
+  clinicSlug = PANEL_CLINIC_SLUG,
+  basePath = "/clinic",
+}: ClinicDashboardPageProps) {
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [clinicHours, setClinicHours] = useState<ClinicHourRow[]>([]);
@@ -361,25 +368,25 @@ export default function ClinicDashboardPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/clinic/appointments/new"
+              href={`${basePath}/appointments/new`}
               className="rounded-2xl border border-slate-900 bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(15,23,42,0.8)] transition-all duration-150 hover:bg-black"
             >
               Nueva cita
             </Link>
             <Link
-              href="/clinic/settings"
+              href={`${basePath}/settings`}
               className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
             >
               Configuración
             </Link>
             <Link
-              href="/clinic/services"
+              href={`${basePath}/services`}
               className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
             >
               Servicios
             </Link>
             <Link
-              href="/clinic/hours"
+              href={`${basePath}/hours`}
               className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
             >
               Horarios
@@ -551,4 +558,8 @@ export default function ClinicDashboardPage() {
       </section>
     </div>
   );
+}
+
+export default function ClinicDashboardRoute() {
+  return <ClinicDashboardPage />;
 }

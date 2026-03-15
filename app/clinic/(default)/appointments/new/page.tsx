@@ -23,6 +23,11 @@ type AvailabilitySlot = {
   label: string;
 };
 
+type ClinicNewAppointmentPageProps = {
+  clinicSlug?: string;
+  basePath?: string;
+};
+
 function generateToken(): string {
   const random = Math.random().toString(36).slice(2, 8);
   return `cita-${Date.now().toString(36)}-${random}`.toLowerCase();
@@ -47,10 +52,15 @@ function buildDateTimeLabel(dateInput: string, timeInput: string): string {
   return `${weekdayTitle} · ${timeInput}`;
 }
 
-function ClinicNewAppointmentContent() {
+function ClinicNewAppointmentContent({
+  clinicSlug,
+  basePath,
+}: {
+  clinicSlug: string;
+  basePath: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clinicSlug = PANEL_CLINIC_SLUG;
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceOption | null>(null);
@@ -240,7 +250,7 @@ function ClinicNewAppointmentContent() {
         throw new Error(result.error ?? "No se pudo crear la cita");
       }
 
-      router.push("/clinic");
+      router.push(basePath);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la cita");
     } finally {
@@ -403,7 +413,7 @@ function ClinicNewAppointmentContent() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/clinic")}
+                onClick={() => router.push(basePath)}
                 className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
               >
                 Cancelar
@@ -418,7 +428,10 @@ function ClinicNewAppointmentContent() {
   );
 }
 
-export default function ClinicNewAppointmentPage() {
+export function ClinicNewAppointmentPage({
+  clinicSlug = PANEL_CLINIC_SLUG,
+  basePath = "/clinic",
+}: ClinicNewAppointmentPageProps) {
   return (
     <Suspense
       fallback={
@@ -434,7 +447,11 @@ export default function ClinicNewAppointmentPage() {
         </div>
       }
     >
-      <ClinicNewAppointmentContent />
+      <ClinicNewAppointmentContent clinicSlug={clinicSlug} basePath={basePath} />
     </Suspense>
   );
+}
+
+export default function ClinicNewAppointmentRoute() {
+  return <ClinicNewAppointmentPage />;
 }

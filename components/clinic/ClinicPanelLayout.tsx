@@ -1,20 +1,25 @@
 "use client";
 
-import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
-  { href: "/clinic", label: "Dashboard" },
-  { href: "/clinic/calendar", label: "Calendario" },
-  { href: "/clinic/appointments/new", label: "Nueva cita" },
-  { href: "/clinic/services", label: "Servicios" },
-  { href: "/clinic/hours", label: "Horarios" },
-  { href: "/clinic/settings", label: "Configuración" },
-];
+type ClinicPanelLayoutProps = {
+  children: React.ReactNode;
+  clinicSlug: string;
+  basePath: string;
+};
 
-export default function ClinicLayout({ children }: { children: React.ReactNode }) {
+export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPanelLayoutProps) {
   const pathname = usePathname();
+
+  const navItems = [
+    { href: basePath, label: "Dashboard" },
+    { href: `${basePath}/calendar`, label: "Calendario" },
+    { href: `${basePath}/appointments/new`, label: "Nueva cita" },
+    { href: `${basePath}/services`, label: "Servicios" },
+    { href: `${basePath}/hours`, label: "Horarios" },
+    { href: `${basePath}/settings`, label: "Configuración" },
+  ];
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.98),_rgba(241,245,249,0.94)_38%,_rgba(226,232,240,0.86)_100%)]">
@@ -25,7 +30,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
               Panel de clínica
             </p>
             <p className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
-              {PANEL_CLINIC_SLUG}
+              {clinicSlug}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Agenda, servicios y configuración en una única vista.
@@ -33,7 +38,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
           </div>
 
           <nav className="mt-6 space-y-1.5">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive = pathname === item.href;
 
               return (
@@ -54,7 +59,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
 
           <div className="mt-6 border-t border-slate-200 pt-5">
             <Link
-              href={`/b/${PANEL_CLINIC_SLUG}`}
+              href={`/b/${clinicSlug}`}
               className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-white hover:text-slate-900"
             >
               Abrir página pública
