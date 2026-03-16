@@ -13,6 +13,7 @@ import {
   createCalendarEvent,
   getGoogleCalendarBusyRangesForDate,
 } from "@/lib/googleCalendar";
+import { getClinicBySlug } from "@/lib/clinics";
 import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
@@ -74,12 +75,15 @@ export async function POST(request: Request) {
       date,
       appointments: (data ?? []) as AvailabilityAppointmentRow[],
     });
-    const googleBusyRanges = await getGoogleCalendarBusyRangesForDate(date);
-    const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
     const clinicSlug =
       typeof payload.clinicSlug === "string" && payload.clinicSlug.trim()
         ? payload.clinicSlug.trim()
         : "";
+    const googleBusyRanges = clinicSlug
+      ? await getGoogleCalendarBusyRangesForDate(date, clinicSlug)
+      : [];
+    const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
+    const clinicRow = clinicSlug ? await getClinicBySlug(clinicSlug) : null;
     const serviceRow =
       clinicSlug && payload.service
         ? await getServiceByClinicSlugAndName(clinicSlug, payload.service)
@@ -118,20 +122,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const appointment = await createAppointment(normalizedPayload);
+    const appointment = await createAppointment({
+      ...normalizedPayload,
+      clinic_id: clinicRow?.id ?? normalizedPayload.clinic_id,
+      clinic_name: clinicRow?.name ?? normalizedPayload.clinic_name,
+    });
 
     let nextAppointment: AppointmentRow = appointment;
     let calendarWarning: string | null = null;
 
     try {
-      const { eventId, calendarId } = await createCalendarEvent(appointment);
-      const updated = await updateAppointment(appointment.token, {
-        google_event_id: eventId,
-        calendar_id: calendarId,
-      });
+      if (clinicRow?.google_connected) {
+        const { eventId, calendarId } = await createCalendarEvent(appointment, clinicSlug);
+        const updated = await updateAppointment(appointment.token, {
+          google_event_id: eventId,
+          calendar_id: calendarId,
+        });
 
-      if (updated) {
-        nextAppointment = updated;
+        if (updated) {
+          nextAppointment = updated;
+        }
       }
     } catch (error) {
       calendarWarning =

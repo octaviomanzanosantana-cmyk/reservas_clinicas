@@ -132,7 +132,7 @@ export function ClinicDashboardPage({
           await Promise.all([
             fetch(`/api/services?clinicSlug=${clinicSlug}`),
             fetch(`/api/clinic-hours?clinicSlug=${clinicSlug}`),
-            fetch("/api/google/status"),
+            fetch(`/api/google/status?clinicSlug=${encodeURIComponent(clinicSlug)}`),
             fetch(`/api/appointments/by-clinic?clinicName=${encodeURIComponent(clinicName)}`),
           ]);
 
@@ -214,6 +214,10 @@ export function ClinicDashboardPage({
     try {
       const response = await fetch("/api/google/disconnect", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ clinicSlug }),
       });
       const data = (await response.json()) as { error?: string };
 
@@ -347,7 +351,7 @@ export function ClinicDashboardPage({
             </>
           ) : (
             <a
-              href="/api/google/connect"
+              href={`/api/google/connect?clinicSlug=${encodeURIComponent(clinicSlug)}`}
               className="mt-4 inline-flex rounded-xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-black"
             >
               Conectar Google Calendar

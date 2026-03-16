@@ -5,13 +5,23 @@ import { useEffect, useState } from "react";
 
 type ClinicResponse = {
   clinic?: {
+    id?: string;
+    slug?: string;
     name: string;
     description: string | null;
     address: string | null;
     phone: string | null;
     logo_url: string | null;
     theme_color: string | null;
+    booking_enabled?: boolean;
   };
+  error?: string;
+};
+
+type GoogleStatusResponse = {
+  connected?: boolean;
+  authorized?: boolean;
+  email?: string | null;
   error?: string;
 };
 
@@ -28,6 +38,9 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
   const [themeColor, setThemeColor] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -39,21 +52,31 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
       setErrorMessage(null);
 
       try {
-        const response = await fetch(`/api/clinics?slug=${clinicSlug}`);
-        const data = (await response.json()) as ClinicResponse;
+        const [clinicResponse, googleResponse] = await Promise.all([
+          fetch(`/api/clinics?slug=${encodeURIComponent(clinicSlug)}`),
+          fetch(`/api/google/status?clinicSlug=${encodeURIComponent(clinicSlug)}`),
+        ]);
+        const clinicData = (await clinicResponse.json()) as ClinicResponse;
+        const googleData = (await googleResponse.json()) as GoogleStatusResponse;
 
         if (!active) return;
 
-        if (!response.ok || !data.clinic) {
-          throw new Error(data.error ?? "No se pudo cargar la clínica");
+        if (!clinicResponse.ok || !clinicData.clinic) {
+          throw new Error(clinicData.error ?? "No se pudo cargar la clínica");
         }
 
-        setName(data.clinic.name ?? "");
-        setDescription(data.clinic.description ?? "");
-        setAddress(data.clinic.address ?? "");
-        setPhone(data.clinic.phone ?? "");
-        setLogoUrl(data.clinic.logo_url ?? "");
-        setThemeColor(data.clinic.theme_color ?? "");
+        if (!googleResponse.ok) {
+          throw new Error(googleData.error ?? "No se pudo cargar Google Calendar");
+        }
+
+        setName(clinicData.clinic.name ?? "");
+        setDescription(clinicData.clinic.description ?? "");
+        setAddress(clinicData.clinic.address ?? "");
+        setPhone(clinicData.clinic.phone ?? "");
+        setLogoUrl(clinicData.clinic.logo_url ?? "");
+        setThemeColor(clinicData.clinic.theme_color ?? "");
+        setGoogleConnected(Boolean(googleData.connected));
+        setGoogleEmail(googleData.email ?? null);
       } catch (error) {
         if (!active) return;
         setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar la clínica");
@@ -69,7 +92,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
     return () => {
       active = false;
     };
-  }, []);
+  }, [clinicSlug]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,6 +128,37 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
       setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar la clínica");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    setDisconnectingGoogle(true);
+    setMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/google/disconnect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ clinicSlug }),
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo desconectar Google Calendar");
+      }
+
+      setGoogleConnected(false);
+      setGoogleEmail(null);
+      setMessage("Google Calendar desconectado");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo desconectar Google Calendar",
+      );
+    } finally {
+      setDisconnectingGoogle(false);
     }
   };
 
@@ -154,7 +208,9 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">Teléfono de contacto de la clínica</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Teléfono de contacto de la clínica
+                </span>
                 <input
                   type="text"
                   value={phone}
@@ -214,6 +270,41 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
           {message ? <p className="mt-4 text-sm text-emerald-700">{message}</p> : null}
           {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Google Calendar</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                {googleConnected
+                  ? `Conectado${googleEmail ? ` como ${googleEmail}` : ""}.`
+                  : "No conectado."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {!googleConnected ? (
+                <a
+                  href={`/api/google/connect?clinicSlug=${encodeURIComponent(clinicSlug)}`}
+                  className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black"
+                >
+                  Conectar Google Calendar
+                </a>
+              ) : null}
+
+              {googleConnected ? (
+                <button
+                  type="button"
+                  onClick={() => void handleDisconnectGoogle()}
+                  disabled={disconnectingGoogle}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {disconnectingGoogle ? "Desconectando..." : "Desconectar"}
+                </button>
+              ) : null}
+            </div>
+          </div>
         </section>
       </div>
     </div>

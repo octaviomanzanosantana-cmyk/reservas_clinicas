@@ -1,27 +1,17 @@
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { disconnectGoogleCalendar } from "@/lib/googleCalendar";
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { NextResponse } from "next/server";
 
-const GOOGLE_TOKEN_ROW_ID = "default";
-
-export async function POST() {
-  const { error } = await supabaseAdmin
-    .from("google_calendar_tokens")
-    .update({
-      access_token: null,
-      refresh_token: null,
-      scope: null,
-      token_type: null,
-      expiry_date: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", GOOGLE_TOKEN_ROW_ID);
-
-  if (error) {
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json().catch(() => ({}))) as { clinicSlug?: string };
+    const clinicSlug = body.clinicSlug?.trim() || PANEL_CLINIC_SLUG;
+    await disconnectGoogleCalendar(clinicSlug);
+    return NextResponse.json({ disconnected: true });
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: error instanceof Error ? error.message : "No se pudo desconectar Google Calendar" },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({ disconnected: true });
 }

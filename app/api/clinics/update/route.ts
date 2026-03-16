@@ -10,6 +10,10 @@ type UpdateClinicRequest = {
   logo_url?: string | null;
   theme_color?: string | null;
   booking_enabled?: boolean;
+  google_connected?: boolean;
+  google_email?: string | null;
+  google_refresh_token?: string | null;
+  google_calendar_id?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -29,6 +33,10 @@ export async function POST(request: Request) {
       logo_url: body.logo_url,
       theme_color: body.theme_color,
       booking_enabled: body.booking_enabled,
+      google_connected: body.google_connected,
+      google_email: body.google_email,
+      google_refresh_token: body.google_refresh_token,
+      google_calendar_id: body.google_calendar_id,
     });
 
     if (!clinic) {

@@ -1,21 +1,16 @@
 import "server-only";
 
 import type { BusyRange } from "@/lib/availability";
-import { google } from "googleapis";
 import type { AppointmentRow } from "@/lib/appointments";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getClinicById, getClinicBySlug, updateClinicBySlug } from "@/lib/clinics";
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
+import { google } from "googleapis";
 
-const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
+const GOOGLE_SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/userinfo.email",
+];
 const DEFAULT_TIMEZONE = "Europe/Madrid";
-const GOOGLE_TOKEN_ROW_ID = "default";
-
-type GoogleOAuthTokens = {
-  access_token?: string | null;
-  refresh_token?: string | null;
-  scope?: string | null;
-  token_type?: string | null;
-  expiry_date?: number | null;
-};
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -33,50 +28,70 @@ function getOAuthClient() {
   );
 }
 
-async function readStoredTokens() {
-  const { data, error } = await supabaseAdmin
-    .from("google_calendar_tokens")
-    .select("access_token, refresh_token, scope, token_type, expiry_date")
-    .eq("id", GOOGLE_TOKEN_ROW_ID)
-    .maybeSingle<GoogleOAuthTokens>();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data ?? null;
+function getFallbackClinicSlug(): string {
+  return PANEL_CLINIC_SLUG;
 }
 
-async function writeStoredTokens(tokens: unknown) {
-  const nextTokens =
-    typeof tokens === "object" && tokens !== null ? (tokens as GoogleOAuthTokens) : {};
+function resolveDateTimeFromLabel(label: string): { start: Date; end: Date } {
+  const fallbackStart = new Date();
+  fallbackStart.setHours(fallbackStart.getHours() + 1, 0, 0, 0);
+  const fallbackEnd = new Date(fallbackStart.getTime() + 30 * 60 * 1000);
 
-  const payload = {
-    id: GOOGLE_TOKEN_ROW_ID,
-    access_token: nextTokens.access_token ?? null,
-    refresh_token: nextTokens.refresh_token ?? null,
-    scope: nextTokens.scope ?? null,
-    token_type: nextTokens.token_type ?? null,
-    expiry_date:
-      typeof nextTokens.expiry_date === "number" ? Math.trunc(nextTokens.expiry_date) : null,
-    updated_at: new Date().toISOString(),
-  };
+  const parts = label.split("·").map((part) => part.trim());
+  if (parts.length < 2) {
+    return { start: fallbackStart, end: fallbackEnd };
+  }
 
-  const { error } = await supabaseAdmin.from("google_calendar_tokens").upsert(payload, {
-    onConflict: "id",
+  const timeMatch = parts[1].match(/^(\d{1,2}):(\d{2})$/);
+  if (!timeMatch) {
+    return { start: fallbackStart, end: fallbackEnd };
+  }
+
+  const hour = Number.parseInt(timeMatch[1], 10);
+  const minute = Number.parseInt(timeMatch[2], 10);
+  const start = new Date();
+  start.setHours(hour, minute, 0, 0);
+  const end = new Date(start.getTime() + 30 * 60 * 1000);
+
+  return { start, end };
+}
+
+async function getClinicGoogleConfig(clinicSlug?: string | null) {
+  const resolvedSlug = clinicSlug?.trim() || getFallbackClinicSlug();
+  const clinic = await getClinicBySlug(resolvedSlug);
+
+  if (!clinic) {
+    throw new Error("Clínica no encontrada");
+  }
+
+  return clinic;
+}
+
+async function getAuthorizedOAuthClient(clinicSlug?: string | null) {
+  const clinic = await getClinicGoogleConfig(clinicSlug);
+
+  if (!clinic.google_connected || !clinic.google_refresh_token) {
+    throw new Error("Google Calendar no autorizado para esta clínica.");
+  }
+
+  const client = getOAuthClient();
+
+  client.on("tokens", async (tokens) => {
+    if (!clinic.slug) return;
+
+    await updateClinicBySlug(clinic.slug, {
+      google_connected: true,
+      google_refresh_token: tokens.refresh_token ?? clinic.google_refresh_token,
+      google_calendar_id: clinic.google_calendar_id ?? "primary",
+      google_email: clinic.google_email,
+    });
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-}
+  client.setCredentials({
+    refresh_token: clinic.google_refresh_token,
+  });
 
-function normalizeWeekday(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  return { client, clinic };
 }
 
 function parseGoogleEventDate(value?: string | null): Date | null {
@@ -95,108 +110,77 @@ function parseGoogleEventDate(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function resolveDateTimeFromLabel(label: string): { start: Date; end: Date } {
-  const fallbackStart = new Date();
-  fallbackStart.setHours(fallbackStart.getHours() + 1, 0, 0, 0);
-  const fallbackEnd = new Date(fallbackStart.getTime() + 30 * 60 * 1000);
+function resolveEventDateRange(appointment: AppointmentRow): { start: Date; end: Date } {
+  const startFromSchedule = appointment.scheduled_at ? new Date(appointment.scheduled_at) : null;
+  const hasValidSchedule = Boolean(startFromSchedule && !Number.isNaN(startFromSchedule.getTime()));
+  const start = hasValidSchedule
+    ? (startFromSchedule as Date)
+    : resolveDateTimeFromLabel(appointment.datetime_label).start;
 
-  const parts = label.split("·").map((part) => part.trim());
-  if (parts.length < 2) {
-    return { start: fallbackStart, end: fallbackEnd };
-  }
-
-  const dayName = normalizeWeekday(parts[0]);
-  const timeMatch = parts[1].match(/^(\d{1,2}):(\d{2})$/);
-  if (!timeMatch) {
-    return { start: fallbackStart, end: fallbackEnd };
-  }
-
-  const dayMap: Record<string, number> = {
-    domingo: 0,
-    lunes: 1,
-    martes: 2,
-    miercoles: 3,
-    jueves: 4,
-    viernes: 5,
-    sabado: 6,
-  };
-
-  const targetDay = dayMap[dayName];
-  if (targetDay === undefined) {
-    return { start: fallbackStart, end: fallbackEnd };
-  }
-
-  const hour = Number.parseInt(timeMatch[1], 10);
-  const minute = Number.parseInt(timeMatch[2], 10);
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(hour, minute, 0, 0);
-
-  const delta = (targetDay - now.getDay() + 7) % 7;
-  start.setDate(now.getDate() + delta);
-
-  if (start <= now) {
-    start.setDate(start.getDate() + 7);
-  }
-
-  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const durationMinutes = Number.parseInt(appointment.duration_label, 10);
+  const safeDuration = Number.isNaN(durationMinutes) ? 30 : Math.max(15, durationMinutes);
+  const end = new Date(start.getTime() + safeDuration * 60 * 1000);
   return { start, end };
 }
 
-export async function isGoogleCalendarAuthorized(): Promise<boolean> {
-  const tokens = await readStoredTokens();
-  return Boolean(tokens?.refresh_token || tokens?.access_token);
+export async function isGoogleCalendarAuthorized(clinicSlug?: string | null): Promise<boolean> {
+  const clinic = await getClinicGoogleConfig(clinicSlug);
+  return Boolean(clinic.google_connected && clinic.google_refresh_token);
 }
 
-export async function getGoogleCalendarAuthUrl(): Promise<string> {
+export async function getGoogleCalendarAuthUrl(clinicSlug?: string | null): Promise<string> {
+  const resolvedSlug = clinicSlug?.trim() || getFallbackClinicSlug();
   const client = getOAuthClient();
+
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: GOOGLE_SCOPES,
+    state: resolvedSlug,
   });
 }
 
-export async function completeGoogleCalendarOAuth(code: string): Promise<void> {
+export async function completeGoogleCalendarOAuth(code: string, clinicSlug: string): Promise<void> {
   const client = getOAuthClient();
   const { tokens } = await client.getToken(code);
-  await writeStoredTokens(tokens);
+
+  client.setCredentials(tokens);
+
+  const oauth2 = google.oauth2({ version: "v2", auth: client });
+  const { data: profile } = await oauth2.userinfo.get();
+
+  await updateClinicBySlug(clinicSlug, {
+    google_connected: true,
+    google_email: profile.email ?? null,
+    google_refresh_token: tokens.refresh_token ?? null,
+    google_calendar_id: "primary",
+  });
 }
 
-async function getAuthorizedOAuthClient() {
-  const client = getOAuthClient();
-  const tokens = await readStoredTokens();
+export async function disconnectGoogleCalendar(clinicSlug?: string | null): Promise<void> {
+  const clinic = await getClinicGoogleConfig(clinicSlug);
 
-  if (!tokens) {
-    throw new Error("Google Calendar no autorizado. Conecta la cuenta primero.");
-  }
-
-  client.on("tokens", async (nextTokens) => {
-    const currentTokens = await readStoredTokens();
-    await writeStoredTokens({
-      ...currentTokens,
-      ...nextTokens,
-      refresh_token: nextTokens.refresh_token ?? currentTokens?.refresh_token ?? null,
-    });
+  await updateClinicBySlug(clinic.slug, {
+    google_connected: false,
+    google_email: null,
+    google_refresh_token: null,
+    google_calendar_id: null,
   });
-
-  client.setCredentials({
-    access_token: tokens.access_token ?? undefined,
-    refresh_token: tokens.refresh_token ?? undefined,
-    scope: tokens.scope ?? undefined,
-    token_type: tokens.token_type ?? undefined,
-    expiry_date: tokens.expiry_date ?? undefined,
-  });
-  return client;
 }
 
 export async function getGoogleCalendarBusyRangesForDate(
   date: Date,
+  clinicSlug?: string | null,
   calendarId?: string | null,
 ): Promise<BusyRange[]> {
-  const auth = await getAuthorizedOAuthClient();
-  const calendar = google.calendar({ version: "v3", auth });
-  const resolvedCalendarId = calendarId || getRequiredEnv("GOOGLE_CALENDAR_ID");
+  const clinic = await getClinicGoogleConfig(clinicSlug);
+  if (!clinic.google_connected || !clinic.google_refresh_token) {
+    return [];
+  }
+
+  const { client } = await getAuthorizedOAuthClient(clinic.slug);
+  const calendar = google.calendar({ version: "v3", auth: client });
+  const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
 
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
@@ -231,18 +215,28 @@ export async function getGoogleCalendarBusyRangesForDate(
     .filter((item): item is BusyRange => Boolean(item));
 }
 
-export async function createCalendarEvent(appointment: AppointmentRow): Promise<{
+export async function createCalendarEvent(
+  appointment: AppointmentRow,
+  clinicSlug?: string | null,
+): Promise<{
   eventId: string;
   calendarId: string;
 }> {
-  const auth = await getAuthorizedOAuthClient();
-  const calendar = google.calendar({ version: "v3", auth });
-  const calendarId = getRequiredEnv("GOOGLE_CALENDAR_ID");
+  const clinic =
+    clinicSlug?.trim()
+      ? await getClinicBySlug(clinicSlug)
+      : appointment.clinic_id
+        ? await getClinicById(appointment.clinic_id)
+        : null;
 
-  const startFromSchedule = appointment.scheduled_at ? new Date(appointment.scheduled_at) : null;
-  const hasValidSchedule = Boolean(startFromSchedule && !Number.isNaN(startFromSchedule.getTime()));
-  const start = hasValidSchedule ? (startFromSchedule as Date) : resolveDateTimeFromLabel(appointment.datetime_label).start;
-  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  if (!clinic?.google_connected || !clinic.google_refresh_token) {
+    throw new Error("Google Calendar no conectado para esta clínica.");
+  }
+
+  const { client } = await getAuthorizedOAuthClient(clinic.slug);
+  const calendar = google.calendar({ version: "v3", auth: client });
+  const calendarId = clinic.google_calendar_id || "primary";
+  const { start, end } = resolveEventDateRange(appointment);
   const summary = `${appointment.service} - ${appointment.patient_name}`;
   const description = [
     `Paciente: ${appointment.patient_name}`,
@@ -276,10 +270,25 @@ export async function createCalendarEvent(appointment: AppointmentRow): Promise<
   };
 }
 
-export async function deleteCalendarEvent(eventId: string, calendarId?: string | null): Promise<void> {
-  const auth = await getAuthorizedOAuthClient();
-  const calendar = google.calendar({ version: "v3", auth });
-  const resolvedCalendarId = calendarId || getRequiredEnv("GOOGLE_CALENDAR_ID");
+export async function deleteCalendarEvent(
+  eventId: string,
+  calendarId?: string | null,
+  clinicSlug?: string | null,
+  clinicId?: string | null,
+): Promise<void> {
+  const clinic =
+    clinicSlug?.trim()
+      ? await getClinicBySlug(clinicSlug)
+      : clinicId?.trim()
+        ? await getClinicById(clinicId)
+        : await getClinicGoogleConfig(clinicSlug);
+  if (!clinic.google_connected || !clinic.google_refresh_token) {
+    return;
+  }
+
+  const { client } = await getAuthorizedOAuthClient(clinic.slug);
+  const calendar = google.calendar({ version: "v3", auth: client });
+  const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
 
   try {
     await calendar.events.delete({
@@ -295,7 +304,6 @@ export async function deleteCalendarEvent(eventId: string, calendarId?: string |
         ? (error as { code: number }).code
         : null;
 
-    // Consider "not found/already deleted" as a successful terminal state.
     if (status === 404 || status === 410) {
       return;
     }
@@ -303,30 +311,29 @@ export async function deleteCalendarEvent(eventId: string, calendarId?: string |
   }
 }
 
-function resolveEventDateRange(appointment: AppointmentRow): { start: Date; end: Date } {
-  const startFromSchedule = appointment.scheduled_at ? new Date(appointment.scheduled_at) : null;
-  const hasValidSchedule = Boolean(startFromSchedule && !Number.isNaN(startFromSchedule.getTime()));
-  const start = hasValidSchedule
-    ? (startFromSchedule as Date)
-    : resolveDateTimeFromLabel(appointment.datetime_label).start;
-
-  const durationMinutes = Number.parseInt(appointment.duration_label, 10);
-  const safeDuration = Number.isNaN(durationMinutes) ? 30 : Math.max(15, durationMinutes);
-  const end = new Date(start.getTime() + safeDuration * 60 * 1000);
-  return { start, end };
-}
-
 export async function updateCalendarEvent(
   appointment: AppointmentRow,
   eventId: string,
   calendarId?: string | null,
+  clinicSlug?: string | null,
 ): Promise<void> {
-  const auth = await getAuthorizedOAuthClient();
-  const calendar = google.calendar({ version: "v3", auth });
-  const resolvedCalendarId = calendarId || getRequiredEnv("GOOGLE_CALENDAR_ID");
+  const clinic =
+    clinicSlug?.trim()
+      ? await getClinicBySlug(clinicSlug)
+      : appointment.clinic_id
+        ? await getClinicById(appointment.clinic_id)
+        : null;
+
+  if (!clinic?.google_connected || !clinic.google_refresh_token) {
+    return;
+  }
+
+  const { client } = await getAuthorizedOAuthClient(clinic.slug);
+  const calendar = google.calendar({ version: "v3", auth: client });
+  const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
   const { start, end } = resolveEventDateRange(appointment);
 
-  const summary = `✅ Confirmada – ${appointment.service} – ${appointment.patient_name}`;
+  const summary = `✅ Confirmada - ${appointment.service} - ${appointment.patient_name}`;
   const description = [
     `Estado: CONFIRMADA`,
     `Paciente confirmó la cita desde el enlace`,

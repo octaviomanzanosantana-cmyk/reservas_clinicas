@@ -78,7 +78,9 @@ export async function GET(request: Request) {
       appointments: (data ?? []) as AvailabilityAppointmentRow[],
       excludeToken,
     });
-    const googleBusyRanges = await getGoogleCalendarBusyRangesForDate(date);
+    const googleBusyRanges = clinicSlug
+      ? await getGoogleCalendarBusyRangesForDate(date, clinicSlug)
+      : [];
     const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
     const serviceRow =
       clinicSlug && service

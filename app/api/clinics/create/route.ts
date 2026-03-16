@@ -73,6 +73,10 @@ export async function POST(request: Request) {
       phone,
       theme_color: themeColor,
       booking_enabled: true,
+      google_connected: false,
+      google_email: null,
+      google_refresh_token: null,
+      google_calendar_id: null,
       logo_url: null,
     });
 

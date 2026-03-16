@@ -1,16 +1,22 @@
 import { completeGoogleCalendarOAuth } from "@/lib/googleCalendar";
+import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
+  const clinicSlug = searchParams.get("state")?.trim() || PANEL_CLINIC_SLUG;
 
   if (!code) {
     return new NextResponse("Falta el parámetro code", { status: 400 });
   }
 
   try {
-    await completeGoogleCalendarOAuth(code);
+    await completeGoogleCalendarOAuth(code, clinicSlug);
+    const settingsHref =
+      clinicSlug === PANEL_CLINIC_SLUG
+        ? "/clinic/settings?google=connected"
+        : `/clinic/${clinicSlug}/settings?google=connected`;
     const html = `
       <!doctype html>
       <html lang="es">
@@ -26,8 +32,8 @@ export async function GET(request: Request) {
         <body>
           <div class="card">
             <h1>Google Calendar conectado</h1>
-            <p>Ya puedes volver al dashboard para crear citas con evento automático.</p>
-            <a href="/demo/dashboard">Volver al dashboard</a>
+            <p>Ya puedes volver a configuración para crear citas con evento automático.</p>
+            <a href="${settingsHref}">Volver a configuración</a>
           </div>
         </body>
       </html>

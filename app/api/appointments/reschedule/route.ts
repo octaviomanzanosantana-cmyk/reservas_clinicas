@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     if (updated.google_event_id) {
-      await updateCalendarEvent(updated, updated.google_event_id, updated.calendar_id);
+      await updateCalendarEvent(updated, updated.google_event_id, updated.calendar_id, undefined);
     }
 
     return NextResponse.json({ ok: true });

@@ -41,7 +41,12 @@ export async function POST(request: Request) {
 
     if (current.google_event_id) {
       try {
-        await deleteCalendarEvent(current.google_event_id, current.calendar_id);
+        await deleteCalendarEvent(
+          current.google_event_id,
+          current.calendar_id,
+          undefined,
+          current.clinic_id,
+        );
       } catch (error) {
         calendarWarning =
           error instanceof Error

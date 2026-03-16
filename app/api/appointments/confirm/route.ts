@@ -30,7 +30,12 @@ export async function POST(request: Request) {
 
     if (confirmed.google_event_id) {
       try {
-        await updateCalendarEvent(confirmed, confirmed.google_event_id, confirmed.calendar_id);
+        await updateCalendarEvent(
+          confirmed,
+          confirmed.google_event_id,
+          confirmed.calendar_id,
+          undefined,
+        );
       } catch (error) {
         calendarWarning =
           error instanceof Error
