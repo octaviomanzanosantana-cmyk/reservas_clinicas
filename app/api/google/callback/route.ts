@@ -1,22 +1,34 @@
-import { completeGoogleCalendarOAuth } from "@/lib/googleCalendar";
+import { getClinicById } from "@/lib/clinics";
+import { completeGoogleCalendarOAuth, parseGoogleOAuthState } from "@/lib/googleCalendar";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const clinicSlug = searchParams.get("state")?.trim() || PANEL_CLINIC_SLUG;
+  const state = searchParams.get("state")?.trim();
 
   if (!code) {
     return new NextResponse("Falta el parámetro code", { status: 400 });
   }
 
+  if (!state) {
+    return new NextResponse("Falta el parámetro state", { status: 400 });
+  }
+
   try {
-    await completeGoogleCalendarOAuth(code, clinicSlug);
+    const clinicId = parseGoogleOAuthState(state);
+    const clinic = await getClinicById(clinicId);
+
+    if (!clinic) {
+      return new NextResponse("Clínica no encontrada", { status: 404 });
+    }
+
+    await completeGoogleCalendarOAuth(code, clinicId);
     const settingsHref =
-      clinicSlug === PANEL_CLINIC_SLUG
+      clinic.slug === PANEL_CLINIC_SLUG
         ? "/clinic/settings?google=connected"
-        : `/clinic/${clinicSlug}/settings?google=connected`;
+        : `/clinic/${clinic.slug}/settings?google=connected`;
     const html = `
       <!doctype html>
       <html lang="es">

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { BusyRange } from "@/lib/availability";
 import type { AppointmentRow } from "@/lib/appointments";
 import { getClinicById, getClinicBySlug, updateClinicBySlug } from "@/lib/clinics";
@@ -30,6 +31,45 @@ function getOAuthClient() {
 
 function getFallbackClinicSlug(): string {
   return PANEL_CLINIC_SLUG;
+}
+
+function signGoogleOAuthState(clinicId: string): string {
+  return createHmac("sha256", getRequiredEnv("GOOGLE_CLIENT_SECRET"))
+    .update(clinicId)
+    .digest("hex");
+}
+
+function createGoogleOAuthState(clinicId: string): string {
+  return Buffer.from(
+    JSON.stringify({
+      clinicId,
+      sig: signGoogleOAuthState(clinicId),
+    }),
+  ).toString("base64url");
+}
+
+export function parseGoogleOAuthState(state: string): string {
+  const decoded = Buffer.from(state, "base64url").toString("utf8");
+  const payload = JSON.parse(decoded) as { clinicId?: string; sig?: string };
+  const clinicId = payload.clinicId?.trim();
+  const signature = payload.sig?.trim();
+
+  if (!clinicId || !signature) {
+    throw new Error("Estado OAuth inválido");
+  }
+
+  const expected = signGoogleOAuthState(clinicId);
+  const signatureBuffer = Buffer.from(signature, "utf8");
+  const expectedBuffer = Buffer.from(expected, "utf8");
+
+  if (
+    signatureBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(signatureBuffer, expectedBuffer)
+  ) {
+    throw new Error("Estado OAuth no válido");
+  }
+
+  return clinicId;
 }
 
 function resolveDateTimeFromLabel(label: string): { start: Date; end: Date } {
@@ -67,6 +107,27 @@ async function getClinicGoogleConfig(clinicSlug?: string | null) {
   return clinic;
 }
 
+async function getClinicGoogleConfigById(clinicId: string) {
+  const clinic = await getClinicById(clinicId.trim());
+
+  if (!clinic) {
+    throw new Error("Clínica no encontrada");
+  }
+
+  return clinic;
+}
+
+function buildGoogleCalendarAuthUrl(clinic: Awaited<ReturnType<typeof getClinicGoogleConfigById>>) {
+  const client = getOAuthClient();
+
+  return client.generateAuthUrl({
+    access_type: "offline",
+    scope: GOOGLE_SCOPES,
+    state: createGoogleOAuthState(clinic.id),
+    ...(clinic.google_refresh_token ? {} : { prompt: "consent" }),
+  });
+}
+
 async function getAuthorizedOAuthClient(clinicSlug?: string | null) {
   const clinic = await getClinicGoogleConfig(clinicSlug);
 
@@ -84,6 +145,12 @@ async function getAuthorizedOAuthClient(clinicSlug?: string | null) {
       google_refresh_token: tokens.refresh_token ?? clinic.google_refresh_token,
       google_calendar_id: clinic.google_calendar_id ?? "primary",
       google_email: clinic.google_email,
+      google_token_scope: tokens.scope?.trim() || clinic.google_token_scope,
+      google_token_type: tokens.token_type?.trim() || clinic.google_token_type,
+      google_token_expires_at:
+        typeof tokens.expiry_date === "number"
+          ? new Date(tokens.expiry_date).toISOString()
+          : clinic.google_token_expires_at,
     });
   });
 
@@ -130,30 +197,41 @@ export async function isGoogleCalendarAuthorized(clinicSlug?: string | null): Pr
 
 export async function getGoogleCalendarAuthUrl(clinicSlug?: string | null): Promise<string> {
   const resolvedSlug = clinicSlug?.trim() || getFallbackClinicSlug();
-  const client = getOAuthClient();
-
-  return client.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
-    scope: GOOGLE_SCOPES,
-    state: resolvedSlug,
-  });
+  const clinic = await getClinicGoogleConfig(resolvedSlug);
+  return buildGoogleCalendarAuthUrl(clinic);
 }
 
-export async function completeGoogleCalendarOAuth(code: string, clinicSlug: string): Promise<void> {
+export async function getGoogleCalendarAuthUrlByClinicId(clinicId: string): Promise<string> {
+  const clinic = await getClinicGoogleConfigById(clinicId);
+  return buildGoogleCalendarAuthUrl(clinic);
+}
+
+export async function completeGoogleCalendarOAuth(code: string, clinicId: string): Promise<void> {
+  const clinic = await getClinicGoogleConfigById(clinicId);
   const client = getOAuthClient();
   const { tokens } = await client.getToken(code);
+  const refreshToken = tokens.refresh_token?.trim() || clinic.google_refresh_token;
+
+  if (!refreshToken) {
+    throw new Error("Google no devolvió refresh_token para esta clínica.");
+  }
 
   client.setCredentials(tokens);
 
   const oauth2 = google.oauth2({ version: "v2", auth: client });
   const { data: profile } = await oauth2.userinfo.get();
 
-  await updateClinicBySlug(clinicSlug, {
+  await updateClinicBySlug(clinic.slug, {
     google_connected: true,
-    google_email: profile.email ?? null,
-    google_refresh_token: tokens.refresh_token ?? null,
-    google_calendar_id: "primary",
+    google_email: profile.email?.trim() || clinic.google_email,
+    google_refresh_token: refreshToken,
+    google_calendar_id: clinic.google_calendar_id || "primary",
+    google_token_scope: tokens.scope?.trim() || clinic.google_token_scope,
+    google_token_type: tokens.token_type?.trim() || clinic.google_token_type,
+    google_token_expires_at:
+      typeof tokens.expiry_date === "number"
+        ? new Date(tokens.expiry_date).toISOString()
+        : clinic.google_token_expires_at,
   });
 }
 
@@ -165,6 +243,9 @@ export async function disconnectGoogleCalendar(clinicSlug?: string | null): Prom
     google_email: null,
     google_refresh_token: null,
     google_calendar_id: null,
+    google_token_scope: null,
+    google_token_type: null,
+    google_token_expires_at: null,
   });
 }
 

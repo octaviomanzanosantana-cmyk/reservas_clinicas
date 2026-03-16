@@ -15,6 +15,9 @@ export type ClinicRow = {
   google_email: string | null;
   google_refresh_token: string | null;
   google_calendar_id: string | null;
+  google_token_scope: string | null;
+  google_token_type: string | null;
+  google_token_expires_at: string | null;
 };
 
 export async function getClinicBySlug(slug: string): Promise<ClinicRow | null> {
@@ -78,6 +81,9 @@ export async function createClinic(
     | "google_email"
     | "google_refresh_token"
     | "google_calendar_id"
+    | "google_token_scope"
+    | "google_token_type"
+    | "google_token_expires_at"
   > & {
     logo_url?: string | null;
   },
@@ -100,6 +106,9 @@ export async function createClinic(
       google_email: input.google_email?.trim() || null,
       google_refresh_token: input.google_refresh_token?.trim() || null,
       google_calendar_id: input.google_calendar_id?.trim() || null,
+      google_token_scope: input.google_token_scope?.trim() || null,
+      google_token_type: input.google_token_type?.trim() || null,
+      google_token_expires_at: input.google_token_expires_at?.trim() || null,
     })
     .select("*")
     .single<ClinicRow>();
@@ -127,6 +136,9 @@ export async function updateClinicBySlug(
       | "google_email"
       | "google_refresh_token"
       | "google_calendar_id"
+      | "google_token_scope"
+      | "google_token_type"
+      | "google_token_expires_at"
     >
   >,
 ): Promise<ClinicRow | null> {
@@ -180,6 +192,21 @@ export async function updateClinicBySlug(
       ? { google_calendar_id: input.google_calendar_id.trim() || null }
       : input.google_calendar_id === null
         ? { google_calendar_id: null }
+        : {}),
+    ...(typeof input.google_token_scope === "string"
+      ? { google_token_scope: input.google_token_scope.trim() || null }
+      : input.google_token_scope === null
+        ? { google_token_scope: null }
+        : {}),
+    ...(typeof input.google_token_type === "string"
+      ? { google_token_type: input.google_token_type.trim() || null }
+      : input.google_token_type === null
+        ? { google_token_type: null }
+        : {}),
+    ...(typeof input.google_token_expires_at === "string"
+      ? { google_token_expires_at: input.google_token_expires_at.trim() || null }
+      : input.google_token_expires_at === null
+        ? { google_token_expires_at: null }
         : {}),
   };
 

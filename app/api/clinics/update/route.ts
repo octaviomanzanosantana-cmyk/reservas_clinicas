@@ -14,6 +14,9 @@ type UpdateClinicRequest = {
   google_email?: string | null;
   google_refresh_token?: string | null;
   google_calendar_id?: string | null;
+  google_token_scope?: string | null;
+  google_token_type?: string | null;
+  google_token_expires_at?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -37,6 +40,9 @@ export async function POST(request: Request) {
       google_email: body.google_email,
       google_refresh_token: body.google_refresh_token,
       google_calendar_id: body.google_calendar_id,
+      google_token_scope: body.google_token_scope,
+      google_token_type: body.google_token_type,
+      google_token_expires_at: body.google_token_expires_at,
     });
 
     if (!clinic) {

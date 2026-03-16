@@ -77,6 +77,9 @@ export async function POST(request: Request) {
       google_email: null,
       google_refresh_token: null,
       google_calendar_id: null,
+      google_token_scope: null,
+      google_token_type: null,
+      google_token_expires_at: null,
       logo_url: null,
     });
 
