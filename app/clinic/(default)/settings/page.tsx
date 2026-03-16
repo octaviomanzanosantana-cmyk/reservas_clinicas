@@ -1,6 +1,10 @@
 "use client";
 
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
+import {
+  isGoogleCalendarConnected,
+  type GoogleCalendarStatus,
+} from "@/lib/googleCalendarStatus";
 import { useEffect, useState } from "react";
 
 type ClinicResponse = {
@@ -15,13 +19,6 @@ type ClinicResponse = {
     theme_color: string | null;
     booking_enabled?: boolean;
   };
-  error?: string;
-};
-
-type GoogleStatusResponse = {
-  connected?: boolean;
-  authorized?: boolean;
-  email?: string | null;
   error?: string;
 };
 
@@ -57,7 +54,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
           fetch(`/api/google/status?clinicSlug=${encodeURIComponent(clinicSlug)}`),
         ]);
         const clinicData = (await clinicResponse.json()) as ClinicResponse;
-        const googleData = (await googleResponse.json()) as GoogleStatusResponse;
+        const googleData = (await googleResponse.json()) as GoogleCalendarStatus;
 
         if (!active) return;
 
@@ -75,7 +72,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         setPhone(clinicData.clinic.phone ?? "");
         setLogoUrl(clinicData.clinic.logo_url ?? "");
         setThemeColor(clinicData.clinic.theme_color ?? "");
-        setGoogleConnected(Boolean(googleData.connected));
+        setGoogleConnected(isGoogleCalendarConnected(googleData));
         setGoogleEmail(googleData.email ?? null);
       } catch (error) {
         if (!active) return;

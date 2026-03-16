@@ -1,6 +1,10 @@
 "use client";
 
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
+import {
+  isGoogleCalendarConnected,
+  type GoogleCalendarStatus,
+} from "@/lib/googleCalendarStatus";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -40,12 +44,6 @@ type AppointmentRow = {
   datetime_label: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | string;
   updated_at: string;
-};
-
-type GoogleStatusResponse = {
-  connected?: boolean;
-  authorized?: boolean;
-  error?: string;
 };
 
 type ClinicDashboardPageProps = {
@@ -153,12 +151,7 @@ export function ClinicDashboardPage({
             ? ((appointmentsData.appointments ?? []) as AppointmentRow[])
             : [],
         );
-        setGoogleConnected(
-          Boolean(
-            (googleData as GoogleStatusResponse).connected ??
-              (googleData as GoogleStatusResponse).authorized,
-          ),
-        );
+        setGoogleConnected(isGoogleCalendarConnected(googleData as GoogleCalendarStatus));
       } catch (error) {
         if (!active) return;
         setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar el dashboard");
