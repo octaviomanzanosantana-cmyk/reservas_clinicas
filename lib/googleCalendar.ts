@@ -282,7 +282,7 @@ export async function deleteCalendarEvent(
       : clinicId?.trim()
         ? await getClinicById(clinicId)
         : await getClinicGoogleConfig(clinicSlug);
-  if (!clinic.google_connected || !clinic.google_refresh_token) {
+  if (!clinic || !clinic.google_connected || !clinic.google_refresh_token) {
     return;
   }
 
