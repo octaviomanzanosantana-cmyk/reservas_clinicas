@@ -172,7 +172,11 @@ export async function POST(request: Request) {
 
     try {
       await sendAppointmentCreatedEmail(nextAppointment);
-    } catch {
+    } catch (error) {
+      console.error("[appointments.create] Failed to send appointment created email", {
+        appointmentToken: nextAppointment.token,
+        error: error instanceof Error ? error.message : String(error),
+      });
       // El email transaccional no debe bloquear la cita.
     }
 

@@ -13,7 +13,17 @@ export async function sendAppointmentCreatedEmail(appointment: AppointmentRow): 
   const from = process.env.EMAIL_FROM?.trim() || "";
   const appUrl = getAppUrl();
 
-  if (!patientEmail || !apiKey || !from || !appUrl) {
+  if (!patientEmail) {
+    return;
+  }
+
+  if (!apiKey || !from || !appUrl) {
+    console.warn("[appointments.email] Missing email configuration", {
+      hasEmailApiKey: Boolean(apiKey),
+      hasEmailFrom: Boolean(from),
+      hasAppUrl: Boolean(appUrl),
+      appointmentToken: appointment.token,
+    });
     return;
   }
 
@@ -70,6 +80,12 @@ export async function sendAppointmentCreatedEmail(appointment: AppointmentRow): 
   });
 
   if (!response.ok) {
-    throw new Error("No se pudo enviar el email de la cita");
+    const responseText = await response.text().catch(() => "");
+    console.error("[appointments.email] Provider request failed", {
+      status: response.status,
+      responseText,
+      appointmentToken: appointment.token,
+    });
+    throw new Error(`No se pudo enviar el email de la cita (${response.status})`);
   }
 }
