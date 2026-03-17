@@ -5,6 +5,7 @@ import {
   getBusyRangesFromAppointments,
   rangesOverlap,
 } from "@/lib/availability";
+import { getClinicBySlug } from "@/lib/clinics";
 import { getClinicHoursByClinicSlug } from "@/lib/clinicHours";
 import { getGoogleCalendarBusyRangesForDate } from "@/lib/googleCalendar";
 import { getServiceByClinicSlugAndName } from "@/lib/services";
@@ -63,11 +64,20 @@ export async function GET(request: Request) {
     endOfNextDay.setDate(endOfNextDay.getDate() + 1);
     endOfNextDay.setHours(0, 0, 0, 0);
 
-    const { data, error } = await supabase
+    const clinicRow = clinicSlug ? await getClinicBySlug(clinicSlug) : null;
+    if (clinicSlug && !clinicRow?.id) {
+      return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
+    }
+    let appointmentsQuery = supabase
       .from("appointments")
       .select("scheduled_at, duration_label, token, status")
       .gte("scheduled_at", startOfDay.toISOString())
       .lt("scheduled_at", endOfNextDay.toISOString());
+    if (clinicRow?.id) {
+      appointmentsQuery = appointmentsQuery.eq("clinic_id", clinicRow.id);
+    }
+
+    const { data, error } = await appointmentsQuery;
 
     if (error) {
       throw new Error(error.message);
