@@ -124,14 +124,12 @@ export function ClinicDashboardPage({
           throw new Error(clinicData.error ?? "No se pudo cargar la clínica");
         }
 
-        const clinicName = clinicData.clinic.name as string;
-
         const [servicesResponse, hoursResponse, googleResponse, appointmentsResponse] =
           await Promise.all([
             fetch(`/api/services?clinicSlug=${clinicSlug}`),
             fetch(`/api/clinic-hours?clinicSlug=${clinicSlug}`),
             fetch(`/api/google/status?clinicSlug=${encodeURIComponent(clinicSlug)}`),
-            fetch(`/api/appointments/by-clinic?clinicName=${encodeURIComponent(clinicName)}`),
+            fetch(`/api/appointments/by-clinic?clinicSlug=${encodeURIComponent(clinicSlug)}`),
           ]);
 
         const [servicesData, hoursData, googleData, appointmentsData] = await Promise.all([

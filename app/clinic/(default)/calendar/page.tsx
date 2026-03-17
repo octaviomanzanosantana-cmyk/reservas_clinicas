@@ -231,7 +231,7 @@ export function ClinicCalendarPage({
     let active = true;
 
     const loadAppointments = async () => {
-      if (!clinic?.name || !selectedDateObject) return;
+      if (!clinicSlug || !selectedDateObject) return;
 
       setLoadingAppointments(true);
       setErrorMessage(null);
@@ -243,7 +243,7 @@ export function ClinicCalendarPage({
         const responses = await Promise.all(
           datesToLoad.map((date) =>
             fetch(
-              `/api/appointments/by-date?clinicName=${encodeURIComponent(clinic.name)}&date=${date}`,
+              `/api/appointments/by-date?clinicSlug=${encodeURIComponent(clinicSlug)}&date=${date}`,
             ),
           ),
         );
@@ -280,7 +280,7 @@ export function ClinicCalendarPage({
     return () => {
       active = false;
     };
-  }, [clinic?.name, selectedDate, selectedDateObject, viewMode, weekDates]);
+  }, [clinicSlug, selectedDate, selectedDateObject, viewMode, weekDates]);
 
   const appointments = appointmentsByDate[selectedDate] ?? [];
 

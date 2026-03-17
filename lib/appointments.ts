@@ -85,10 +85,21 @@ export async function listAppointmentsByClinic(
 
 export async function createAppointment(data: CreateAppointmentInput): Promise<AppointmentRow> {
   const payload: CreateAppointmentInput = {
-    ...data,
+    clinic_id: data.clinic_id,
+    clinic_name: data.clinic_name,
+    patient_name: data.patient_name,
+    service: data.service,
+    scheduled_at: data.scheduled_at,
+    datetime_label: data.datetime_label,
+    address: data.address,
+    duration_label: data.duration_label,
+    status: data.status,
     token: normalizeToken(data.token),
     patient_phone:
       typeof data.patient_phone === "string" ? data.patient_phone.trim() || null : null,
+    google_event_id:
+      typeof data.google_event_id === "string" ? data.google_event_id.trim() || null : null,
+    calendar_id: typeof data.calendar_id === "string" ? data.calendar_id.trim() || null : null,
   };
 
   const { data: created, error } = await supabase
