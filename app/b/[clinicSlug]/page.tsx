@@ -84,6 +84,7 @@ export default function PublicBookingPage() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [patientName, setPatientName] = useState("");
+  const [patientEmail, setPatientEmail] = useState("");
   const [loadingServices, setLoadingServices] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -252,6 +253,7 @@ export default function PublicBookingPage() {
         clinic_id: null,
         clinic_name: clinicDetails?.clinicName ?? clinicSlug,
         patient_name: patientName.trim(),
+        patient_email: patientEmail.trim() || null,
         service: selectedService.name,
         scheduled_at: selectedSlot.value,
         datetime_label: datetimeLabel,
@@ -488,9 +490,22 @@ export default function PublicBookingPage() {
                     />
                   </label>
 
+                  <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      5. Email
+                    </span>
+                    <input
+                      type="email"
+                      value={patientEmail}
+                      onChange={(event) => setPatientEmail(event.target.value)}
+                      placeholder="Ej: marta@email.com"
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                    />
+                  </label>
+
                   <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      5. Confirmar reserva
+                      6. Confirmar reserva
                     </p>
                     <button
                       type="submit"

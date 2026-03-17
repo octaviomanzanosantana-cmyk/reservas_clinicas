@@ -4,6 +4,7 @@ import {
   type AppointmentRow,
   type CreateAppointmentInput,
 } from "@/lib/appointments";
+import { sendAppointmentCreatedEmail } from "@/lib/appointmentEmails";
 import {
   getBusyRangesFromAppointments,
   parseDurationMinutes,
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as CreateAppointmentRequest;
     const normalizedPayload: CreateAppointmentRequest = {
       ...payload,
+      patient_email:
+        typeof payload.patient_email === "string" ? payload.patient_email.trim() || null : null,
       patient_phone:
         typeof payload.patient_phone === "string" ? payload.patient_phone.trim() || null : null,
     };
@@ -165,6 +168,12 @@ export async function POST(request: Request) {
         error instanceof Error
           ? error.message
           : "No se pudo crear el evento de Google Calendar";
+    }
+
+    try {
+      await sendAppointmentCreatedEmail(nextAppointment);
+    } catch {
+      // El email transaccional no debe bloquear la cita.
     }
 
     return NextResponse.json({ appointment: nextAppointment, calendarWarning });

@@ -68,6 +68,7 @@ function ClinicNewAppointmentContent({
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [patientName, setPatientName] = useState("");
+  const [patientEmail, setPatientEmail] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
   const [loadingClinic, setLoadingClinic] = useState(true);
   const [loadingServices, setLoadingServices] = useState(true);
@@ -229,6 +230,7 @@ function ClinicNewAppointmentContent({
         clinic_id: null,
         clinic_name: clinic.name,
         patient_name: patientName.trim(),
+        patient_email: patientEmail.trim() || null,
         patient_phone: phone.trim() || null,
         service: selectedService.name,
         scheduled_at: selectedSlot.value,
@@ -405,6 +407,17 @@ function ClinicNewAppointmentContent({
                 ) : null}
               </label>
             </div>
+
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Email</span>
+              <input
+                type="email"
+                value={patientEmail}
+                onChange={(event) => setPatientEmail(event.target.value)}
+                placeholder="Ej: marta@email.com"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+              />
+            </label>
 
             <div className="flex flex-wrap gap-3 pt-2">
               <button

@@ -7,6 +7,7 @@ export type AppointmentRow = {
   clinic_id: string | null;
   clinic_name: string;
   patient_name: string;
+  patient_email: string | null;
   patient_phone: string | null;
   service: string;
   scheduled_at: string | null;
@@ -22,8 +23,15 @@ export type AppointmentRow = {
 
 export type CreateAppointmentInput = Omit<
   AppointmentRow,
-  "id" | "created_at" | "updated_at" | "google_event_id" | "calendar_id" | "patient_phone"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "google_event_id"
+  | "calendar_id"
+  | "patient_email"
+  | "patient_phone"
 > & {
+  patient_email?: string | null;
   patient_phone?: string | null;
   google_event_id?: string | null;
   calendar_id?: string | null;
@@ -88,6 +96,8 @@ export async function createAppointment(data: CreateAppointmentInput): Promise<A
     clinic_id: data.clinic_id,
     clinic_name: data.clinic_name,
     patient_name: data.patient_name,
+    patient_email:
+      typeof data.patient_email === "string" ? data.patient_email.trim() || null : null,
     service: data.service,
     scheduled_at: data.scheduled_at,
     datetime_label: data.datetime_label,
