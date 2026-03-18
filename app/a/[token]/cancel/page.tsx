@@ -2,9 +2,11 @@
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
+import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
 import type { AppointmentRow } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
+import { getClinicConfig } from "@/lib/demoClinics";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -31,6 +33,7 @@ export default function CancelPage() {
   const params = useParams();
   const token = params.token as string;
   const theme = getClinicTheme(token);
+  const clinic = getClinicConfig(token);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [toastVisible, setToastVisible] = useState(true);
@@ -135,11 +138,13 @@ export default function CancelPage() {
             Cita cancelada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}
+        <PatientFooter supportPhone={clinic.supportPhone ?? null} />
       </>
     );
   }, [
     appointment,
     calendarWarning,
+    clinic.supportPhone,
     loading,
     theme.accent,
     theme.brandName,

@@ -2,6 +2,7 @@
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
+import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
 import type { AppointmentRow } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
@@ -73,12 +74,6 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
 
   const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
   return { dateLabel, timeLabel };
-}
-
-function toWhatsAppPhone(phone: string | null | undefined): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/\D/g, "").replace(/^00/, "");
-  return digits || null;
 }
 
 export default function ConfirmPage() {
@@ -163,8 +158,6 @@ export default function ConfirmPage() {
       : `La clínica ha recibido tu confirmación. Te esperamos ${appointment.datetimeLabel}.`;
     const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
     const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
-    const clinicPhone = clinic.supportPhone ?? null;
-    const clinicWhatsAppPhone = toWhatsAppPhone(clinicPhone);
     const whatsappUrl =
       changed && appointment.status === "confirmed" && dateLabel && timeLabel
         ? `https://wa.me/?text=${encodeURIComponent(
@@ -183,20 +176,6 @@ export default function ConfirmPage() {
             ].join("\n"),
           )}`
         : null;
-    const clinicWhatsAppUrl = clinicWhatsAppPhone
-      ? `https://wa.me/${clinicWhatsAppPhone}?text=${encodeURIComponent(
-          [
-            "Hola, necesito ayuda con mi cita.",
-            "",
-            `Clínica: ${appointment.clinicName}`,
-            `Servicio: ${appointment.service}`,
-            `Cita: ${appointment.datetimeLabel}`,
-            "",
-            `Gestionar cita: ${
-              typeof window !== "undefined" ? `${window.location.origin}/a/${token}` : `/a/${token}`
-            }`,
-          ].join("\n"),
-        )}`
       : null;
 
     return (
@@ -270,26 +249,7 @@ export default function ConfirmPage() {
             Cita confirmada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}
-        {clinicPhone ? (
-          <div className="space-y-2 text-center text-xs text-gray-500">
-            <p>
-              Contactar con la clínica:{" "}
-              <a href={`tel:${clinicPhone}`} className="font-medium text-gray-700 underline">
-                {clinicPhone}
-              </a>
-            </p>
-            {clinicWhatsAppUrl ? (
-              <a
-                href={clinicWhatsAppUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-sm transition-all duration-150 hover:bg-emerald-100"
-              >
-                WhatsApp de la clínica
-              </a>
-            ) : null}
-          </div>
-        ) : null}
+        <PatientFooter supportPhone={clinic.supportPhone ?? null} />
       </>
     );
   }, [

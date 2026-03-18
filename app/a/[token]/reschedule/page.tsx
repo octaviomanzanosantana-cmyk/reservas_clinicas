@@ -2,9 +2,10 @@
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
+import PatientFooter from "@/components/patient/PatientFooter";
 import { getAppointmentByToken } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
-import { getClinicSlugByClinicName } from "@/lib/demoClinics";
+import { getClinicConfig, getClinicSlugByClinicName } from "@/lib/demoClinics";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -47,6 +48,7 @@ export default function ReschedulePage() {
   const params = useParams();
   const token = params.token as string;
   const theme = getClinicTheme(token);
+  const clinic = getClinicConfig(token);
   const router = useRouter();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,6 +258,8 @@ export default function ReschedulePage() {
       >
         Volver a la cita
       </Link>
+
+      <PatientFooter supportPhone={clinic.supportPhone ?? null} />
     </div>
   );
 }
