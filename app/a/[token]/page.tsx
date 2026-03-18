@@ -7,7 +7,7 @@ import { getAppointmentByToken } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
 import { getClinicConfig } from "@/lib/demoClinics";
 import type { Appointment } from "@/lib/types";
-import { MessageCircle } from "lucide-react";
+import { Phone } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -43,12 +43,6 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
     lastUpdateLabel: row.updated_at,
     idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
   };
-}
-
-function toWhatsAppPhone(phone: string | null | undefined): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/\D/g, "").replace(/^00/, "");
-  return digits || null;
 }
 
 export default function AppointmentHomePage() {
@@ -108,22 +102,6 @@ export default function AppointmentHomePage() {
     }
 
     const clinicPhone = clinic.supportPhone ?? null;
-    const whatsappPhone = toWhatsAppPhone(clinicPhone);
-    const clinicWhatsAppUrl = whatsappPhone
-      ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-          [
-            "Hola, necesito ayuda con mi cita.",
-            "",
-            `Clínica: ${appointment.clinicName}`,
-            `Servicio: ${appointment.service}`,
-            `Cita: ${appointment.datetimeLabel}`,
-            "",
-            `Gestionar cita: ${
-              typeof window !== "undefined" ? `${window.location.origin}/a/${token}` : `/a/${token}`
-            }`,
-          ].join("\n"),
-        )}`
-      : null;
 
     return (
       <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
@@ -218,31 +196,21 @@ export default function AppointmentHomePage() {
             </div>
           ) : null}
 
-          <footer className="border-t border-slate-200 pt-5 text-center text-xs text-slate-600">
-            <p className="font-medium text-slate-700">¿Necesitas ayuda con tu cita?</p>
-
+          <footer className="border-t border-slate-200 pt-5 text-center">
             {clinicPhone ? (
-              <a
-                href={`tel:${clinicPhone}`}
-                className="mt-2 inline-block font-medium text-slate-900 underline"
-              >
-                {clinicPhone}
-              </a>
+              <div className="space-y-1.5">
+                <p className="text-[11px] text-slate-400">¿Necesitas ayuda con tu cita?</p>
+                <a
+                  href={`tel:${clinicPhone}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700"
+                >
+                  <Phone size={12} className="shrink-0" />
+                  <span>{clinicPhone}</span>
+                </a>
+              </div>
             ) : null}
 
-            {clinicWhatsAppUrl ? (
-              <a
-                href={clinicWhatsAppUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
-              >
-                <MessageCircle size={16} />
-                WhatsApp
-              </a>
-            ) : null}
-
-            <p className="mt-3 text-xs text-slate-500">No compartas este enlace</p>
+            <p className="mt-3 text-[11px] text-slate-400">No compartas este enlace</p>
           </footer>
         </div>
       </section>
