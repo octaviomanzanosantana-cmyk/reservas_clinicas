@@ -201,7 +201,7 @@ export default function AppointmentHomePage() {
   }, [appointment, clinic.supportPhone, loading, router, theme.accent, theme.brandName, theme.logoText, theme.primary, token]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_38%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f7_100%)]">
+    <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-2xl px-4 py-12">{content}</div>
     </div>
   );
