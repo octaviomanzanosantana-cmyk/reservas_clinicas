@@ -176,7 +176,6 @@ export default function ConfirmPage() {
             ].join("\n"),
           )}`
         : null;
-      : null;
 
     return (
       <>
