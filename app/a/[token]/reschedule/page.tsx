@@ -163,7 +163,7 @@ export default function ReschedulePage() {
 
       router.push(`/a/${token}/confirm?changed=1`);
     } catch {
-      setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
+      setErrorMessage("No se pudo reprogramar la cita. IntÃ©ntalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -172,7 +172,7 @@ export default function ReschedulePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
           Cargando cita...
         </section>
       </div>
@@ -182,7 +182,7 @@ export default function ReschedulePage() {
   if (!appointment) {
     return (
       <div className="space-y-4">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -201,9 +201,9 @@ export default function ReschedulePage() {
 
       <AppointmentCard appointment={appointment} />
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">Selecciona un nuevo horario</h1>
-        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
           <p className="text-sm font-semibold text-gray-900">Tu cita actual</p>
           <p className="mt-2 text-sm text-gray-700">{appointment.datetimeLabel}</p>
           <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
@@ -216,9 +216,9 @@ export default function ReschedulePage() {
         </p>
 
         <div className="mt-4 space-y-2">
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <div className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
             <label className="block text-sm font-semibold text-gray-900" htmlFor="selected-date">
-              Elige un día
+              Elige un dÃ­a
             </label>
             <input
               id="selected-date"
@@ -239,14 +239,14 @@ export default function ReschedulePage() {
                   key={slot.value}
                   type="button"
                   onClick={() => handleSlotSelect(slot)}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
                 >
                   {slot.label}
                 </button>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-600">No hay horarios disponibles para este día. Prueba con otra fecha.</p>
+            <p className="text-sm text-gray-600">No hay horarios disponibles para este dÃ­a. Prueba con otra fecha.</p>
           )}
         </div>
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}

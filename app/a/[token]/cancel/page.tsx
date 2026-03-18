@@ -82,7 +82,7 @@ export default function CancelPage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
           Cargando cita...
         </section>
       );
@@ -90,7 +90,7 @@ export default function CancelPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -106,7 +106,7 @@ export default function CancelPage() {
           accentColor={theme.accent}
         />
 
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" stroke="currentColor" strokeWidth="2">
               <path d="M12 8v5" strokeLinecap="round" />
@@ -115,21 +115,21 @@ export default function CancelPage() {
             </svg>
           </div>
           <h1 className="text-center text-xl font-semibold tracking-tight text-gray-900">Cita cancelada</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">La clínica ha recibido la cancelación.</p>
+          <p className="mt-2 text-center text-sm text-gray-600">La clÃ­nica ha recibido la cancelaciÃ³n.</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
 
         <Link
           href={`/a/${token}`}
-          className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
+          className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
           style={{ backgroundColor: theme.primary }}
         >
           Volver a la cita
         </Link>
 
         <Toast
-          message="Acción realizada. La clínica ha sido notificada."
+          message="AcciÃ³n realizada. La clÃ­nica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />

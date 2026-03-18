@@ -11,10 +11,10 @@ function IconWrap({ children }: { children: ReactNode }) {
 }
 
 export default function AppointmentCard({ appointment }: AppointmentCardProps) {
-  const [day = appointment.datetimeLabel, hour = ""] = appointment.datetimeLabel.split("·").map((v) => v.trim());
+  const [day = appointment.datetimeLabel, hour = ""] = appointment.datetimeLabel.split("Â·").map((v) => v.trim());
 
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
+    <section className="rounded-[24px] border border-slate-200 bg-white p-6">
       <div className="mb-5 flex items-start justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Tu cita</h1>
         <StatusBadge status={appointment.status} />
@@ -31,7 +31,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
           </svg>
         </IconWrap>
         <span>{day}</span>
-        <span>·</span>
+        <span>Â·</span>
         <IconWrap>
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">
             <circle cx="12" cy="12" r="9" />
@@ -56,7 +56,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
 
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Dirección</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">DirecciÃ³n</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-gray-900">
             <IconWrap>
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">
@@ -69,7 +69,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
 
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Duración</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">DuraciÃ³n</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-gray-900">
             <IconWrap>
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">

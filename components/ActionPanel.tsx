@@ -37,12 +37,12 @@ export default function ActionPanel({
             <button
               type="button"
               onClick={onConfirm}
-              className="w-full rounded-2xl bg-[var(--theme-color)] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.35)] transition-all duration-150 hover:bg-[var(--theme-color-dark)] active:translate-y-[1px]"
+              className="w-full rounded-2xl bg-[var(--theme-color)] px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-[var(--theme-color-dark)] active:translate-y-[1px]"
             >
               Confirmar cita
             </button>
             <p className="text-sm text-gray-500">
-              Confirmación instantánea. La clínica recibirá el aviso automáticamente.
+              ConfirmaciÃ³n instantÃ¡nea. La clÃ­nica recibirÃ¡ el aviso automÃ¡ticamente.
             </p>
           </>
         ) : null}
@@ -57,14 +57,14 @@ export default function ActionPanel({
       </div>
 
       <div
-        className="rounded-[20px] border border-slate-200 bg-slate-50/70 p-4"
+        className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4"
         style={{ borderColor: `${accentColor}33` }}
       >
         <p className="text-sm text-slate-600">
-          Evita esperas al teléfono: gestiona aquí tu cita en 10 segundos.
+          Evita esperas al telÃ©fono: gestiona aquÃ­ tu cita en 10 segundos.
         </p>
         <p className="mt-1 text-sm text-slate-600">
-          La clínica recibirá el aviso automáticamente.
+          La clÃ­nica recibirÃ¡ el aviso automÃ¡ticamente.
         </p>
       </div>
     </div>

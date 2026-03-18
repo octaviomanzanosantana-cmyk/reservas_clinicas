@@ -71,7 +71,7 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
     }
   }
 
-  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
+  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("Â·").map((value) => value.trim());
   return { dateLabel, timeLabel };
 }
 
@@ -135,7 +135,7 @@ export default function ConfirmPage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
           Cargando cita...
         </section>
       );
@@ -143,7 +143,7 @@ export default function ConfirmPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -151,7 +151,7 @@ export default function ConfirmPage() {
     }
 
     const isChangeRequested = appointment.status === "change_requested";
-    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita está confirmada";
+    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita estÃ¡ confirmada";
     const description = isChangeRequested
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : appointment.datetimeLabel;
@@ -165,7 +165,7 @@ export default function ConfirmPage() {
               "",
               appointment.clinicName,
               appointment.service,
-              `${dateLabel} · ${timeLabel}`,
+              `${dateLabel} Â· ${timeLabel}`,
               "",
               `Gestionar cita: ${
                 typeof window !== "undefined"
@@ -185,7 +185,7 @@ export default function ConfirmPage() {
           accentColor={theme.accent}
         />
 
-        <section className="rounded-[24px] border border-slate-200 bg-white px-6 py-5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white px-6 py-5">
           <div
             className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full ${
               isChangeRequested ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
@@ -206,10 +206,10 @@ export default function ConfirmPage() {
             href={googleCalendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.35)] transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
+            className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
             style={{ backgroundColor: theme.primary }}
           >
-            Añadir a mi calendario
+            AÃ±adir a mi calendario
           </a>
         ) : null}
 
@@ -218,7 +218,7 @@ export default function ConfirmPage() {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm transition-all duration-150 hover:bg-emerald-100"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
           >
             Enviar a WhatsApp
           </a>
@@ -232,7 +232,7 @@ export default function ConfirmPage() {
         </Link>
 
         <Toast
-          message="Acción realizada. La clínica ha sido notificada."
+          message="AcciÃ³n realizada. La clÃ­nica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />

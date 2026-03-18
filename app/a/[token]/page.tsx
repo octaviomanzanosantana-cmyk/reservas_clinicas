@@ -12,8 +12,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const STATUS_MESSAGE: Record<Appointment["status"], string> = {
-  pending: "Tu cita está pendiente de confirmación",
-  confirmed: "Tu cita está confirmada",
+  pending: "Tu cita estÃ¡ pendiente de confirmaciÃ³n",
+  confirmed: "Tu cita estÃ¡ confirmada",
   cancelled: "Esta cita ha sido cancelada",
   change_requested: "Hemos recibido tu solicitud de cambio",
   completed: "Esta cita ya ha sido completada",
@@ -82,7 +82,7 @@ export default function AppointmentHomePage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-7 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-7 text-center text-sm text-slate-600 md:p-8">
           Cargando cita...
         </section>
       );
@@ -90,7 +90,7 @@ export default function AppointmentHomePage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-7 text-center md:p-8">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
             Cita no encontrada
           </h1>
@@ -102,7 +102,7 @@ export default function AppointmentHomePage() {
     }
 
     return (
-      <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-7 md:p-8">
         <div className="space-y-6">
           <HeaderBar
             logoText={theme.logoText}
@@ -111,14 +111,14 @@ export default function AppointmentHomePage() {
           />
 
           <section
-            className="rounded-[24px] border px-5 py-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.12)]"
+            className="rounded-[24px] border border-slate-200 bg-white px-5 py-5"
             style={{
               borderColor: `${theme.accent}33`,
               backgroundColor: `${theme.accent}12`,
             }}
           >
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {appointment.status === "confirmed" ? "✔ " : ""}
+              {appointment.status === "confirmed" ? "âœ” " : ""}
               {STATUS_TITLE[appointment.status]}
             </h1>
             <p className="mt-2 text-sm text-slate-600">{STATUS_MESSAGE[appointment.status]}</p>
@@ -127,7 +127,7 @@ export default function AppointmentHomePage() {
           <AppointmentCard appointment={appointment} />
 
           {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
-            <section className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
+            <section className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-5">
               <button
                 type="button"
                 onClick={async () => {
@@ -158,7 +158,7 @@ export default function AppointmentHomePage() {
                     );
                     setCancelMessage("Tu cita ha sido cancelada.");
                   } catch {
-                    setCancelError("No se pudo cancelar la cita. Inténtalo de nuevo.");
+                    setCancelError("No se pudo cancelar la cita. IntÃ©ntalo de nuevo.");
                   } finally {
                     setCancelLoading(false);
                   }
