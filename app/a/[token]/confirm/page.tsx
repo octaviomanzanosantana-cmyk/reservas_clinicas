@@ -7,7 +7,6 @@ import Toast from "@/components/Toast";
 import type { AppointmentRow } from "@/lib/appointments";
 import { getClinicTheme } from "@/lib/clinicTheme";
 import { getClinicConfig } from "@/lib/demoClinics";
-import { darkenHex } from "@/lib/color";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -136,7 +135,7 @@ export default function ConfirmPage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
           Cargando cita...
         </section>
       );
@@ -144,7 +143,7 @@ export default function ConfirmPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -152,10 +151,10 @@ export default function ConfirmPage() {
     }
 
     const isChangeRequested = appointment.status === "change_requested";
-    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Cita confirmada";
+    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita está confirmada";
     const description = isChangeRequested
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
-      : `La clínica ha recibido tu confirmación. Te esperamos ${appointment.datetimeLabel}.`;
+      : appointment.datetimeLabel;
     const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
     const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
     const whatsappUrl =
@@ -186,18 +185,18 @@ export default function ConfirmPage() {
           accentColor={theme.accent}
         />
 
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
+        <section className="rounded-[24px] border border-slate-200 bg-white px-6 py-5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.25)]">
           <div
-            className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
+            className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full ${
               isChangeRequested ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
             }`}
           >
-            <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" stroke="currentColor" strokeWidth="2.2">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="2.1">
               <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1 className="text-center text-xl font-semibold tracking-tight text-gray-900">{title}</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">{description}</p>
+          <h1 className="text-center text-lg font-semibold tracking-tight text-gray-900">{title}</h1>
+          <p className="mt-1.5 text-center text-sm text-gray-600">{description}</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
@@ -207,7 +206,8 @@ export default function ConfirmPage() {
             href={googleCalendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.35)] transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
+            style={{ backgroundColor: theme.primary }}
           >
             Añadir a mi calendario
           </a>
@@ -226,14 +226,7 @@ export default function ConfirmPage() {
 
         <Link
           href={`/a/${token}`}
-          className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
-          style={{ backgroundColor: theme.primary }}
-          onMouseDown={(event) => {
-            event.currentTarget.style.backgroundColor = darkenHex(theme.primary, 18);
-          }}
-          onMouseUp={(event) => {
-            event.currentTarget.style.backgroundColor = theme.primary;
-          }}
+          className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:translate-y-[1px]"
         >
           Volver a la cita
         </Link>
