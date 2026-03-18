@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import ActionPanel from "@/components/ActionPanel";
 import AppointmentCard from "@/components/AppointmentCard";
@@ -82,7 +82,7 @@ export default function AppointmentHomePage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 text-center text-sm text-slate-600 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-7 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
           Cargando cita...
         </section>
       );
@@ -90,7 +90,7 @@ export default function AppointmentHomePage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-7 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
             Cita no encontrada
           </h1>
@@ -102,7 +102,7 @@ export default function AppointmentHomePage() {
     }
 
     return (
-      <section className="rounded-[30px] border border-white/70 bg-white/90 p-7 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)] md:p-8">
+      <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)] md:p-8">
         <div className="space-y-6">
           <HeaderBar
             logoText={theme.logoText}
@@ -111,7 +111,7 @@ export default function AppointmentHomePage() {
           />
 
           <section
-            className="rounded-[24px] border px-5 py-5 shadow-sm"
+            className="rounded-[24px] border px-5 py-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.12)]"
             style={{
               borderColor: `${theme.accent}33`,
               backgroundColor: `${theme.accent}12`,
@@ -127,7 +127,7 @@ export default function AppointmentHomePage() {
           <AppointmentCard appointment={appointment} />
 
           {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
-            <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
               <button
                 type="button"
                 onClick={async () => {
@@ -164,7 +164,7 @@ export default function AppointmentHomePage() {
                   }
                 }}
                 disabled={cancelLoading}
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.7)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {cancelLoading ? "Cancelando..." : "Cancelar cita"}
               </button>

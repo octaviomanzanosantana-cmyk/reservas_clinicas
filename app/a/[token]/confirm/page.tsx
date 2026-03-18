@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
@@ -136,7 +136,7 @@ export default function ConfirmPage() {
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-600 shadow-sm">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
           Cargando cita...
         </section>
       );
@@ -144,7 +144,7 @@ export default function ConfirmPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -186,7 +186,7 @@ export default function ConfirmPage() {
           accentColor={theme.accent}
         />
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
           <div
             className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
               isChangeRequested ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
@@ -207,7 +207,7 @@ export default function ConfirmPage() {
             href={googleCalendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
           >
             Añadir a mi calendario
           </a>

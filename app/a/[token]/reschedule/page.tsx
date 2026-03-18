@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
@@ -172,7 +172,7 @@ export default function ReschedulePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-600 shadow-sm">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
           Cargando cita...
         </section>
       </div>
@@ -182,7 +182,7 @@ export default function ReschedulePage() {
   if (!appointment) {
     return (
       <div className="space-y-4">
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
           <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
         </section>
@@ -201,7 +201,7 @@ export default function ReschedulePage() {
 
       <AppointmentCard appointment={appointment} />
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">Selecciona un nuevo horario</h1>
         <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-sm font-semibold text-gray-900">Tu cita actual</p>
@@ -254,7 +254,7 @@ export default function ReschedulePage() {
 
       <Link
         href={`/a/${token}`}
-        className="inline-flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-sm transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+        className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:translate-y-[1px]"
       >
         Volver a la cita
       </Link>

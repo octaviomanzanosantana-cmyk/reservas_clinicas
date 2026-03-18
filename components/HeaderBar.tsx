@@ -13,10 +13,10 @@ export default function HeaderBar({
   accentColor = "#0EA5E9",
 }: HeaderBarProps) {
   return (
-    <header className="mb-4 flex items-center">
-      <div className="flex items-center gap-3">
+    <header className="mb-3 flex items-center">
+      <div className="flex items-center gap-2.5">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold shadow-sm"
+          className="flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold"
           style={{
             borderColor: hexToRgba(accentColor, 0.35),
             backgroundColor: hexToRgba(accentColor, 0.12),
@@ -25,11 +25,8 @@ export default function HeaderBar({
         >
           {logoText}
         </div>
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            Reservas Clínicas
-          </p>
-          <p className="text-sm font-semibold text-gray-900">{clinicName}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900">{clinicName}</p>
         </div>
       </div>
     </header>

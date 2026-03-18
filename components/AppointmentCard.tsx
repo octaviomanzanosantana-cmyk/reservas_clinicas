@@ -14,16 +14,16 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
   const [day = appointment.datetimeLabel, hour = ""] = appointment.datetimeLabel.split("·").map((v) => v.trim());
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-slate-50/80 p-6 shadow-sm">
+    <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.18)]">
       <div className="mb-5 flex items-start justify-between gap-2">
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900">Tu cita</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Tu cita</h1>
         <StatusBadge status={appointment.status} />
       </div>
 
-      <p className="text-lg font-semibold text-gray-900">{appointment.clinicName}</p>
-      <p className="mt-0.5 text-base text-gray-900">{appointment.service}</p>
+      <p className="text-lg font-semibold text-slate-900">{appointment.clinicName}</p>
+      <p className="mt-0.5 text-base text-slate-900">{appointment.service}</p>
 
-      <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+      <div className="mt-4 flex items-center gap-2 text-sm text-slate-600">
         <IconWrap>
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">
             <rect x="3" y="5" width="18" height="16" rx="2" />
