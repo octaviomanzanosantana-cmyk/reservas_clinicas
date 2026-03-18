@@ -115,7 +115,7 @@ export default function CancelPage() {
             </svg>
           </div>
           <h1 className="text-center text-xl font-semibold tracking-tight text-gray-900">Cita cancelada</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">La clÃ­nica ha recibido la cancelaciÃ³n.</p>
+          <p className="mt-2 text-center text-sm text-gray-600">La clínica ha recibido la cancelación.</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
@@ -129,7 +129,7 @@ export default function CancelPage() {
         </Link>
 
         <Toast
-          message="AcciÃ³n realizada. La clÃ­nica ha sido notificada."
+          message="Acción realizada. La clínica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />

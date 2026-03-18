@@ -71,7 +71,7 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
     }
   }
 
-  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("Â·").map((value) => value.trim());
+  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
   return { dateLabel, timeLabel };
 }
 
@@ -151,7 +151,7 @@ export default function ConfirmPage() {
     }
 
     const isChangeRequested = appointment.status === "change_requested";
-    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita estÃ¡ confirmada";
+    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita está confirmada";
     const description = isChangeRequested
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : appointment.datetimeLabel;
@@ -165,7 +165,7 @@ export default function ConfirmPage() {
               "",
               appointment.clinicName,
               appointment.service,
-              `${dateLabel} Â· ${timeLabel}`,
+              `${dateLabel} · ${timeLabel}`,
               "",
               `Gestionar cita: ${
                 typeof window !== "undefined"
@@ -209,7 +209,7 @@ export default function ConfirmPage() {
             className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
             style={{ backgroundColor: theme.primary }}
           >
-            AÃ±adir a mi calendario
+            Añadir a mi calendario
           </a>
         ) : null}
 
@@ -232,7 +232,7 @@ export default function ConfirmPage() {
         </Link>
 
         <Toast
-          message="AcciÃ³n realizada. La clÃ­nica ha sido notificada."
+          message="Acción realizada. La clínica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />

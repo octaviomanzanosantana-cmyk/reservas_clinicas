@@ -163,7 +163,7 @@ export default function ReschedulePage() {
 
       router.push(`/a/${token}/confirm?changed=1`);
     } catch {
-      setErrorMessage("No se pudo reprogramar la cita. IntÃ©ntalo de nuevo.");
+      setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -218,7 +218,7 @@ export default function ReschedulePage() {
         <div className="mt-4 space-y-2">
           <div className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
             <label className="block text-sm font-semibold text-gray-900" htmlFor="selected-date">
-              Elige un dÃ­a
+              Elige un día
             </label>
             <input
               id="selected-date"
@@ -246,7 +246,7 @@ export default function ReschedulePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-600">No hay horarios disponibles para este dÃ­a. Prueba con otra fecha.</p>
+            <p className="text-sm text-gray-600">No hay horarios disponibles para este día. Prueba con otra fecha.</p>
           )}
         </div>
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
