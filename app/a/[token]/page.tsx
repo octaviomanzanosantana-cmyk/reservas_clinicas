@@ -126,8 +126,26 @@ export default function AppointmentHomePage() {
 
           <AppointmentCard appointment={appointment} />
 
+          {appointment.status === "pending" ||
+          appointment.status === "confirmed" ||
+          appointment.status === "change_requested" ? (
+            <div className="[&_button]:rounded-2xl [&_button]:px-5 [&_button]:py-3 [&_button]:text-sm [&_button]:font-semibold [&_.primary]:bg-slate-950 [&_.primary]:text-white [&_.secondary]:border [&_.secondary]:border-slate-200 [&_.secondary]:bg-white [&_.secondary]:text-slate-900">
+              <ActionPanel
+                primaryColor={theme.primary}
+                accentColor={theme.accent}
+                showConfirm={appointment.status === "pending"}
+                onConfirm={async () => {
+                  router.push(`/a/${token}/confirm`);
+                }}
+                onReschedule={() => {
+                  router.push(`/a/${token}/reschedule`);
+                }}
+              />
+            </div>
+          ) : null}
+
           {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
-            <section className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-5">
+            <section className="mt-4 text-center">
               <button
                 type="button"
                 onClick={async () => {
@@ -164,7 +182,7 @@ export default function AppointmentHomePage() {
                   }
                 }}
                 disabled={cancelLoading}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="text-sm text-red-500 transition-colors duration-150 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {cancelLoading ? "Cancelando..." : "Cancelar cita"}
               </button>
@@ -174,24 +192,6 @@ export default function AppointmentHomePage() {
               ) : null}
               {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
             </section>
-          ) : null}
-
-          {appointment.status === "pending" ||
-          appointment.status === "confirmed" ||
-          appointment.status === "change_requested" ? (
-            <div className="[&_button]:rounded-2xl [&_button]:px-5 [&_button]:py-3 [&_button]:text-sm [&_button]:font-semibold [&_.primary]:bg-slate-950 [&_.primary]:text-white [&_.secondary]:border [&_.secondary]:border-slate-200 [&_.secondary]:bg-white [&_.secondary]:text-slate-900">
-              <ActionPanel
-                primaryColor={theme.primary}
-                accentColor={theme.accent}
-                showConfirm={appointment.status === "pending"}
-                onConfirm={async () => {
-                  router.push(`/a/${token}/confirm`);
-                }}
-                onReschedule={() => {
-                  router.push(`/a/${token}/reschedule`);
-                }}
-              />
-            </div>
           ) : null}
 
           <PatientFooter supportPhone={clinic.supportPhone ?? null} />
