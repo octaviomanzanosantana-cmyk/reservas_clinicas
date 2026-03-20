@@ -10,6 +10,7 @@
     "clinic:create": "node scripts/create-clinic.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "googleapis": "^171.4.0",
     "lucide-react": "^0.577.0",
