@@ -1,4 +1,5 @@
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
 type UpdateAppointmentStatusRequest = {
@@ -18,28 +19,44 @@ export async function POST(request: Request) {
     }
 
     if (!body.status || !VALID_STATUSES.has(body.status)) {
-      return NextResponse.json({ error: "status inválido" }, { status: 400 });
+      return NextResponse.json({ error: "status invalido" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("appointments")
-      .update({
-        status: body.status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("token", token)
-      .select("*")
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (!data) {
+    const current = await getAppointmentByToken(token);
+    if (!current) {
       return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
     }
 
-    return NextResponse.json({ appointment: data });
+    const appointment = (await updateAppointmentStatus(token, body.status)) ?? current;
+    let calendarWarning: string | null = null;
+
+    try {
+      if (body.status === "cancelled" && current.google_event_id) {
+        await deleteCalendarEvent(
+          current.google_event_id,
+          current.calendar_id,
+          undefined,
+          current.clinic_id,
+        );
+      } else if (
+        (body.status === "confirmed" || body.status === "completed") &&
+        appointment.google_event_id
+      ) {
+        await updateCalendarEvent(
+          appointment as AppointmentRow,
+          appointment.google_event_id,
+          appointment.calendar_id,
+          undefined,
+        );
+      }
+    } catch (error) {
+      calendarWarning =
+        error instanceof Error
+          ? error.message
+          : "No se pudo sincronizar Google Calendar";
+    }
+
+    return NextResponse.json({ appointment, calendarWarning });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo actualizar la cita" },

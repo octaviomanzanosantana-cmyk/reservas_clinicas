@@ -3,9 +3,8 @@
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
-import { getAppointmentByToken } from "@/lib/appointments";
-import { getClinicTheme } from "@/lib/clinicTheme";
-import { getClinicConfig, getClinicSlugByClinicName } from "@/lib/demoClinics";
+import type { PatientClinicData } from "@/lib/patientClient";
+import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -14,6 +13,20 @@ import { useEffect, useState } from "react";
 type AvailabilitySlot = {
   value: string;
   label: string;
+};
+
+type PatientAppointmentRow = {
+  id: number;
+  token: string;
+  clinic_name: string;
+  scheduled_at: string | null;
+  service: string;
+  datetime_label: string;
+  patient_name: string;
+  address: string;
+  duration_label: string;
+  status: Appointment["status"];
+  updated_at: string;
 };
 
 function toDateInputValue(date: Date): string {
@@ -27,9 +40,7 @@ function getTodayInputValue(): string {
   return toDateInputValue(new Date());
 }
 
-function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>>): Appointment | null {
-  if (!row) return null;
-
+function toViewAppointment(row: PatientAppointmentRow): Appointment {
   return {
     token: row.token,
     clinicName: row.clinic_name,
@@ -47,10 +58,9 @@ function toViewAppointment(row: Awaited<ReturnType<typeof getAppointmentByToken>
 export default function ReschedulePage() {
   const params = useParams();
   const token = params.token as string;
-  const theme = getClinicTheme(token);
-  const clinic = getClinicConfig(token);
   const router = useRouter();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [clinic, setClinic] = useState<PatientClinicData | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
@@ -65,17 +75,21 @@ export default function ReschedulePage() {
     const load = async () => {
       setLoading(true);
       try {
-        const row = await getAppointmentByToken(token);
+        const details = await fetchPatientAppointmentDetails(token);
         if (!active) return;
 
-        setAppointment(toViewAppointment(row));
+        setAppointment(toViewAppointment(details.appointment as PatientAppointmentRow));
+        setClinic(details.clinic);
 
-        const baseDate = row?.scheduled_at ? new Date(row.scheduled_at) : new Date();
+        const baseDate = details.appointment.scheduled_at
+          ? new Date(details.appointment.scheduled_at)
+          : new Date();
         const safeBaseDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
         setSelectedDate(toDateInputValue(safeBaseDate));
       } catch {
         if (active) {
           setAppointment(null);
+          setClinic(null);
           setSelectedDate("");
         }
       } finally {
@@ -85,7 +99,7 @@ export default function ReschedulePage() {
       }
     };
 
-    load();
+    void load();
 
     return () => {
       active = false;
@@ -108,12 +122,9 @@ export default function ReschedulePage() {
           date: selectedDate,
           excludeToken: token,
         });
-        const clinicSlug = appointment?.clinicName
-          ? getClinicSlugByClinicName(appointment.clinicName)
-          : null;
 
-        if (clinicSlug) {
-          searchParams.set("clinicSlug", clinicSlug);
+        if (clinic?.slug) {
+          searchParams.set("clinicSlug", clinic.slug);
         }
         if (appointment?.service) {
           searchParams.set("service", appointment.service);
@@ -140,7 +151,7 @@ export default function ReschedulePage() {
     return () => {
       active = false;
     };
-  }, [appointment?.clinicName, appointment?.service, selectedDate, token]);
+  }, [appointment?.service, clinic?.slug, selectedDate, token]);
 
   const handleSlotSelect = async (slot: AvailabilitySlot) => {
     if (submitting) return;
@@ -163,7 +174,7 @@ export default function ReschedulePage() {
 
       router.push(`/a/${token}/confirm?changed=1`);
     } catch {
-      setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
+      setErrorMessage("No se pudo reprogramar la cita. Intentalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -193,10 +204,10 @@ export default function ReschedulePage() {
   return (
     <div className="space-y-4">
       <HeaderBar
-        logoText={theme.logoText}
-        clinicName={theme.brandName}
+        logoText={clinic?.logoText ?? "RC"}
+        clinicName={clinic?.name ?? appointment.clinicName}
         idLabel={appointment.idLabel}
-        accentColor={theme.accent}
+        accentColor={clinic?.accentColor ?? "#1d4ed8"}
       />
 
       <AppointmentCard appointment={appointment} />
@@ -208,9 +219,7 @@ export default function ReschedulePage() {
           <p className="mt-2 text-sm text-gray-700">{appointment.datetimeLabel}</p>
           <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
         </div>
-        <p className="mt-2 text-sm text-gray-600">
-          Selecciona un nuevo horario
-        </p>
+        <p className="mt-2 text-sm text-gray-600">Selecciona un nuevo horario</p>
         <p className="mt-2 text-sm text-gray-600">
           Elige un nuevo horario disponible para reprogramar tu cita.
         </p>
@@ -218,7 +227,7 @@ export default function ReschedulePage() {
         <div className="mt-4 space-y-2">
           <div className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
             <label className="block text-sm font-semibold text-gray-900" htmlFor="selected-date">
-              Elige un día
+              Elige un dia
             </label>
             <input
               id="selected-date"
@@ -246,7 +255,7 @@ export default function ReschedulePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-600">No hay horarios disponibles para este día. Prueba con otra fecha.</p>
+            <p className="text-sm text-gray-600">No hay horarios disponibles para este dia. Prueba con otra fecha.</p>
           )}
         </div>
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
@@ -259,7 +268,7 @@ export default function ReschedulePage() {
         Volver a la cita
       </Link>
 
-      <PatientFooter supportPhone={clinic.supportPhone ?? null} />
+      <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { ClinicDashboardPage } from "@/app/clinic/(default)/page";
+import { ClinicDashboardPage } from "@/components/clinic/ClinicDashboardPage";
 
 export default async function DynamicClinicDashboardPage({
   params,

@@ -1,7 +1,6 @@
 "use client";
 
 import type { CreateAppointmentInput } from "@/lib/appointments";
-import { DEMO_CLINICS } from "@/lib/demoClinics";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -43,30 +42,6 @@ function buildDateTimeLabel(dateInput: string, timeInput: string): string {
   return `${weekdayTitle} · ${timeInput}`;
 }
 
-function getClinicDetails(clinicSlug: string) {
-  const directMatch = DEMO_CLINICS[clinicSlug];
-  if (directMatch) {
-    return {
-      clinicName: directMatch.clinicName,
-      description: "",
-      address: directMatch.address,
-      phone: "",
-      logo_url: "",
-      theme_color: directMatch.themeColor ?? "",
-    };
-  }
-
-  const config = Object.values(DEMO_CLINICS).find((item) => item.clinicSlug === clinicSlug);
-  return {
-    clinicName: config?.clinicName ?? clinicSlug,
-    description: "",
-    address: config?.address ?? "",
-    phone: "",
-    logo_url: "",
-    theme_color: config?.themeColor ?? "",
-  };
-}
-
 export default function PublicBookingPage() {
   const params = useParams();
   const clinicSlug = params.clinicSlug as string;
@@ -78,6 +53,7 @@ export default function PublicBookingPage() {
     logo_url?: string;
     theme_color?: string;
   } | null>(null);
+  const [loadingClinic, setLoadingClinic] = useState(true);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceOption | null>(null);
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
@@ -104,7 +80,7 @@ export default function PublicBookingPage() {
             `Cita confirmada en ${createdAppointment.clinicName}.`,
             `Servicio: ${createdAppointment.service}`,
             `Fecha: ${createdAppointment.datetimeLabel}`,
-            `Gestiona tu cita aquí: ${createdLink}`,
+            `Gestiona tu cita aqui: ${createdLink}`,
           ].join("\n"),
         )}`
       : null;
@@ -113,6 +89,7 @@ export default function PublicBookingPage() {
     let active = true;
 
     const loadClinic = async () => {
+      setLoadingClinic(true);
       try {
         const response = await fetch(`/api/clinics?slug=${encodeURIComponent(clinicSlug)}`);
         const data = await response.json();
@@ -128,14 +105,19 @@ export default function PublicBookingPage() {
             logo_url: data.clinic.logo_url ?? "",
             theme_color: data.clinic.theme_color ?? "",
           });
+          setErrorMessage(null);
         } else {
-          const fallback = getClinicDetails(clinicSlug);
-          setClinicDetails(fallback);
+          setClinicDetails(null);
+          setErrorMessage(data.error ?? "No se pudo cargar la clinica");
         }
       } catch {
         if (!active) return;
-        const fallback = getClinicDetails(clinicSlug);
-        setClinicDetails(fallback);
+        setClinicDetails(null);
+        setErrorMessage("No se pudo cargar la clinica");
+      } finally {
+        if (active) {
+          setLoadingClinic(false);
+        }
       }
     };
 
@@ -154,6 +136,13 @@ export default function PublicBookingPage() {
     let active = true;
 
     const loadServices = async () => {
+      if (!clinicDetails) {
+        setServices([]);
+        setSelectedService(null);
+        setLoadingServices(false);
+        return;
+      }
+
       setLoadingServices(true);
       try {
         const response = await fetch(`/api/services?clinicSlug=${encodeURIComponent(clinicSlug)}`);
@@ -182,13 +171,13 @@ export default function PublicBookingPage() {
     return () => {
       active = false;
     };
-  }, [clinicSlug]);
+  }, [clinicDetails, clinicSlug]);
 
   useEffect(() => {
     let active = true;
 
     const loadSlots = async () => {
-      if (!selectedService || !selectedDate) {
+      if (!clinicDetails || !selectedService || !selectedDate) {
         setSlots([]);
         setSelectedSlot(null);
         setLoadingSlots(false);
@@ -228,7 +217,7 @@ export default function PublicBookingPage() {
     return () => {
       active = false;
     };
-  }, [clinicSlug, selectedDate, selectedService]);
+  }, [clinicDetails, clinicSlug, selectedDate, selectedService]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -236,6 +225,9 @@ export default function PublicBookingPage() {
     setErrorMessage(null);
 
     try {
+      if (!clinicDetails) {
+        throw new Error("No se pudo resolver la clinica");
+      }
       if (!selectedService) {
         throw new Error("Selecciona un servicio");
       }
@@ -251,13 +243,13 @@ export default function PublicBookingPage() {
       const payload: CreateAppointmentInput = {
         token,
         clinic_id: null,
-        clinic_name: clinicDetails?.clinicName ?? clinicSlug,
+        clinic_name: clinicDetails.clinicName,
         patient_name: patientName.trim(),
         patient_email: patientEmail.trim() || null,
         service: selectedService.name,
         scheduled_at: selectedSlot.value,
         datetime_label: datetimeLabel,
-        address: clinicDetails?.address ?? "",
+        address: clinicDetails.address ?? "",
         duration_label: `${selectedService.duration_minutes} min`,
         status: "confirmed",
       };
@@ -308,7 +300,11 @@ export default function PublicBookingPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f7_100%)] px-4 py-8 md:px-6 md:py-12">
       <div className="mx-auto max-w-6xl space-y-8">
-        {clinicDetails && (
+        {loadingClinic ? (
+          <section className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-10 text-center shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+            <p className="text-sm text-slate-600">Cargando clinica...</p>
+          </section>
+        ) : clinicDetails ? (
           <>
             <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
               <div className="px-6 py-8 md:px-8 md:py-9">
@@ -332,7 +328,7 @@ export default function PublicBookingPage() {
                       </h1>
                       <p className="max-w-2xl text-base leading-7 text-slate-600">
                         {clinicDetails.description ||
-                          "Reserva tu próxima cita en una experiencia clara, rápida y diseñada para una atención clínica moderna."}
+                          "Reserva tu proxima cita en una experiencia clara, rapida y disenada para una atencion clinica moderna."}
                       </p>
                     </div>
                   </div>
@@ -347,7 +343,7 @@ export default function PublicBookingPage() {
                           className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                            Dirección
+                            Direccion
                           </p>
                           <p className="mt-3 text-sm leading-6 text-slate-700">
                             {clinicDetails.address}
@@ -361,7 +357,7 @@ export default function PublicBookingPage() {
                           className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                            Teléfono
+                            Telefono
                           </p>
                           <p className="mt-3 text-sm leading-6 text-slate-700">
                             {clinicDetails.phone}
@@ -371,7 +367,6 @@ export default function PublicBookingPage() {
                     </div>
                   ) : null}
                 </div>
-
               </div>
             </section>
 
@@ -471,7 +466,7 @@ export default function PublicBookingPage() {
                         ))
                       ) : (
                         <p className="text-sm text-slate-600">
-                          No hay horarios disponibles para este día.
+                          No hay horarios disponibles para este dia.
                         </p>
                       )}
                     </div>
@@ -485,7 +480,7 @@ export default function PublicBookingPage() {
                       type="text"
                       value={patientName}
                       onChange={(event) => setPatientName(event.target.value)}
-                      placeholder="Ej: Marta García"
+                      placeholder="Ej: Marta Garcia"
                       className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
                     />
                   </label>
@@ -509,7 +504,7 @@ export default function PublicBookingPage() {
                     </p>
                     <button
                       type="submit"
-                      disabled={submitting || !selectedService || !selectedSlot}
+                      disabled={submitting || !selectedService || !selectedSlot || !clinicDetails}
                       className="mt-3 w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                       style={{ backgroundColor: clinicDetails.theme_color ?? "#0f172a" }}
                     >
@@ -528,7 +523,7 @@ export default function PublicBookingPage() {
                       <div className="mt-3 grid gap-3 md:grid-cols-3">
                         <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Clínica
+                            Clinica
                           </p>
                           <p className="mt-2 text-sm font-medium text-emerald-950">
                             {createdAppointment.clinicName}
@@ -552,7 +547,7 @@ export default function PublicBookingPage() {
                         </div>
                       </div>
                       <p className="mt-4 text-sm text-emerald-700">
-                        Desde este enlace podrás gestionar tu cita y consultar sus datos cuando lo necesites.
+                        Desde este enlace podras gestionar tu cita y consultar sus datos cuando lo necesites.
                       </p>
                       <Link
                         href={createdLink}
@@ -573,10 +568,23 @@ export default function PublicBookingPage() {
                     </div>
                   ) : null}
                 </form>
-
               </div>
             </section>
           </>
+        ) : (
+          <section className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-10 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Reserva online
+              </p>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+                Clinica no disponible
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                {errorMessage ?? "No se pudo cargar la clinica o este enlace ya no esta disponible."}
+              </p>
+            </div>
+          </section>
         )}
       </div>
     </div>

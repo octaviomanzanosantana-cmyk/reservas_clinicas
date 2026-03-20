@@ -1,4 +1,5 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { getPatientClinicContext } from "@/lib/patientContext";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
@@ -22,7 +23,11 @@ export async function POST(request: Request) {
 
     // No tocar por ahora el flujo de cambio solicitado.
     if (current.status === "change_requested") {
-      return NextResponse.json({ appointment: current, calendarWarning: null });
+      return NextResponse.json({
+        appointment: current,
+        clinic: await getPatientClinicContext(current),
+        calendarWarning: null,
+      });
     }
 
     const confirmed = (await updateAppointmentStatus(token, "confirmed")) ?? current;
@@ -46,6 +51,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       appointment: confirmed as AppointmentRow,
+      clinic: await getPatientClinicContext(confirmed as AppointmentRow),
       calendarWarning,
     });
   } catch (error) {

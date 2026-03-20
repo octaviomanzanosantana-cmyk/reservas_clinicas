@@ -1,14 +1,12 @@
 import {
-  buildDaySlotsFromTimeRange,
-  formatTimeLabel,
   getAvailableSlotsForDate,
   getBusyRangesFromAppointments,
-  rangesOverlap,
 } from "@/lib/availability";
+import {
+  getAvailableSlotsForClinicDate,
+  getClinicSlugForAppointmentToken,
+} from "@/lib/clinicAvailability";
 import { getClinicBySlug } from "@/lib/clinics";
-import { getClinicHoursByClinicSlug } from "@/lib/clinicHours";
-import { getGoogleCalendarBusyRangesForDate } from "@/lib/googleCalendar";
-import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
@@ -45,7 +43,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
     const excludeToken = searchParams.get("excludeToken") ?? undefined;
-    const clinicSlug = searchParams.get("clinicSlug")?.trim();
+    const clinicSlugParam = searchParams.get("clinicSlug")?.trim();
     const service = searchParams.get("service")?.trim();
 
     if (!dateParam) {
@@ -54,7 +52,26 @@ export async function GET(request: Request) {
 
     const date = parseDateParam(dateParam);
     if (!date) {
-      return NextResponse.json({ error: "date inválido, usa YYYY-MM-DD" }, { status: 400 });
+      return NextResponse.json({ error: "date invalido, usa YYYY-MM-DD" }, { status: 400 });
+    }
+
+    const resolvedClinicSlug =
+      clinicSlugParam || (excludeToken ? await getClinicSlugForAppointmentToken(excludeToken) : null);
+
+    if (resolvedClinicSlug) {
+      const clinic = await getClinicBySlug(resolvedClinicSlug);
+      if (!clinic?.id) {
+        return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
+      }
+
+      const slots = await getAvailableSlotsForClinicDate({
+        clinicSlug: resolvedClinicSlug,
+        date,
+        service,
+        excludeToken,
+      });
+
+      return NextResponse.json({ slots });
     }
 
     const startOfDay = new Date(date);
@@ -64,76 +81,26 @@ export async function GET(request: Request) {
     endOfNextDay.setDate(endOfNextDay.getDate() + 1);
     endOfNextDay.setHours(0, 0, 0, 0);
 
-    const clinicRow = clinicSlug ? await getClinicBySlug(clinicSlug) : null;
-    if (clinicSlug && !clinicRow?.id) {
-      return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
-    }
-    let appointmentsQuery = supabase
+    const { data, error } = await supabase
       .from("appointments")
       .select("scheduled_at, duration_label, token, status")
       .gte("scheduled_at", startOfDay.toISOString())
       .lt("scheduled_at", endOfNextDay.toISOString());
-    if (clinicRow?.id) {
-      appointmentsQuery = appointmentsQuery.eq("clinic_id", clinicRow.id);
-    }
-
-    const { data, error } = await appointmentsQuery;
 
     if (error) {
       throw new Error(error.message);
     }
 
-    const appointmentBusyRanges = getBusyRangesFromAppointments({
+    const busyRanges = getBusyRangesFromAppointments({
       date,
       appointments: (data ?? []) as AvailabilityAppointmentRow[],
       excludeToken,
     });
-    const googleBusyRanges = clinicSlug
-      ? await getGoogleCalendarBusyRangesForDate(date, clinicSlug)
-      : [];
-    const busyRanges = [...appointmentBusyRanges, ...googleBusyRanges];
-    const serviceRow =
-      clinicSlug && service
-        ? await getServiceByClinicSlugAndName(clinicSlug, service)
-        : null;
-    const slotMinutes = serviceRow?.duration_minutes;
 
-    const slots = clinicSlug
-      ? await (async () => {
-          const clinicHours = await getClinicHoursByClinicSlug(clinicSlug);
-          const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
-          const clinicHour = clinicHours.find((item) => item.day_of_week === dayOfWeek);
-
-          if (!clinicHour) {
-            return [];
-          }
-
-          const safeSlotMinutes = slotMinutes && slotMinutes > 0 ? slotMinutes : 30;
-          const slotDurationMs = safeSlotMinutes * 60_000;
-          const daySlots = buildDaySlotsFromTimeRange(
-            date,
-            clinicHour.start_time,
-            clinicHour.end_time,
-            safeSlotMinutes,
-          );
-
-          return daySlots
-            .filter((slotStart) => {
-              const slotEnd = new Date(slotStart.getTime() + slotDurationMs);
-              return !busyRanges.some((occupied) =>
-                rangesOverlap(slotStart, slotEnd, occupied.start, occupied.end),
-              );
-            })
-            .map((slot) => ({
-              value: slot.toISOString(),
-              label: formatTimeLabel(slot),
-            }));
-        })()
-      : getAvailableSlotsForDate({
-          date,
-          busyRanges,
-          ...(slotMinutes ? { slotMinutes } : {}),
-        });
+    const slots = getAvailableSlotsForDate({
+      date,
+      busyRanges,
+    });
 
     return NextResponse.json({ slots });
   } catch (error) {

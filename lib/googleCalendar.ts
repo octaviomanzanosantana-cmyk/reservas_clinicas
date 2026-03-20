@@ -414,13 +414,29 @@ export async function updateCalendarEvent(
   const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
   const { start, end } = resolveEventDateRange(appointment);
 
-  const summary = `✅ Confirmada - ${appointment.service} - ${appointment.patient_name}`;
+  const statusMeta =
+    appointment.status === "completed"
+      ? {
+          summaryPrefix: "Asistio",
+          lines: [
+            "Estado: COMPLETADA",
+            "La clinica marco la cita como asistida",
+          ],
+        }
+      : {
+          summaryPrefix: "Confirmada",
+          lines: [
+            "Estado: CONFIRMADA",
+            "La cita fue confirmada o actualizada",
+          ],
+        };
+
+  const summary = `${statusMeta.summaryPrefix} - ${appointment.service} - ${appointment.patient_name}`;
   const description = [
-    `Estado: CONFIRMADA`,
-    `Paciente confirmó la cita desde el enlace`,
-    ``,
+    ...statusMeta.lines,
+    "",
     `Paciente: ${appointment.patient_name}`,
-    `Clínica: ${appointment.clinic_name}`,
+    `Clinica: ${appointment.clinic_name}`,
     `Token: ${appointment.token}`,
   ].join("\n");
 
@@ -441,3 +457,4 @@ export async function updateCalendarEvent(
     },
   });
 }
+

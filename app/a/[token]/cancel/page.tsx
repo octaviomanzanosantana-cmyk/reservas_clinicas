@@ -5,8 +5,7 @@ import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
 import type { AppointmentRow } from "@/lib/appointments";
-import { getClinicTheme } from "@/lib/clinicTheme";
-import { getClinicConfig } from "@/lib/demoClinics";
+import type { PatientClinicData } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -32,9 +31,8 @@ function toViewAppointment(row: AppointmentRow | null): Appointment | null {
 export default function CancelPage() {
   const params = useParams();
   const token = params.token as string;
-  const theme = getClinicTheme(token);
-  const clinic = getClinicConfig(token);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [clinic, setClinic] = useState<PatientClinicData | null>(null);
   const [loading, setLoading] = useState(true);
   const [toastVisible, setToastVisible] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
@@ -52,27 +50,35 @@ export default function CancelPage() {
         });
 
         if (!response.ok) {
-          if (active) setAppointment(null);
+          if (active) {
+            setAppointment(null);
+            setClinic(null);
+          }
           return;
         }
 
         const data = (await response.json()) as {
           appointment?: AppointmentRow;
+          clinic?: PatientClinicData;
           calendarWarning?: string | null;
         };
 
         if (active) {
           setAppointment(toViewAppointment(data.appointment ?? null));
+          setClinic(data.clinic ?? null);
           setCalendarWarning(data.calendarWarning ?? null);
         }
       } catch {
-        if (active) setAppointment(null);
+        if (active) {
+          setAppointment(null);
+          setClinic(null);
+        }
       } finally {
         if (active) setLoading(false);
       }
     };
 
-    load();
+    void load();
 
     return () => {
       active = false;
@@ -97,11 +103,18 @@ export default function CancelPage() {
       );
     }
 
+    const theme = {
+      primary: clinic?.primaryColor ?? "#2563eb",
+      accent: clinic?.accentColor ?? "#1d4ed8",
+      logoText: clinic?.logoText ?? "RC",
+      name: clinic?.name ?? appointment.clinicName,
+    };
+
     return (
       <>
         <HeaderBar
           logoText={theme.logoText}
-          clinicName={theme.brandName}
+          clinicName={theme.name}
           idLabel={appointment.idLabel}
           accentColor={theme.accent}
         />
@@ -115,7 +128,7 @@ export default function CancelPage() {
             </svg>
           </div>
           <h1 className="text-center text-xl font-semibold tracking-tight text-gray-900">Cita cancelada</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">La clínica ha recibido la cancelación.</p>
+          <p className="mt-2 text-center text-sm text-gray-600">La clinica ha recibido la cancelacion.</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
@@ -129,7 +142,7 @@ export default function CancelPage() {
         </Link>
 
         <Toast
-          message="Acción realizada. La clínica ha sido notificada."
+          message="Accion realizada. La clinica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />
@@ -138,21 +151,10 @@ export default function CancelPage() {
             Cita cancelada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}
-        <PatientFooter supportPhone={clinic.supportPhone ?? null} />
+        <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>
     );
-  }, [
-    appointment,
-    calendarWarning,
-    clinic.supportPhone,
-    loading,
-    theme.accent,
-    theme.brandName,
-    theme.logoText,
-    theme.primary,
-    toastVisible,
-    token,
-  ]);
+  }, [appointment, calendarWarning, clinic, loading, toastVisible, token]);
 
   return <div className="space-y-4">{content}</div>;
 }

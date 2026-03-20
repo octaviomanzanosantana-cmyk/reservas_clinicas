@@ -5,8 +5,7 @@ import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
 import type { AppointmentRow } from "@/lib/appointments";
-import { getClinicTheme } from "@/lib/clinicTheme";
-import { getClinicConfig } from "@/lib/demoClinics";
+import type { PatientClinicData } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -39,7 +38,8 @@ function buildGoogleCalendarUrl(appointment: Appointment): string | null {
   const durationMatch = appointment.durationLabel.match(/\d+/);
   const durationMinutes = durationMatch ? Number(durationMatch[0]) : 30;
   const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-  const formatGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const formatGoogleDate = (date: Date) =>
+    date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
@@ -78,9 +78,8 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
 export default function ConfirmPage() {
   const params = useParams();
   const token = params.token as string;
-  const clinic = getClinicConfig(token);
-  const theme = getClinicTheme(token);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [clinic, setClinic] = useState<PatientClinicData | null>(null);
   const [loading, setLoading] = useState(true);
   const [toastVisible, setToastVisible] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
@@ -99,27 +98,35 @@ export default function ConfirmPage() {
         });
 
         if (!response.ok) {
-          if (active) setAppointment(null);
+          if (active) {
+            setAppointment(null);
+            setClinic(null);
+          }
           return;
         }
 
         const data = (await response.json()) as {
           appointment?: AppointmentRow;
+          clinic?: PatientClinicData;
           calendarWarning?: string | null;
         };
 
         if (active) {
           setAppointment(toViewAppointment(data.appointment ?? null));
+          setClinic(data.clinic ?? null);
           setCalendarWarning(data.calendarWarning ?? null);
         }
       } catch {
-        if (active) setAppointment(null);
+        if (active) {
+          setAppointment(null);
+          setClinic(null);
+        }
       } finally {
         if (active) setLoading(false);
       }
     };
 
-    load();
+    void load();
 
     return () => {
       active = false;
@@ -150,8 +157,14 @@ export default function ConfirmPage() {
       );
     }
 
+    const theme = {
+      primary: clinic?.primaryColor ?? "#2563eb",
+      accent: clinic?.accentColor ?? "#1d4ed8",
+      logoText: clinic?.logoText ?? "RC",
+      name: clinic?.name ?? appointment.clinicName,
+    };
     const isChangeRequested = appointment.status === "change_requested";
-    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita está confirmada";
+    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita esta confirmada";
     const description = isChangeRequested
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : appointment.datetimeLabel;
@@ -163,7 +176,7 @@ export default function ConfirmPage() {
             [
               "Hola, esta es mi nueva cita:",
               "",
-              appointment.clinicName,
+              theme.name,
               appointment.service,
               `${dateLabel} · ${timeLabel}`,
               "",
@@ -180,7 +193,7 @@ export default function ConfirmPage() {
       <>
         <HeaderBar
           logoText={theme.logoText}
-          clinicName={theme.brandName}
+          clinicName={theme.name}
           idLabel={appointment.idLabel}
           accentColor={theme.accent}
         />
@@ -209,7 +222,7 @@ export default function ConfirmPage() {
             className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
             style={{ backgroundColor: theme.primary }}
           >
-            Añadir a mi calendario
+            Anadir a mi calendario
           </a>
         ) : null}
 
@@ -232,7 +245,7 @@ export default function ConfirmPage() {
         </Link>
 
         <Toast
-          message="Acción realizada. La clínica ha sido notificada."
+          message="Accion realizada. La clinica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />
@@ -241,22 +254,10 @@ export default function ConfirmPage() {
             Cita confirmada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}
-        <PatientFooter supportPhone={clinic.supportPhone ?? null} />
+        <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>
     );
-  }, [
-    appointment,
-    calendarWarning,
-    clinic.supportPhone,
-    loading,
-    theme.accent,
-    theme.brandName,
-    theme.logoText,
-    theme.primary,
-    toastVisible,
-    token,
-    changed,
-  ]);
+  }, [appointment, calendarWarning, changed, clinic, loading, toastVisible, token]);
 
   return <div className="space-y-4">{content}</div>;
 }

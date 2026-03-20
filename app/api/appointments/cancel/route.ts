@@ -1,5 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
 import { deleteCalendarEvent } from "@/lib/googleCalendar";
+import { getPatientClinicContext } from "@/lib/patientContext";
 import { NextResponse } from "next/server";
 
 type CancelRequestBody = {
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       appointment: cancelled as AppointmentRow,
+      clinic: await getPatientClinicContext(cancelled as AppointmentRow),
       calendarWarning,
     });
   } catch (error) {
