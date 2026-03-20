@@ -1,4 +1,4 @@
-import { ClinicServicesPage } from "@/app/clinic/(default)/services/page";
+import { ClinicServicesPage } from "@/components/clinic/ClinicServicesPage";
 
 export default async function DynamicClinicServicesPage({
   params,

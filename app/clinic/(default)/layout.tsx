@@ -1,13 +1,13 @@
-"use client";
-
 import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
-import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
+import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 
-export default function ClinicLayout({ children }: { children: React.ReactNode }) {
+export default async function ClinicLayout({ children }: { children: React.ReactNode }) {
+  const clinicAccess = await requireCurrentClinicForRequest();
+
   return (
     <ClinicPanelLayout
-      clinicSlug={PANEL_CLINIC_SLUG}
-      basePath={`/clinic/${PANEL_CLINIC_SLUG}`}
+      clinicSlug={clinicAccess.clinicSlug}
+      basePath={`/clinic/${clinicAccess.clinicSlug}`}
     >
       {children}
     </ClinicPanelLayout>

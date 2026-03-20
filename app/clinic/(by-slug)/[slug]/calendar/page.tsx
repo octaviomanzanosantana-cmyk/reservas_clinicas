@@ -1,4 +1,4 @@
-import { ClinicCalendarPage } from "@/app/clinic/(default)/calendar/page";
+import { ClinicCalendarPage } from "@/components/clinic/ClinicCalendarPage";
 
 export default async function DynamicClinicCalendarPage({
   params,

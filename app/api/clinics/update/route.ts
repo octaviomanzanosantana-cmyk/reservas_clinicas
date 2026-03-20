@@ -1,3 +1,4 @@
+import { ClinicAccessError, assertCurrentClinicAccessForApi } from "@/lib/clinicAuth";
 import { updateClinicBySlug } from "@/lib/clinics";
 import { NextResponse } from "next/server";
 
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "slug es requerido" }, { status: 400 });
     }
 
-    const clinic = await updateClinicBySlug(slug, {
+    const access = await assertCurrentClinicAccessForApi({ clinicSlug: slug });
+    const clinic = await updateClinicBySlug(access.clinicSlug, {
       name: body.name,
       description: body.description,
       address: body.address,
@@ -46,13 +48,17 @@ export async function POST(request: Request) {
     });
 
     if (!clinic) {
-      return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
     }
 
     return NextResponse.json({ clinic });
   } catch (error) {
+    if (error instanceof ClinicAccessError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "No se pudo actualizar la clínica" },
+      { error: error instanceof Error ? error.message : "No se pudo actualizar la clinica" },
       { status: 500 },
     );
   }

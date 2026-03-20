@@ -51,6 +51,23 @@ export async function getServiceByClinicSlugAndName(
   return data ?? null;
 }
 
+export async function getServiceById(id: string): Promise<ServiceRow | null> {
+  const safeId = id.trim();
+  if (!safeId) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from("services")
+    .select("id, clinic_slug, name, duration_minutes, active")
+    .eq("id", safeId)
+    .maybeSingle<ServiceRow>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? null;
+}
+
 export async function createService(input: {
   clinic_slug: string;
   name: string;

@@ -1,4 +1,4 @@
-import { ClinicNewAppointmentPage } from "@/app/clinic/(default)/appointments/new/page";
+import { ClinicNewAppointmentPage } from "@/components/clinic/ClinicNewAppointmentPage";
 
 export default async function DynamicClinicNewAppointmentPage({
   params,

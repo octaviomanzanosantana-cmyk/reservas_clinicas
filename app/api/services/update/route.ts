@@ -1,4 +1,5 @@
-import { updateServiceById } from "@/lib/services";
+import { ClinicAccessError, requireCurrentClinicForApi } from "@/lib/clinicAuth";
+import { getServiceById, updateServiceById } from "@/lib/services";
 import { NextResponse } from "next/server";
 
 type UpdateServiceRequest = {
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as UpdateServiceRequest;
     const id = body.id?.trim();
+    const access = await requireCurrentClinicForApi();
 
     if (!id) {
       return NextResponse.json({ error: "id es requerido" }, { status: 400 });
@@ -23,7 +25,17 @@ export async function POST(request: Request) {
         Number.isNaN(body.duration_minutes) ||
         body.duration_minutes <= 0)
     ) {
-      return NextResponse.json({ error: "duration_minutes inválido" }, { status: 400 });
+      return NextResponse.json({ error: "duration_minutes invalido" }, { status: 400 });
+    }
+
+    const current = await getServiceById(id);
+
+    if (!current) {
+      return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
+    }
+
+    if (current.clinic_slug !== access.clinicSlug) {
+      throw new ClinicAccessError("No puedes modificar servicios de otra clinica", 403);
     }
 
     const service = await updateServiceById(id, {
@@ -38,6 +50,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ service });
   } catch (error) {
+    if (error instanceof ClinicAccessError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo actualizar el servicio" },
       { status: 500 },

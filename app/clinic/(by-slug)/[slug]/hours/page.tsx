@@ -1,4 +1,4 @@
-import { ClinicHoursPage } from "@/app/clinic/(default)/hours/page";
+import { ClinicHoursPage } from "@/components/clinic/ClinicHoursPage";
 
 export default async function DynamicClinicHoursPage({
   params,

@@ -1,3 +1,4 @@
+import { ClinicAccessError, assertCurrentClinicAccessForApi } from "@/lib/clinicAuth";
 import { getClinicHoursConfigByClinicSlug } from "@/lib/clinicHours";
 import { NextResponse } from "next/server";
 
@@ -10,9 +11,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "clinicSlug es requerido" }, { status: 400 });
     }
 
-    const clinicHours = await getClinicHoursConfigByClinicSlug(clinicSlug);
+    const access = await assertCurrentClinicAccessForApi({ clinicSlug });
+    const clinicHours = await getClinicHoursConfigByClinicSlug(access.clinicSlug);
     return NextResponse.json({ clinicHours });
   } catch (error) {
+    if (error instanceof ClinicAccessError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudieron cargar los horarios" },
       { status: 500 },

@@ -1,4 +1,5 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
     if (!current) {
       return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
     }
+
+    await assertCurrentClinicAccessForApi({ clinicId: current.clinic_id });
 
     const appointment = (await updateAppointmentStatus(token, body.status)) ?? current;
     let calendarWarning: string | null = null;
@@ -58,6 +61,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ appointment, calendarWarning });
   } catch (error) {
+    if (error instanceof ClinicAccessError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo actualizar la cita" },
       { status: 500 },
