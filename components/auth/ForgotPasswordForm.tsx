@@ -1,40 +1,40 @@
 "use client";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const RECOVERY_REDIRECT_URL =
+  process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
+
+export function ForgotPasswordForm() {
   const [supabase] = useState(() => createSupabaseBrowserClient());
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const nextPath = searchParams.get("next")?.trim() || null;
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${RECOVERY_REDIRECT_URL.replace(/\/+$/, "")}/reset-password`,
       });
 
-      if (error || !data.user) {
-        throw new Error(error?.message ?? "No se pudo iniciar sesion");
+      if (error) {
+        throw error;
       }
 
-      router.replace(nextPath || "/clinic");
-      router.refresh();
+      setSuccessMessage(
+        "Si el email existe, te hemos enviado un enlace para restablecer tu password.",
+      );
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo iniciar sesion");
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo enviar el email de recuperacion",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -55,33 +55,15 @@ export function LoginForm() {
         />
       </label>
 
-      <label className="block">
-        <span className="text-sm font-medium text-slate-700">Password</span>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
-          placeholder="Tu password"
-          required
-        />
-      </label>
-
       {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
-
-      <div className="text-right">
-        <Link href="/forgot-password" className="text-sm font-medium text-slate-700 underline">
-          Has olvidado tu password?
-        </Link>
-      </div>
+      {successMessage ? <p className="text-sm text-emerald-700">{successMessage}</p> : null}
 
       <button
         type="submit"
         disabled={submitting}
         className="w-full rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? "Entrando..." : "Entrar"}
+        {submitting ? "Enviando..." : "Enviar enlace de recuperacion"}
       </button>
     </form>
   );

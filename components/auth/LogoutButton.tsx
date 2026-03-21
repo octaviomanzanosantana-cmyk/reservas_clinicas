@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export function LogoutButton() {
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
+  const [supabase] = useState(() => createSupabaseBrowserClient());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
