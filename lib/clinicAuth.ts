@@ -1,6 +1,5 @@
 import "server-only";
 
-import { getCurrentUserIdFromSession } from "@/lib/authSession";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
@@ -61,10 +60,7 @@ export async function getCurrentClinicForRequest(): Promise<CurrentClinicAccess 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  // Compatibilidad temporal: mientras login/logout sigan en la capa antigua,
-  // mantenemos fallback a la cookie legacy para no romper el acceso actual.
-  const userId = user?.id?.trim() || (await getCurrentUserIdFromSession());
+  const userId = user?.id?.trim();
   if (!userId) return null;
 
   return getCurrentClinicForUser(userId);

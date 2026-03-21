@@ -1,11 +1,13 @@
 "use client";
 
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createSupabaseBrowserClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -19,21 +21,16 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
 
-      const data = (await response.json()) as { error?: string; redirectTo?: string };
-
-      if (!response.ok || !data.redirectTo) {
-        throw new Error(data.error ?? "No se pudo iniciar sesion");
+      if (error || !data.user) {
+        throw new Error(error?.message ?? "No se pudo iniciar sesion");
       }
 
-      router.replace(nextPath || data.redirectTo);
+      router.replace(nextPath || "/clinic");
       router.refresh();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo iniciar sesion");

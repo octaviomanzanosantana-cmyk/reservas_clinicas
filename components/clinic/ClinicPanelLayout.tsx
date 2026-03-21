@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -64,6 +65,9 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
             >
               Abrir página pública
             </Link>
+            <div className="mt-3">
+              <LogoutButton />
+            </div>
           </div>
         </aside>
 
