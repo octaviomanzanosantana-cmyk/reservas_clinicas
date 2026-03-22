@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server";
+
 import { upsertClinicHour } from "@/lib/clinicHours";
+import { provisionClinicUserAccess } from "@/lib/clinicUserProvisioning";
 import { createClinic } from "@/lib/clinics";
 import { createService } from "@/lib/services";
-import { NextResponse } from "next/server";
 
 type CreateClinicRequest = {
   name?: string;
@@ -12,11 +14,12 @@ type CreateClinicRequest = {
   description?: string | null;
   seed_default_services?: boolean;
   seed_default_hours?: boolean;
+  access_email?: string | null;
 };
 
 const DEFAULT_SERVICES = [
   { name: "Primera consulta", duration_minutes: 30 },
-  { name: "Revisión", duration_minutes: 20 },
+  { name: "Revision", duration_minutes: 20 },
   { name: "Seguimiento", duration_minutes: 30 },
 ];
 
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
     const phone = body.phone?.trim();
     const address = body.address?.trim();
     const themeColor = body.theme_color?.trim();
+    const accessEmail = body.access_email?.trim().toLowerCase() || "";
 
     if (!name) {
       return NextResponse.json({ error: "name es requerido" }, { status: 400 });
@@ -110,10 +114,50 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ clinic });
+    let access:
+      | { attempted: false }
+      | {
+          attempted: true;
+          success: boolean;
+          email: string;
+          user_created?: boolean;
+          clinic_link_created?: boolean;
+          recovery_email_sent?: boolean;
+          error?: string;
+        } = { attempted: false };
+
+    if (accessEmail) {
+      try {
+        const accessResult = await provisionClinicUserAccess({
+          email: accessEmail,
+          clinicId: clinic.id,
+        });
+
+        access = {
+          attempted: true,
+          success: true,
+          email: accessResult.email,
+          user_created: accessResult.userCreated,
+          clinic_link_created: accessResult.clinicLinkCreated,
+          recovery_email_sent: accessResult.recoveryEmailSent,
+        };
+      } catch (error) {
+        access = {
+          attempted: true,
+          success: false,
+          email: accessEmail,
+          error:
+            error instanceof Error
+              ? error.message
+              : "No se pudo crear el acceso principal",
+        };
+      }
+    }
+
+    return NextResponse.json({ clinic, access }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "No se pudo crear la clínica" },
+      { error: error instanceof Error ? error.message : "No se pudo crear la clinica" },
       { status: 500 },
     );
   }

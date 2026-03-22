@@ -1,35 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type CreateClinicResponse = {
   clinic?: {
     slug: string;
   };
+  access?:
+    | {
+        attempted: false;
+      }
+    | {
+        attempted: true;
+        success: boolean;
+        email: string;
+        error?: string;
+      };
   error?: string;
 };
 
 export default function AdminNewClinicPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [themeColor, setThemeColor] = useState("#2563eb");
   const [description, setDescription] = useState("");
+  const [accessEmail, setAccessEmail] = useState("");
   const [seedDefaultServices, setSeedDefaultServices] = useState(true);
   const [seedDefaultHours, setSeedDefaultHours] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [accessMessage, setAccessMessage] = useState<string | null>(null);
+  const [createdClinicSlug, setCreatedClinicSlug] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setName("");
+    setSlug("");
+    setPhone("");
+    setAddress("");
+    setThemeColor("#2563eb");
+    setDescription("");
+    setAccessEmail("");
+    setSeedDefaultServices(true);
+    setSeedDefaultHours(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setAccessMessage(null);
+    setCreatedClinicSlug(null);
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
+    setAccessMessage(null);
+    setCreatedClinicSlug(null);
 
     try {
+      const normalizedAccessEmail = accessEmail.trim().toLowerCase();
+
       const response = await fetch("/api/clinics/create", {
         method: "POST",
         headers: {
@@ -42,6 +75,7 @@ export default function AdminNewClinicPage() {
           address,
           theme_color: themeColor,
           description: description || null,
+          access_email: normalizedAccessEmail || null,
           seed_default_services: seedDefaultServices,
           seed_default_hours: seedDefaultHours,
         }),
@@ -50,12 +84,27 @@ export default function AdminNewClinicPage() {
       const data = (await response.json()) as CreateClinicResponse;
 
       if (!response.ok || !data.clinic) {
-        throw new Error(data.error ?? "No se pudo crear la clínica");
+        throw new Error(data.error ?? "No se pudo crear la clinica");
       }
 
-      router.push(`/clinic/${data.clinic.slug}`);
+      setCreatedClinicSlug(data.clinic.slug);
+      setSuccessMessage("Clinica creada correctamente.");
+
+      if (data.access?.attempted) {
+        setAccessMessage(
+          data.access.success
+            ? `Acceso principal creado para ${data.access.email}. Ya se ha enviado el email para definir password.`
+            : `Clinica creada, pero no se pudo crear el acceso para ${data.access.email}: ${data.access.error ?? "error desconocido"}`,
+        );
+      } else {
+        setAccessMessage(
+          "No se ha creado acceso principal porque no se indico un email de acceso.",
+        );
+      }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la clínica");
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo crear la clinica",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -71,11 +120,11 @@ export default function AdminNewClinicPage() {
                 Admin interno
               </p>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
-                Nueva clínica
+                Nueva clinica
               </h1>
               <p className="mt-2 text-sm text-slate-600">
-                Crea una clínica piloto y déjala preparada para panel, página pública, servicios y
-                horarios base.
+                Crea una clinica piloto y dejala preparada para panel, pagina
+                publica, servicios y horarios base.
               </p>
             </div>
 
@@ -114,7 +163,7 @@ export default function AdminNewClinicPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700">Teléfono</span>
+                <span className="text-sm font-medium text-slate-700">Telefono</span>
                 <input
                   type="text"
                   value={phone}
@@ -143,7 +192,7 @@ export default function AdminNewClinicPage() {
             </div>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Dirección</span>
+              <span className="text-sm font-medium text-slate-700">Direccion</span>
               <input
                 type="text"
                 value={address}
@@ -153,7 +202,9 @@ export default function AdminNewClinicPage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Descripción opcional</span>
+              <span className="text-sm font-medium text-slate-700">
+                Descripcion opcional
+              </span>
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -162,8 +213,27 @@ export default function AdminNewClinicPage() {
               />
             </label>
 
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">
+                Email de acceso principal
+              </span>
+              <input
+                type="email"
+                value={accessEmail}
+                onChange={(event) => setAccessEmail(event.target.value)}
+                placeholder="doctora@clinica.com"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                Opcional. Si lo rellenas, se creara el acceso principal y se
+                enviara el email para definir password.
+              </p>
+            </label>
+
             <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
-              <p className="text-sm font-medium text-slate-900">Preparación inicial</p>
+              <p className="text-sm font-medium text-slate-900">
+                Preparacion inicial
+              </p>
               <div className="mt-4 space-y-3">
                 <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <input
@@ -192,7 +262,7 @@ export default function AdminNewClinicPage() {
                 disabled={submitting}
                 className="rounded-2xl border border-slate-900 bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(15,23,42,0.8)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? "Creando..." : "Crear clínica"}
+                {submitting ? "Creando..." : "Crear clinica"}
               </button>
               <Link
                 href="/admin/clinics"
@@ -203,6 +273,28 @@ export default function AdminNewClinicPage() {
             </div>
 
             {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+            {successMessage ? (
+              <p className="text-sm text-emerald-700">{successMessage}</p>
+            ) : null}
+            {accessMessage ? <p className="text-sm text-slate-700">{accessMessage}</p> : null}
+
+            {createdClinicSlug ? (
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  href={`/clinic/${createdClinicSlug}`}
+                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800 transition-all duration-150 hover:border-emerald-300 hover:bg-emerald-100"
+                >
+                  Ir al panel de la clinica
+                </Link>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Crear otra clinica
+                </button>
+              </div>
+            ) : null}
           </form>
         </section>
       </div>
