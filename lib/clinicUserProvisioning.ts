@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createClient } from "@supabase/supabase-js";
+
 import { getClinicById } from "@/lib/clinics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -10,6 +12,23 @@ type ClinicUserRow = {
 };
 
 const DEFAULT_APP_URL = "https://app.appoclick.com";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+if (!supabaseUrl) {
+  throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_URL");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY");
+}
+
+const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
 
 export class ClinicUserProvisioningError extends Error {
   status: number;
@@ -94,7 +113,7 @@ async function createClinicMembership(clinicId: string, userId: string) {
 
 async function sendPasswordSetupEmail(email: string) {
   const redirectTo = getRecoveryRedirectTo();
-  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+  const { error } = await supabaseAuthClient.auth.resetPasswordForEmail(email, {
     redirectTo,
   });
 
