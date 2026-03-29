@@ -1,6 +1,5 @@
 import { getClinicById } from "@/lib/clinics";
 import { completeGoogleCalendarOAuth, parseGoogleOAuthState } from "@/lib/googleCalendar";
-import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -25,10 +24,7 @@ export async function GET(request: Request) {
     }
 
     await completeGoogleCalendarOAuth(code, clinicId);
-    const settingsHref =
-      clinic.slug === PANEL_CLINIC_SLUG
-        ? "/clinic/settings?google=connected"
-        : `/clinic/${clinic.slug}/settings?google=connected`;
+    const settingsHref = `/clinic/${clinic.slug}/settings?google=connected`;
     const html = `
       <!doctype html>
       <html lang="es">

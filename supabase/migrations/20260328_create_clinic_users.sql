@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create table if not exists public.clinic_users (
   id uuid primary key default gen_random_uuid(),
   clinic_id uuid not null references public.clinics(id) on delete cascade,
@@ -8,6 +10,9 @@ create table if not exists public.clinic_users (
 
 create unique index if not exists clinic_users_user_id_key
   on public.clinic_users(user_id);
+
+create unique index if not exists clinic_users_clinic_id_key
+  on public.clinic_users(clinic_id);
 
 create index if not exists clinic_users_clinic_id_idx
   on public.clinic_users(clinic_id);

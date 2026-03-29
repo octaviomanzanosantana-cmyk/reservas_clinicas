@@ -1,7 +1,6 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
-
+import { sendClinicAccessRecoveryEmail } from "@/lib/clinicAccessEmails";
 import { getClinicById } from "@/lib/clinics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -12,23 +11,6 @@ type ClinicUserRow = {
 };
 
 const DEFAULT_APP_URL = "https://app.appoclick.com";
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-if (!supabaseUrl) {
-  throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!supabaseAnonKey) {
-  throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY");
-}
-
-const supabaseAuthClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
 
 export class ClinicUserProvisioningError extends Error {
   status: number;
@@ -99,6 +81,20 @@ async function getClinicMembershipForUser(userId: string) {
   return data ?? null;
 }
 
+async function getClinicMembershipForClinic(clinicId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("clinic_users")
+    .select("clinic_id, user_id, role")
+    .eq("clinic_id", clinicId)
+    .maybeSingle<ClinicUserRow>();
+
+  if (error) {
+    throw new ClinicUserProvisioningError(error.message);
+  }
+
+  return data ?? null;
+}
+
 async function createClinicMembership(clinicId: string, userId: string) {
   const { error } = await supabaseAdmin.from("clinic_users").insert({
     clinic_id: clinicId,
@@ -111,14 +107,67 @@ async function createClinicMembership(clinicId: string, userId: string) {
   }
 }
 
-async function sendPasswordSetupEmail(email: string) {
+async function inviteClinicUser(input: {
+  email: string;
+  clinicId: string;
+  clinicSlug: string;
+}) {
   const redirectTo = getRecoveryRedirectTo();
-  const { error } = await supabaseAuthClient.auth.resetPasswordForEmail(email, {
+  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    input.email,
+    {
+      data: {
+        clinic_id: input.clinicId,
+        clinic_slug: input.clinicSlug,
+        source: "create-clinic-user-api",
+      },
+      redirectTo,
+    },
+  );
+
+  if (error || !data.user) {
+    throw new ClinicUserProvisioningError(
+      error?.message ?? "Could not invite auth user",
+    );
+  }
+
+  return {
+    user: data.user,
     redirectTo,
+  };
+}
+
+async function sendPasswordSetupEmail(email: string, clinicName: string) {
+  const redirectTo = getRecoveryRedirectTo();
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: {
+      redirectTo,
+    },
   });
 
   if (error) {
     throw new ClinicUserProvisioningError(error.message);
+  }
+
+  const actionLink = data.properties?.action_link?.trim();
+  if (!actionLink) {
+    throw new ClinicUserProvisioningError("Could not generate recovery link");
+  }
+
+  try {
+    await sendClinicAccessRecoveryEmail({
+      to: email,
+      clinicName,
+      resetLink: actionLink,
+    });
+  } catch (error) {
+    throw new ClinicUserProvisioningError(
+      error instanceof Error
+        ? error.message
+        : "Could not send recovery email",
+    );
   }
 
   return redirectTo;
@@ -146,26 +195,32 @@ export async function provisionClinicUserAccess(input: {
 
   let authUser = await findAuthUserByEmail(email);
   let userCreated = false;
+  let recoveryRedirectTo = getRecoveryRedirectTo();
+  const clinicMembership = await getClinicMembershipForClinic(clinic.id);
 
-  if (!authUser) {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: {
-        clinic_id: clinic.id,
-        clinic_slug: clinic.slug,
-        source: "create-clinic-user-api",
-      },
-    });
-
-    if (error || !data.user) {
+  if (clinicMembership) {
+    if (!authUser || clinicMembership.user_id !== authUser.id) {
       throw new ClinicUserProvisioningError(
-        error?.message ?? "Could not create auth user",
+        "Clinic already has an owner user linked",
+        409,
+        {
+          clinic_id: clinic.id,
+          linked_user_id: clinicMembership.user_id,
+        },
       );
     }
+  }
 
-    authUser = data.user;
+  if (!authUser) {
+    const inviteResult = await inviteClinicUser({
+      email,
+      clinicId: clinic.id,
+      clinicSlug: clinic.slug,
+    });
+
+    authUser = inviteResult.user;
     userCreated = true;
+    recoveryRedirectTo = inviteResult.redirectTo;
   }
 
   const membership = await getClinicMembershipForUser(authUser.id);
@@ -182,12 +237,14 @@ export async function provisionClinicUserAccess(input: {
     );
   }
 
-  if (!membership) {
+  if (!membership && !clinicMembership) {
     await createClinicMembership(clinic.id, authUser.id);
     clinicLinkCreated = true;
   }
 
-  const recoveryRedirectTo = await sendPasswordSetupEmail(email);
+  if (!userCreated) {
+    recoveryRedirectTo = await sendPasswordSetupEmail(email, clinic.name);
+  }
 
   return {
     userId: authUser.id,

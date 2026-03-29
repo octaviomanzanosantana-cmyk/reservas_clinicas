@@ -254,46 +254,55 @@ export async function getGoogleCalendarBusyRangesForDate(
   clinicSlug?: string | null,
   calendarId?: string | null,
 ): Promise<BusyRange[]> {
-  const clinic = await getClinicGoogleConfig(clinicSlug);
-  if (!clinic.google_connected || !clinic.google_refresh_token) {
+  try {
+    const clinic = await getClinicGoogleConfig(clinicSlug);
+    if (!clinic.google_connected || !clinic.google_refresh_token) {
+      return [];
+    }
+
+    const { client } = await getAuthorizedOAuthClient(clinic.slug);
+    const calendar = google.calendar({ version: "v3", auth: client });
+    const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const { data } = await calendar.events.list({
+      calendarId: resolvedCalendarId,
+      timeMin: startOfDay.toISOString(),
+      timeMax: endOfDay.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+
+    return (data.items ?? [])
+      .filter((event) => event.status !== "cancelled")
+      .filter((event) => event.transparency !== "transparent")
+      .map((event) => {
+        const start = parseGoogleEventDate(event.start?.dateTime ?? event.start?.date);
+        const end = parseGoogleEventDate(event.end?.dateTime ?? event.end?.date);
+
+        if (!start || !end) return null;
+
+        const clampedStart = new Date(Math.max(start.getTime(), startOfDay.getTime()));
+        const clampedEnd = new Date(Math.min(end.getTime(), endOfDay.getTime()));
+
+        if (clampedEnd <= clampedStart) return null;
+
+        return { start: clampedStart, end: clampedEnd };
+      })
+      .filter((item): item is BusyRange => Boolean(item));
+  } catch (error) {
+    console.warn("[google.calendar] Falling back to internal availability only", {
+      clinicSlug: clinicSlug?.trim() || null,
+      date: date.toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
-
-  const { client } = await getAuthorizedOAuthClient(clinic.slug);
-  const calendar = google.calendar({ version: "v3", auth: client });
-  const resolvedCalendarId = calendarId || clinic.google_calendar_id || "primary";
-
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const { data } = await calendar.events.list({
-    calendarId: resolvedCalendarId,
-    timeMin: startOfDay.toISOString(),
-    timeMax: endOfDay.toISOString(),
-    singleEvents: true,
-    orderBy: "startTime",
-  });
-
-  return (data.items ?? [])
-    .filter((event) => event.status !== "cancelled")
-    .filter((event) => event.transparency !== "transparent")
-    .map((event) => {
-      const start = parseGoogleEventDate(event.start?.dateTime ?? event.start?.date);
-      const end = parseGoogleEventDate(event.end?.dateTime ?? event.end?.date);
-
-      if (!start || !end) return null;
-
-      const clampedStart = new Date(Math.max(start.getTime(), startOfDay.getTime()));
-      const clampedEnd = new Date(Math.min(end.getTime(), endOfDay.getTime()));
-
-      if (clampedEnd <= clampedStart) return null;
-
-      return { start: clampedStart, end: clampedEnd };
-    })
-    .filter((item): item is BusyRange => Boolean(item));
 }
 
 export async function createCalendarEvent(

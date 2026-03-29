@@ -84,11 +84,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No se pudo actualizar la cita" }, { status: 500 });
     }
 
+    let calendarWarning: string | null = null;
+
     if (updated.google_event_id) {
-      await updateCalendarEvent(updated, updated.google_event_id, updated.calendar_id, clinicSlug);
+      try {
+        await updateCalendarEvent(updated, updated.google_event_id, updated.calendar_id, clinicSlug);
+      } catch (error) {
+        calendarWarning =
+          error instanceof Error
+            ? error.message
+            : "No se pudo sincronizar Google Calendar";
+      }
     }
 
-    return NextResponse.json({ ok: true, appointment: updated });
+    return NextResponse.json({ ok: true, appointment: updated, calendarWarning });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo reprogramar la cita" },
