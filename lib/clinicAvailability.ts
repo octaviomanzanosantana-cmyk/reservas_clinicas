@@ -28,6 +28,20 @@ type ClinicAvailabilityParams = {
   excludeToken?: string;
 };
 
+type ClinicAvailableDatesParams = {
+  clinicSlug: string;
+  startDate: Date;
+  service?: string | null;
+  excludeToken?: string;
+  limit?: number;
+  searchDays?: number;
+};
+
+export type AvailableDateOption = {
+  value: string;
+  label: string;
+};
+
 function startOfLocalDay(date: Date): Date {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -38,6 +52,23 @@ function endOfNextLocalDay(date: Date): Date {
   const result = startOfLocalDay(date);
   result.setDate(result.getDate() + 1);
   return result;
+}
+
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatAvailableDateLabel(date: Date): string {
+  const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(date);
+  const monthDay = new Intl.DateTimeFormat("es-ES", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} · ${monthDay}`;
 }
 
 export async function getClinicSlugForAppointmentToken(token: string): Promise<string | null> {
@@ -122,4 +153,39 @@ export async function getAvailableSlotsForClinicDate({
       value: slot.toISOString(),
       label: formatTimeLabel(slot),
     }));
+}
+
+export async function getAvailableDatesForClinic({
+  clinicSlug,
+  startDate,
+  service,
+  excludeToken,
+  limit = 14,
+  searchDays = 45,
+}: ClinicAvailableDatesParams): Promise<AvailableDateOption[]> {
+  const results: AvailableDateOption[] = [];
+  const safeStartDate = startOfLocalDay(startDate);
+
+  for (let offset = 0; offset < searchDays && results.length < limit; offset += 1) {
+    const currentDate = new Date(safeStartDate);
+    currentDate.setDate(safeStartDate.getDate() + offset);
+
+    const slots = await getAvailableSlotsForClinicDate({
+      clinicSlug,
+      date: currentDate,
+      service,
+      excludeToken,
+    });
+
+    if (slots.length === 0) {
+      continue;
+    }
+
+    results.push({
+      value: toDateInputValue(currentDate),
+      label: formatAvailableDateLabel(currentDate),
+    });
+  }
+
+  return results;
 }

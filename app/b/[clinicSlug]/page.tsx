@@ -1,6 +1,7 @@
 "use client";
 
 import type { CreateAppointmentInput } from "@/lib/appointments";
+import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,6 +43,52 @@ function buildDateTimeLabel(dateInput: string, timeInput: string): string {
   return `${weekdayTitle} · ${timeInput}`;
 }
 
+function buildGoogleCalendarUrl(appointment: Appointment): string | null {
+  if (!appointment.scheduledAt) return null;
+
+  const start = new Date(appointment.scheduledAt);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const durationMatch = appointment.durationLabel.match(/\d+/);
+  const durationMinutes = durationMatch ? Number(durationMatch[0]) : 30;
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const formatGoogleDate = (date: Date) =>
+    date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: appointment.service,
+    dates: `${formatGoogleDate(start)}/${formatGoogleDate(end)}`,
+    details: `Cita: ${appointment.service}\nClinica: ${appointment.clinicName}`,
+    location: appointment.address,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; timeLabel: string } {
+  if (appointment.scheduledAt) {
+    const scheduledAt = new Date(appointment.scheduledAt);
+
+    if (!Number.isNaN(scheduledAt.getTime())) {
+      return {
+        dateLabel: new Intl.DateTimeFormat("es-ES", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(scheduledAt),
+        timeLabel: new Intl.DateTimeFormat("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(scheduledAt),
+      };
+    }
+  }
+
+  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("Â·").map((value) => value.trim());
+  return { dateLabel, timeLabel };
+}
+
 export default function PublicBookingPage() {
   const params = useParams();
   const clinicSlug = params.clinicSlug as string;
@@ -66,13 +113,10 @@ export default function PublicBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
-  const [createdAppointment, setCreatedAppointment] = useState<{
-    token: string;
-    clinicName: string;
-    service: string;
-    datetimeLabel: string;
-  } | null>(null);
+  const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null);
   const [logoVisible, setLogoVisible] = useState(true);
+  const createdCalendarLink = createdAppointment ? buildGoogleCalendarUrl(createdAppointment) : null;
+  const createdDateTime = createdAppointment ? getDateAndTimeLabels(createdAppointment) : null;
   const whatsappLink =
     createdLink && createdAppointment
       ? `https://wa.me/?text=${encodeURIComponent(
@@ -289,6 +333,13 @@ export default function PublicBookingPage() {
         clinicName: result.appointment.clinic_name,
         service: result.appointment.service,
         datetimeLabel: result.appointment.datetime_label,
+        scheduledAt: selectedSlot.value,
+        patientName: patientName.trim(),
+        address: clinicDetails.address ?? "",
+        durationLabel: `${selectedService.duration_minutes} min`,
+        status: "confirmed",
+        lastUpdateLabel: "",
+        idLabel: result.appointment.token,
       });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la cita");
@@ -523,14 +574,6 @@ export default function PublicBookingPage() {
                       <div className="mt-3 grid gap-3 md:grid-cols-3">
                         <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Clinica
-                          </p>
-                          <p className="mt-2 text-sm font-medium text-emerald-950">
-                            {createdAppointment.clinicName}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
                             Servicio
                           </p>
                           <p className="mt-2 text-sm font-medium text-emerald-950">
@@ -539,10 +582,18 @@ export default function PublicBookingPage() {
                         </div>
                         <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Fecha y hora
+                            Fecha
                           </p>
                           <p className="mt-2 text-sm font-medium text-emerald-950">
-                            {createdAppointment.datetimeLabel}
+                            {createdDateTime?.dateLabel ?? createdAppointment.datetimeLabel}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                            Hora
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-emerald-950">
+                            {createdDateTime?.timeLabel ?? ""}
                           </p>
                         </div>
                       </div>
@@ -555,16 +606,42 @@ export default function PublicBookingPage() {
                       >
                         {createdLink}
                       </Link>
-                      {whatsappLink ? (
-                        <a
-                          href={whatsappLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatedLink(null);
+                            setCreatedAppointment(null);
+                            setPatientName("");
+                            setPatientEmail("");
+                            setSelectedSlot(null);
+                            setErrorMessage(null);
+                          }}
+                          className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
                         >
-                          Enviar a WhatsApp
-                        </a>
-                      ) : null}
+                          Reservar otra cita
+                        </button>
+                        {createdCalendarLink ? (
+                          <a
+                            href={createdCalendarLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+                          >
+                            Anadir a calendario
+                          </a>
+                        ) : null}
+                        {whatsappLink ? (
+                          <a
+                            href={whatsappLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+                          >
+                            Enviar por WhatsApp
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
                 </form>

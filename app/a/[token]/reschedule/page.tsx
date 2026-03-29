@@ -15,6 +15,11 @@ type AvailabilitySlot = {
   label: string;
 };
 
+type AvailabilityDateOption = {
+  value: string;
+  label: string;
+};
+
 type PatientAppointmentRow = {
   id: number;
   token: string;
@@ -34,10 +39,6 @@ function toDateInputValue(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function getTodayInputValue(): string {
-  return toDateInputValue(new Date());
 }
 
 function toViewAppointment(row: PatientAppointmentRow): Appointment {
@@ -64,10 +65,11 @@ export default function ReschedulePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [availableDates, setAvailableDates] = useState<AvailabilityDateOption[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
+  const [datesLoading, setDatesLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const minDate = getTodayInputValue();
 
   useEffect(() => {
     let active = true;
@@ -105,6 +107,65 @@ export default function ReschedulePage() {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDates = async () => {
+      if (!clinic?.slug || !appointment?.service || !selectedDate) {
+        setAvailableDates([]);
+        setDatesLoading(false);
+        return;
+      }
+
+      setDatesLoading(true);
+      try {
+        const searchParams = new URLSearchParams({
+          date: selectedDate,
+          clinicSlug: clinic.slug,
+          service: appointment.service,
+          excludeToken: token,
+          mode: "dates",
+          limit: "14",
+        });
+
+        const response = await fetch(`/api/availability?${searchParams.toString()}`);
+        const data = (await response.json()) as {
+          dates?: AvailabilityDateOption[];
+          error?: string;
+        };
+
+        if (!active) return;
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudieron cargar las fechas disponibles");
+        }
+
+        const nextDates = data.dates ?? [];
+        setAvailableDates(nextDates);
+        setSelectedDate((current) => {
+          if (nextDates.some((item) => item.value === current)) {
+            return current;
+          }
+
+          return nextDates[0]?.value ?? current;
+        });
+      } catch {
+        if (!active) return;
+        setAvailableDates([]);
+      } finally {
+        if (active) {
+          setDatesLoading(false);
+        }
+      }
+    };
+
+    void loadDates();
+
+    return () => {
+      active = false;
+    };
+  }, [appointment?.service, clinic?.slug, selectedDate, token]);
 
   useEffect(() => {
     let active = true;
@@ -226,17 +287,31 @@ export default function ReschedulePage() {
 
         <div className="mt-4 space-y-2">
           <div className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
-            <label className="block text-sm font-semibold text-gray-900" htmlFor="selected-date">
-              Elige un dia
-            </label>
-            <input
-              id="selected-date"
-              type="date"
-              value={selectedDate}
-              min={minDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-            />
+            <p className="text-sm font-semibold text-gray-900">Elige un dia</p>
+            {datesLoading ? (
+              <p className="mt-2 text-sm text-gray-600">Cargando fechas disponibles...</p>
+            ) : availableDates.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {availableDates.map((dateOption) => (
+                  <button
+                    key={dateOption.value}
+                    type="button"
+                    onClick={() => setSelectedDate(dateOption.value)}
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                      selectedDate === dateOption.value
+                        ? "border-slate-950 bg-slate-950 text-white"
+                        : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    {dateOption.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-600">
+                No hay dias disponibles para reprogramar esta cita.
+              </p>
+            )}
           </div>
 
           {slotsLoading ? (

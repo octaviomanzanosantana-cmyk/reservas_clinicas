@@ -1,10 +1,6 @@
 "use client";
 
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
-import {
-  isGoogleCalendarConnected,
-  type GoogleCalendarStatus,
-} from "@/lib/googleCalendarStatus";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -91,6 +87,15 @@ function getAppointmentTimestamp(appointment: AppointmentRow): number {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function isFutureAppointment(appointment: AppointmentRow): boolean {
+  if (!appointment.scheduled_at) return false;
+
+  const scheduledAt = new Date(appointment.scheduled_at);
+  if (Number.isNaN(scheduledAt.getTime())) return false;
+
+  return scheduledAt.getTime() > Date.now();
+}
+
 function getAppointmentStatusLabel(status: string): string {
   return APPOINTMENT_STATUS_LABELS[status] ?? status;
 }
@@ -103,11 +108,10 @@ export function ClinicDashboardPage({
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [clinicHours, setClinicHours] = useState<ClinicHourRow[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
-  const [googleConnected, setGoogleConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
   const [updatingAppointmentToken, setUpdatingAppointmentToken] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -124,18 +128,15 @@ export function ClinicDashboardPage({
           throw new Error(clinicData.error ?? "No se pudo cargar la clínica");
         }
 
-        const [servicesResponse, hoursResponse, googleResponse, appointmentsResponse] =
-          await Promise.all([
-            fetch(`/api/services?clinicSlug=${clinicSlug}`),
-            fetch(`/api/clinic-hours?clinicSlug=${clinicSlug}`),
-            fetch(`/api/google/status?clinicSlug=${encodeURIComponent(clinicSlug)}`),
-            fetch(`/api/appointments/by-clinic?clinicSlug=${encodeURIComponent(clinicSlug)}`),
-          ]);
+        const [servicesResponse, hoursResponse, appointmentsResponse] = await Promise.all([
+          fetch(`/api/services?clinicSlug=${clinicSlug}`),
+          fetch(`/api/clinic-hours?clinicSlug=${clinicSlug}`),
+          fetch(`/api/appointments/by-clinic?clinicSlug=${encodeURIComponent(clinicSlug)}`),
+        ]);
 
-        const [servicesData, hoursData, googleData, appointmentsData] = await Promise.all([
+        const [servicesData, hoursData, appointmentsData] = await Promise.all([
           servicesResponse.json(),
           hoursResponse.json(),
-          googleResponse.json(),
           appointmentsResponse.json(),
         ]);
 
@@ -149,7 +150,6 @@ export function ClinicDashboardPage({
             ? ((appointmentsData.appointments ?? []) as AppointmentRow[])
             : [],
         );
-        setGoogleConnected(isGoogleCalendarConnected(googleData as GoogleCalendarStatus));
       } catch (error) {
         if (!active) return;
         setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar el dashboard");
@@ -183,7 +183,9 @@ export function ClinicDashboardPage({
     () =>
       appointments.filter(
         (appointment) =>
-          appointment.status !== "completed" && appointment.status !== "cancelled",
+          appointment.status !== "completed" &&
+          appointment.status !== "cancelled" &&
+          isFutureAppointment(appointment),
       ),
     [appointments],
   );
@@ -192,39 +194,16 @@ export function ClinicDashboardPage({
       appointments
         .filter(
           (appointment) =>
-            appointment.status === "completed" || appointment.status === "cancelled",
+            (appointment.status === "completed" || appointment.status === "cancelled") &&
+            !isFutureAppointment(appointment),
         )
-        .sort((left, right) => getAppointmentTimestamp(right) - getAppointmentTimestamp(left)),
+        .sort((left, right) => getAppointmentTimestamp(right) - getAppointmentTimestamp(left))
+        .slice(0, 10),
     [appointments],
   );
 
-  const handleDisconnectGoogle = async () => {
-    setDisconnectingGoogle(true);
-    setErrorMessage(null);
-
-    try {
-      const response = await fetch("/api/google/disconnect", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ clinicSlug }),
-      });
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo desconectar Google Calendar");
-      }
-
-      setGoogleConnected(false);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo desconectar Google Calendar",
-      );
-    } finally {
-      setDisconnectingGoogle(false);
-    }
-  };
+  const publicBookingUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/b/${clinicSlug}` : `/b/${clinicSlug}`;
 
   const handleAppointmentStatusUpdate = async (
     token: string,
@@ -274,6 +253,15 @@ export function ClinicDashboardPage({
     }
   };
 
+  const handleCopyBookingLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicBookingUrl);
+      setCopyFeedback("Enlace copiado");
+    } catch {
+      setCopyFeedback("No se pudo copiar el enlace");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-[28px] border border-white/70 bg-white/90 p-7 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
@@ -317,7 +305,7 @@ export function ClinicDashboardPage({
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
           <p className="text-sm text-slate-500">Servicios activos</p>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
@@ -335,29 +323,6 @@ export function ClinicDashboardPage({
           <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
             {todayAppointments}
           </p>
-        </article>
-        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
-          <p className="text-sm text-slate-500">Google Calendar</p>
-          {googleConnected ? (
-            <>
-              <p className="mt-3 text-lg font-semibold text-slate-900">Conectado ✓</p>
-              <button
-                type="button"
-                onClick={() => void handleDisconnectGoogle()}
-                disabled={disconnectingGoogle}
-                className="mt-4 inline-flex rounded-xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {disconnectingGoogle ? "Desconectando..." : "Desconectar"}
-              </button>
-            </>
-          ) : (
-            <a
-              href={`/api/google/connect?clinicSlug=${encodeURIComponent(clinicSlug)}`}
-              className="mt-4 inline-flex rounded-xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-black"
-            >
-              Conectar Google Calendar
-            </a>
-          )}
         </article>
       </section>
 
@@ -396,8 +361,16 @@ export function ClinicDashboardPage({
             >
               Horarios
             </Link>
+            <button
+              type="button"
+              onClick={() => void handleCopyBookingLink()}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+            >
+              Copiar enlace de reservas
+            </button>
           </div>
         </div>
+        {copyFeedback ? <p className="mt-4 text-sm text-slate-600">{copyFeedback}</p> : null}
       </section>
 
       <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
@@ -406,7 +379,7 @@ export function ClinicDashboardPage({
             <h2 className="text-xl font-semibold tracking-tight text-slate-900">
               Próximas citas
             </h2>
-            <p className="mt-1 text-sm text-slate-500">{upcomingAppointments.length} cargadas</p>
+            <p className="mt-1 text-sm text-slate-500">Solo citas futuras.</p>
           </div>
         </div>
 
@@ -519,7 +492,7 @@ export function ClinicDashboardPage({
             <h2 className="text-xl font-semibold tracking-tight text-slate-900">
               Historial reciente
             </h2>
-            <p className="mt-1 text-sm text-slate-500">{recentHistoryAppointments.length} cargadas</p>
+            <p className="mt-1 text-sm text-slate-500">Ultimos 10 registros cerrados.</p>
           </div>
         </div>
 

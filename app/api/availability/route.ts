@@ -3,6 +3,7 @@ import {
   getBusyRangesFromAppointments,
 } from "@/lib/availability";
 import {
+  getAvailableDatesForClinic,
   getAvailableSlotsForClinicDate,
   getClinicSlugForAppointmentToken,
 } from "@/lib/clinicAvailability";
@@ -45,6 +46,8 @@ export async function GET(request: Request) {
     const excludeToken = searchParams.get("excludeToken") ?? undefined;
     const clinicSlugParam = searchParams.get("clinicSlug")?.trim();
     const service = searchParams.get("service")?.trim();
+    const mode = searchParams.get("mode")?.trim();
+    const limitParam = searchParams.get("limit")?.trim();
 
     if (!dateParam) {
       return NextResponse.json({ error: "date es requerido" }, { status: 400 });
@@ -62,6 +65,22 @@ export async function GET(request: Request) {
       const clinic = await getClinicBySlug(resolvedClinicSlug);
       if (!clinic?.id) {
         return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
+      }
+
+      if (mode === "dates") {
+        const parsedLimit = Number.parseInt(limitParam ?? "", 10);
+        const dates = await getAvailableDatesForClinic({
+          clinicSlug: resolvedClinicSlug,
+          startDate: date,
+          service,
+          excludeToken,
+          limit:
+            Number.isNaN(parsedLimit) || parsedLimit <= 0
+              ? undefined
+              : Math.min(parsedLimit, 31),
+        });
+
+        return NextResponse.json({ dates });
       }
 
       const slots = await getAvailableSlotsForClinicDate({

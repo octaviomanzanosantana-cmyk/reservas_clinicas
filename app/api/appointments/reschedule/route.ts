@@ -1,4 +1,5 @@
 import { getAppointmentByToken, updateAppointment } from "@/lib/appointments";
+import { sendAppointmentRescheduledEmail } from "@/lib/appointmentEmails";
 import { getAvailableSlotsForClinicDate } from "@/lib/clinicAvailability";
 import { getClinicById } from "@/lib/clinics";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
@@ -95,6 +96,15 @@ export async function POST(request: Request) {
             ? error.message
             : "No se pudo sincronizar Google Calendar";
       }
+    }
+
+    try {
+      await sendAppointmentRescheduledEmail(updated);
+    } catch (error) {
+      console.error("[appointments.reschedule] Failed to send appointment rescheduled email", {
+        appointmentToken: updated.token,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     return NextResponse.json({ ok: true, appointment: updated, calendarWarning });
