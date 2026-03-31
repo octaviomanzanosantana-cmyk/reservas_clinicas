@@ -181,22 +181,21 @@ export function ClinicDashboardPage({
   );
   const upcomingAppointments = useMemo(
     () =>
-      appointments.filter(
-        (appointment) =>
-          appointment.status !== "completed" &&
-          appointment.status !== "cancelled" &&
-          isFutureAppointment(appointment),
-      ),
+      appointments
+        .filter(
+          (appointment) =>
+            appointment.status !== "completed" &&
+            appointment.status !== "cancelled" &&
+            isFutureAppointment(appointment),
+        )
+        .sort((left, right) => getAppointmentTimestamp(left) - getAppointmentTimestamp(right))
+        .slice(0, 5),
     [appointments],
   );
   const recentHistoryAppointments = useMemo(
     () =>
       appointments
-        .filter(
-          (appointment) =>
-            (appointment.status === "completed" || appointment.status === "cancelled") &&
-            !isFutureAppointment(appointment),
-        )
+        .filter((appointment) => !isFutureAppointment(appointment))
         .sort((left, right) => getAppointmentTimestamp(right) - getAppointmentTimestamp(left))
         .slice(0, 10),
     [appointments],
@@ -416,7 +415,7 @@ export function ClinicDashboardPage({
                   </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {appointment.status}
+                      {getAppointmentStatusLabel(appointment.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -537,9 +536,5 @@ export function ClinicDashboardPage({
     </div>
   );
 }
-
-
-
-
 
 
