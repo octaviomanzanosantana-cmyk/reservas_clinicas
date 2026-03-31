@@ -1,4 +1,25 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+
+// Cargar .env.local manualmente (Node.js no lo hace por defecto)
+try {
+  const envPath = resolve(import.meta.dirname ?? ".", "..", ".env.local");
+  const envContent = readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim();
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+} catch {
+  // No .env.local — depende de variables de entorno del sistema
+}
 
 function parseArgs(argv) {
   const args = {};
