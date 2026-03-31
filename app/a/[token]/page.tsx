@@ -6,6 +6,7 @@ import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import type { PatientClinicData } from "@/lib/patientClient";
 import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
+import { toViewAppointment } from "@/lib/appointmentView";
 import type { Appointment } from "@/lib/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -25,36 +26,6 @@ const STATUS_TITLE: Record<Appointment["status"], string> = {
   change_requested: "Cambio solicitado",
   completed: "Cita completada",
 };
-
-type PatientAppointmentRow = {
-  id: number;
-  token: string;
-  clinic_name: string;
-  service: string;
-  scheduled_at: string | null;
-  datetime_label: string;
-  patient_name: string;
-  address: string;
-  duration_label: string;
-  status: Appointment["status"];
-  updated_at: string;
-};
-
-function toViewAppointment(row: PatientAppointmentRow): Appointment {
-  return {
-    token: row.token,
-    clinicName: row.clinic_name,
-    service: row.service,
-    datetimeLabel: row.datetime_label,
-    scheduledAt: row.scheduled_at,
-    patientName: row.patient_name,
-    address: row.address,
-    durationLabel: row.duration_label,
-    status: row.status,
-    lastUpdateLabel: row.updated_at,
-    idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
-  };
-}
 
 function getBranding(clinic: PatientClinicData | null, appointment: Appointment | null) {
   return {
@@ -85,7 +56,7 @@ export default function AppointmentHomePage() {
         const details = await fetchPatientAppointmentDetails(token);
         if (!active) return;
 
-        setAppointment(toViewAppointment(details.appointment as PatientAppointmentRow));
+        setAppointment(toViewAppointment(details.appointment));
         setClinic(details.clinic);
       } catch {
         if (!active) return;

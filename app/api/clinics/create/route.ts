@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { upsertClinicHour } from "@/lib/clinicHours";
 import { provisionClinicUserAccess } from "@/lib/clinicUserProvisioning";
@@ -31,6 +31,8 @@ const DEFAULT_HOURS = [
   { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
 ];
 
+const ADMIN_API_SECRET = process.env.ADMIN_API_SECRET?.trim();
+
 function normalizeSlug(value: string): string {
   return value
     .trim()
@@ -39,7 +41,19 @@ function normalizeSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!ADMIN_API_SECRET) {
+    return NextResponse.json(
+      { error: "Missing ADMIN_API_SECRET configuration" },
+      { status: 500 },
+    );
+  }
+
+  const providedSecret = request.headers.get("x-admin-secret")?.trim();
+  if (!providedSecret || providedSecret !== ADMIN_API_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as CreateClinicRequest;
     const name = body.name?.trim();

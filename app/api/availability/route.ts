@@ -8,7 +8,7 @@ import {
   getClinicSlugForAppointmentToken,
 } from "@/lib/clinicAvailability";
 import { getClinicBySlug } from "@/lib/clinics";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
 type AvailabilityAppointmentRow = {
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
     endOfNextDay.setDate(endOfNextDay.getDate() + 1);
     endOfNextDay.setHours(0, 0, 0, 0);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("appointments")
       .select("scheduled_at, duration_label, token, status")
       .gte("scheduled_at", startOfDay.toISOString())

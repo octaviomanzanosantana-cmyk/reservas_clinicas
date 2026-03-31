@@ -4,29 +4,12 @@ import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
-import type { AppointmentRow } from "@/lib/appointments";
+import { toViewAppointmentOrNull, type AppointmentRowLike } from "@/lib/appointmentView";
 import type { PatientClinicData } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-function toViewAppointment(row: AppointmentRow | null): Appointment | null {
-  if (!row) return null;
-
-  return {
-    token: row.token,
-    clinicName: row.clinic_name,
-    service: row.service,
-    datetimeLabel: row.datetime_label,
-    patientName: row.patient_name,
-    address: row.address,
-    durationLabel: row.duration_label,
-    status: row.status,
-    lastUpdateLabel: row.updated_at,
-    idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
-  };
-}
 
 export default function CancelPage() {
   const params = useParams();
@@ -58,13 +41,13 @@ export default function CancelPage() {
         }
 
         const data = (await response.json()) as {
-          appointment?: AppointmentRow;
+          appointment?: AppointmentRowLike;
           clinic?: PatientClinicData;
           calendarWarning?: string | null;
         };
 
         if (active) {
-          setAppointment(toViewAppointment(data.appointment ?? null));
+          setAppointment(toViewAppointmentOrNull(data.appointment ?? null));
           setClinic(data.clinic ?? null);
           setCalendarWarning(data.calendarWarning ?? null);
         }

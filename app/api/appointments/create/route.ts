@@ -72,6 +72,13 @@ export async function POST(request: Request) {
     if (clinicSlug && !clinicRow?.id) {
       return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
     }
+
+    if (clinicRow && !clinicRow.booking_enabled) {
+      return NextResponse.json(
+        { error: "Esta clínica no acepta reservas online en este momento" },
+        { status: 400 },
+      );
+    }
     let appointmentsQuery = supabaseAdmin
       .from("appointments")
       .select("scheduled_at, duration_label, token, status")
@@ -99,6 +106,14 @@ export async function POST(request: Request) {
       clinicSlug && payload.service
         ? await getServiceByClinicSlugAndName(clinicSlug, payload.service)
         : null;
+
+    if (clinicSlug && payload.service && !serviceRow) {
+      return NextResponse.json(
+        { error: "El servicio seleccionado no está disponible" },
+        { status: 400 },
+      );
+    }
+
     const durationMinutes = serviceRow?.duration_minutes ?? parseDurationMinutes(payload.duration_label);
     const requestedStart = scheduledAt;
     const requestedEnd = new Date(requestedStart.getTime() + durationMinutes * 60_000);

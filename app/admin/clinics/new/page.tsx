@@ -3,22 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-type CreateClinicResponse = {
-  clinic?: {
-    slug: string;
-  };
-  access?:
-    | {
-        attempted: false;
-      }
-    | {
-        attempted: true;
-        success: boolean;
-        email: string;
-        error?: string;
-      };
-  error?: string;
-};
+import { createClinicAction } from "./actions";
 
 export default function AdminNewClinicPage() {
   const [name, setName] = useState("");
@@ -61,40 +46,30 @@ export default function AdminNewClinicPage() {
     setCreatedClinicSlug(null);
 
     try {
-      const normalizedAccessEmail = accessEmail.trim().toLowerCase();
-
-      const response = await fetch("/api/clinics/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          slug,
-          phone,
-          address,
-          theme_color: themeColor,
-          description: description || null,
-          access_email: normalizedAccessEmail || null,
-          seed_default_services: seedDefaultServices,
-          seed_default_hours: seedDefaultHours,
-        }),
+      const result = await createClinicAction({
+        name,
+        slug,
+        phone,
+        address,
+        theme_color: themeColor,
+        description: description || "",
+        access_email: accessEmail.trim().toLowerCase(),
+        seed_default_services: seedDefaultServices,
+        seed_default_hours: seedDefaultHours,
       });
 
-      const data = (await response.json()) as CreateClinicResponse;
-
-      if (!response.ok || !data.clinic) {
-        throw new Error(data.error ?? "No se pudo crear la clinica");
+      if (!result.ok) {
+        throw new Error(result.error);
       }
 
-      setCreatedClinicSlug(data.clinic.slug);
+      setCreatedClinicSlug(result.clinicSlug);
       setSuccessMessage("Clinica creada correctamente.");
 
-      if (data.access?.attempted) {
+      if (result.access.attempted) {
         setAccessMessage(
-          data.access.success
-            ? `Acceso principal creado para ${data.access.email}. Ya se ha enviado el email para definir password.`
-            : `Clinica creada, pero no se pudo crear el acceso para ${data.access.email}: ${data.access.error ?? "error desconocido"}`,
+          result.access.success
+            ? `Acceso principal creado para ${result.access.email}. Ya se ha enviado el email para definir password.`
+            : `Clinica creada, pero no se pudo crear el acceso para ${result.access.email}: ${result.access.error ?? "error desconocido"}`,
         );
       } else {
         setAccessMessage(

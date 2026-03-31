@@ -2,6 +2,7 @@ import { getAppointmentByToken, updateAppointment } from "@/lib/appointments";
 import { sendAppointmentRescheduledEmail } from "@/lib/appointmentEmails";
 import { getAvailableSlotsForClinicDate } from "@/lib/clinicAvailability";
 import { getClinicById } from "@/lib/clinics";
+import { buildDateTimeLabel } from "@/lib/dateFormat";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
@@ -10,17 +11,6 @@ type RescheduleRequestBody = {
   scheduled_at?: string;
   datetime_label?: string;
 };
-
-function buildDateTimeLabel(date: Date): string {
-  const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(date);
-  const weekdayTitle = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`;
-  const timeLabel = new Intl.DateTimeFormat("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-
-  return `${weekdayTitle} · ${timeLabel}`;
-}
 
 export async function POST(request: Request) {
   try {

@@ -3,12 +3,14 @@
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
+import { toViewAppointment } from "@/lib/appointmentView";
+import { toDateInputValue } from "@/lib/dateFormat";
 import type { PatientClinicData } from "@/lib/patientClient";
 import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type AvailabilitySlot = {
   value: string;
@@ -19,42 +21,6 @@ type AvailabilityDateOption = {
   value: string;
   label: string;
 };
-
-type PatientAppointmentRow = {
-  id: number;
-  token: string;
-  clinic_name: string;
-  scheduled_at: string | null;
-  service: string;
-  datetime_label: string;
-  patient_name: string;
-  address: string;
-  duration_label: string;
-  status: Appointment["status"];
-  updated_at: string;
-};
-
-function toDateInputValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function toViewAppointment(row: PatientAppointmentRow): Appointment {
-  return {
-    token: row.token,
-    clinicName: row.clinic_name,
-    service: row.service,
-    datetimeLabel: row.datetime_label,
-    patientName: row.patient_name,
-    address: row.address,
-    durationLabel: row.duration_label,
-    status: row.status,
-    lastUpdateLabel: row.updated_at,
-    idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,
-  };
-}
 
 export default function ReschedulePage() {
   const params = useParams();
@@ -71,6 +37,10 @@ export default function ReschedulePage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Fecha base para buscar disponibilidad — se fija una vez al cargar la cita
+  // y no cambia al seleccionar fechas, evitando re-fetchs innecesarios.
+  const baseDateRef = useRef<string>("");
+
   useEffect(() => {
     let active = true;
 
@@ -80,14 +50,16 @@ export default function ReschedulePage() {
         const details = await fetchPatientAppointmentDetails(token);
         if (!active) return;
 
-        setAppointment(toViewAppointment(details.appointment as PatientAppointmentRow));
+        setAppointment(toViewAppointment(details.appointment));
         setClinic(details.clinic);
 
         const baseDate = details.appointment.scheduled_at
           ? new Date(details.appointment.scheduled_at)
           : new Date();
         const safeBaseDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
-        setSelectedDate(toDateInputValue(safeBaseDate));
+        const dateValue = toDateInputValue(safeBaseDate);
+        baseDateRef.current = dateValue;
+        setSelectedDate(dateValue);
       } catch {
         if (active) {
           setAppointment(null);
@@ -108,11 +80,18 @@ export default function ReschedulePage() {
     };
   }, [token]);
 
+  // Cargar fechas disponibles UNA SOLA VEZ cuando la cita y clínica están listas.
+  // Usa baseDateRef (la fecha de la cita original) como punto de partida,
+  // NO selectedDate — así el usuario puede navegar por fechas sin re-fetch.
   useEffect(() => {
     let active = true;
 
     const loadDates = async () => {
-      if (!clinic?.slug || !appointment?.service || !selectedDate) {
+      const clinicSlug = clinic?.slug;
+      const service = appointment?.service;
+      const baseDate = baseDateRef.current;
+
+      if (!clinicSlug || !service || !baseDate) {
         setAvailableDates([]);
         setDatesLoading(false);
         return;
@@ -121,9 +100,9 @@ export default function ReschedulePage() {
       setDatesLoading(true);
       try {
         const searchParams = new URLSearchParams({
-          date: selectedDate,
-          clinicSlug: clinic.slug,
-          service: appointment.service,
+          date: baseDate,
+          clinicSlug,
+          service,
           excludeToken: token,
           mode: "dates",
           limit: "14",
@@ -143,11 +122,12 @@ export default function ReschedulePage() {
 
         const nextDates = data.dates ?? [];
         setAvailableDates(nextDates);
+
+        // Auto-seleccionar la primera fecha disponible si la actual no está en la lista
         setSelectedDate((current) => {
           if (nextDates.some((item) => item.value === current)) {
             return current;
           }
-
           return nextDates[0]?.value ?? current;
         });
       } catch {
@@ -165,13 +145,17 @@ export default function ReschedulePage() {
     return () => {
       active = false;
     };
-  }, [appointment?.service, clinic?.slug, selectedDate, token]);
+  }, [appointment?.service, clinic?.slug, token]);
 
+  // Cargar slots disponibles para la fecha seleccionada.
+  // SIEMPRE pasa clinicSlug para que la API use clinic_hours.
   useEffect(() => {
     let active = true;
 
     const loadSlots = async () => {
-      if (!selectedDate) {
+      const clinicSlug = clinic?.slug;
+
+      if (!selectedDate || !clinicSlug) {
         setSlots([]);
         setSlotsLoading(false);
         return;
@@ -181,12 +165,10 @@ export default function ReschedulePage() {
       try {
         const searchParams = new URLSearchParams({
           date: selectedDate,
+          clinicSlug,
           excludeToken: token,
         });
 
-        if (clinic?.slug) {
-          searchParams.set("clinicSlug", clinic.slug);
-        }
         if (appointment?.service) {
           searchParams.set("service", appointment.service);
         }

@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase";
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { AppointmentStatus } from "@/lib/types";
 
 export type AppointmentRow = {
@@ -57,7 +59,7 @@ function normalizeToken(token: string): string {
 export async function getAppointmentByToken(token: string): Promise<AppointmentRow | null> {
   const safeToken = normalizeToken(token);
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("appointments")
     .select("*")
     .eq("token", safeToken)
@@ -77,7 +79,7 @@ export async function listAppointmentsByClinic(
   const safeClinicName = clinicName.trim();
   if (!safeClinicName) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("appointments")
     .select("*")
     .eq("clinic_name", safeClinicName)
@@ -112,7 +114,7 @@ export async function createAppointment(data: CreateAppointmentInput): Promise<A
     calendar_id: typeof data.calendar_id === "string" ? data.calendar_id.trim() || null : null,
   };
 
-  const { data: created, error } = await supabase
+  const { data: created, error } = await supabaseAdmin
     .from("appointments")
     .insert(payload)
     .select("*")
@@ -138,7 +140,7 @@ export async function updateAppointment(
 ): Promise<AppointmentRow | null> {
   const safeToken = normalizeToken(token);
 
-  const { data: updated, error } = await supabase
+  const { data: updated, error } = await supabaseAdmin
     .from("appointments")
     .update({
       ...data,

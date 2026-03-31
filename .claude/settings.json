@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"id.*integer\\\\|id.*bigint\\\\|id.*number\\\\|id.*number\\\\|id.*serial\" /c/Users/oms_g/reservas_clinicas/supabase/migrations/*.sql)",
+      "WebFetch(domain:api.luminpdf.com)",
+      "WebFetch(domain:lumin-integration-production.s3.us-east-1.amazonaws.com)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { CreateAppointmentInput } from "@/lib/appointments";
+import { buildDateTimeLabelFromInputs, getTodayInputValue } from "@/lib/dateFormat";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -20,27 +21,7 @@ type AvailabilitySlot = {
 };
 
 function generateToken(): string {
-  const random = Math.random().toString(36).slice(2, 8);
-  return `cita-${Date.now().toString(36)}-${random}`.toLowerCase();
-}
-
-function getTodayInputValue(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function buildDateTimeLabel(dateInput: string, timeInput: string): string {
-  const date = new Date(`${dateInput}T${timeInput}:00`);
-  if (Number.isNaN(date.getTime())) {
-    return `${dateInput} · ${timeInput}`;
-  }
-
-  const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(date);
-  const weekdayTitle = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`;
-  return `${weekdayTitle} · ${timeInput}`;
+  return crypto.randomUUID();
 }
 
 function buildGoogleCalendarUrl(appointment: Appointment): string | null {
@@ -283,7 +264,7 @@ export default function PublicBookingPage() {
       }
 
       const token = generateToken();
-      const datetimeLabel = buildDateTimeLabel(selectedDate, selectedSlot.label);
+      const datetimeLabel = buildDateTimeLabelFromInputs(selectedDate, selectedSlot.label);
       const payload: CreateAppointmentInput = {
         token,
         clinic_id: null,
