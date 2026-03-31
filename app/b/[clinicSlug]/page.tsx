@@ -96,63 +96,60 @@ function BookingConfirmation({
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
   return (
-    <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
-      <div
-        className="px-6 py-8 md:px-8 md:py-10"
-        style={{ background: `linear-gradient(135deg, ${themeColor}08, ${themeColor}03)` }}
-      >
+    <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
+      <div className="px-6 py-8 md:px-8 md:py-10">
         <div className="mx-auto max-w-2xl space-y-8">
           <div className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50">
-              <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-primary/20 bg-primary-soft">
+              <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
-            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-foreground">
               Reserva confirmada
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-muted">
               Tu cita ha sido registrada correctamente.
             </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-[14px] border border-border bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                 Servicio
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
+              <p className="mt-2 text-sm font-semibold text-foreground">
                 {appointment.service}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-[14px] border border-border bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                 Fecha
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
+              <p className="mt-2 text-sm font-semibold text-foreground">
                 {labels.dateLabel}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="rounded-[14px] border border-border bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                 Hora
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
+              <p className="mt-2 text-sm font-semibold text-foreground">
                 {labels.timeLabel}
               </p>
             </div>
           </div>
 
           {calendarInput ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <p className="text-sm font-semibold text-slate-900">Anadir al calendario</p>
+            <div className="rounded-[14px] border border-border bg-white p-5">
+              <p className="text-sm font-semibold text-foreground">Anadir al calendario</p>
               <div className="mt-3 flex flex-wrap gap-2.5">
                 {googleUrl ? (
                   <a
                     href={googleUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                    className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
                   >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 22h-15A2.5 2.5 0 012 19.5v-15A2.5 2.5 0 014.5 2H8v2H4.5a.5.5 0 00-.5.5v15a.5.5 0 00.5.5h15a.5.5 0 00.5-.5V16h2v3.5a2.5 2.5 0 01-2.5 2.5zM17 2h5v5h-2V4.41l-7.3 7.3-1.41-1.42L18.59 3H17V2zM8 11h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
                     Google Calendar
@@ -161,7 +158,7 @@ function BookingConfirmation({
                 <button
                   type="button"
                   onClick={() => downloadIcsFile(calendarInput, "cita.ics")}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   Apple Calendar
@@ -169,7 +166,7 @@ function BookingConfirmation({
                 <button
                   type="button"
                   onClick={() => downloadIcsFile(calendarInput, `cita-${appointment.clinicName.toLowerCase().replace(/\s+/g, "-")}.ics`)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   Descargar .ics
@@ -183,21 +180,21 @@ function BookingConfirmation({
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95"
+              className="inline-flex items-center gap-2 rounded-[10px] bg-[#25D366] px-5 py-2.5 font-heading text-sm font-semibold text-white transition-all duration-150 hover:brightness-95"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Enviar por WhatsApp
             </a>
             <Link
               href={manageLink}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-primary bg-transparent px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
             >
               Gestionar mi cita
             </Link>
             <button
               type="button"
               onClick={onBookAnother}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-primary bg-transparent px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
             >
               Reservar otra cita
             </button>
@@ -455,15 +452,15 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f7_100%)] px-4 py-8 md:px-6 md:py-12">
+    <div className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12">
       <div className="mx-auto max-w-6xl space-y-8">
         {loadingClinic ? (
-          <section className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-10 text-center shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
-            <p className="text-sm text-slate-600">Cargando clinica...</p>
+          <section className="rounded-[14px] border border-border bg-card px-6 py-10 text-center shadow-sm">
+            <p className="text-sm text-muted">Cargando clinica...</p>
           </section>
         ) : clinicDetails ? (
           <>
-            <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+            <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
               <div className="px-6 py-8 md:px-8 md:py-9">
                 <div className="max-w-3xl space-y-6">
                   <div className="space-y-4">
@@ -477,13 +474,13 @@ export default function PublicBookingPage() {
                     ) : null}
 
                     <div className="space-y-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
                         Reserva online
                       </p>
-                      <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 md:text-[2.75rem]">
+                      <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground md:text-[2.75rem]">
                         {clinicDetails.clinicName}
                       </h1>
-                      <p className="max-w-2xl text-base leading-7 text-slate-600">
+                      <p className="max-w-2xl text-base leading-7 text-muted">
                         {clinicDetails.description ||
                           "Reserva tu proxima cita en una experiencia clara, rapida y disenada para una atencion clinica moderna."}
                       </p>
@@ -497,12 +494,12 @@ export default function PublicBookingPage() {
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicDetails.address)}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                          className="rounded-[14px] border border-border bg-white p-4 transition-all duration-150 hover:border-primary/30 hover:bg-primary-soft/30"
                         >
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                             Direccion
                           </p>
-                          <p className="mt-3 text-sm leading-6 text-slate-700">
+                          <p className="mt-3 text-sm leading-6 text-foreground">
                             {clinicDetails.address}
                           </p>
                         </a>
@@ -511,12 +508,12 @@ export default function PublicBookingPage() {
                       {clinicDetails.phone ? (
                         <a
                           href={`tel:${clinicDetails.phone}`}
-                          className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                          className="rounded-[14px] border border-border bg-white p-4 transition-all duration-150 hover:border-primary/30 hover:bg-primary-soft/30"
                         >
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                             Telefono
                           </p>
-                          <p className="mt-3 text-sm leading-6 text-slate-700">
+                          <p className="mt-3 text-sm leading-6 text-foreground">
                             {clinicDetails.phone}
                           </p>
                         </a>
@@ -543,15 +540,15 @@ export default function PublicBookingPage() {
                 }}
               />
             ) : (
-            <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
-              <div className="border-b border-slate-200/80 bg-slate-50/70 px-6 py-5 md:px-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+            <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
+              <div className="border-b border-border/80 bg-background px-6 py-5 md:px-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
                   Reserva tu cita
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                   Completa tu reserva
                 </h2>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-sm text-muted">
                   Elige servicio, fecha, hora y confirma tu cita.
                 </p>
               </div>
@@ -559,8 +556,8 @@ export default function PublicBookingPage() {
               <div className="px-6 py-6 md:px-8 md:py-8">
                 <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
                   <div className="grid gap-4 md:grid-cols-2">
-                    <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    <label className="block rounded-[14px] border border-border bg-white p-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                         1. Servicio
                       </span>
                       <select
@@ -571,7 +568,7 @@ export default function PublicBookingPage() {
                           setSelectedService(nextService);
                           setSelectedSlot(null);
                         }}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
                         disabled={loadingServices || services.length === 0}
                       >
                         {services.map((service) => (
@@ -582,8 +579,8 @@ export default function PublicBookingPage() {
                       </select>
                     </label>
 
-                    <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    <label className="block rounded-[14px] border border-border bg-white p-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                         2. Fecha
                       </span>
                       <input
@@ -594,21 +591,21 @@ export default function PublicBookingPage() {
                           setSelectedDate(event.target.value);
                           setSelectedSlot(null);
                         }}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
                       />
                     </label>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 shadow-sm md:p-6">
+                  <div className="rounded-[14px] border border-border bg-white p-5 md:p-6">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                           3. Hora disponible
                         </p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">Horas disponibles</p>
+                        <p className="mt-2 text-lg font-semibold text-foreground">Horas disponibles</p>
                       </div>
                       {loadingSlots ? (
-                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
+                        <span className="rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-muted">
                           Cargando
                         </span>
                       ) : null}
@@ -616,37 +613,32 @@ export default function PublicBookingPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2.5">
                       {loadingSlots ? (
-                        <p className="text-sm text-slate-600">Cargando disponibilidad...</p>
+                        <p className="text-sm text-muted">Cargando disponibilidad...</p>
                       ) : slots.length > 0 ? (
                         slots.map((slot) => (
                           <button
                             key={slot.value}
                             type="button"
                             onClick={() => setSelectedSlot(slot)}
-                            className={`rounded-2xl border px-4 py-3 text-sm font-medium shadow-sm transition-all duration-150 ${
+                            className={`rounded-[10px] border px-4 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
                               selectedSlot?.value === slot.value
-                                ? "border-transparent text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.6)]"
-                                : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                                ? "border-primary bg-primary text-white"
+                                : "border-border bg-white text-foreground hover:border-primary hover:bg-primary-soft"
                             }`}
-                            style={
-                              selectedSlot?.value === slot.value && clinicDetails.theme_color
-                                ? { backgroundColor: clinicDetails.theme_color }
-                                : undefined
-                            }
                           >
                             {slot.label}
                           </button>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-muted">
                           No hay horarios disponibles para este dia.
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <label className="block rounded-[14px] border border-border bg-white p-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                       4. Nombre y apellidos
                     </span>
                     <input
@@ -654,12 +646,12 @@ export default function PublicBookingPage() {
                       value={patientName}
                       onChange={(event) => setPatientName(event.target.value)}
                       placeholder="Ej: Marta Garcia"
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                      className="mt-2 w-full rounded-2xl border border-border bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
                     />
                   </label>
 
-                  <label className="block rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <label className="block rounded-[14px] border border-border bg-white p-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                       5. Email
                     </span>
                     <input
@@ -667,19 +659,15 @@ export default function PublicBookingPage() {
                       value={patientEmail}
                       onChange={(event) => setPatientEmail(event.target.value)}
                       placeholder="Ej: marta@email.com"
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                      className="mt-2 w-full rounded-2xl border border-border bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
                     />
                   </label>
 
-                  <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      6. Confirmar reserva
-                    </p>
+                  <div className="pt-2">
                     <button
                       type="submit"
                       disabled={submitting || !selectedService || !selectedSlot || !clinicDetails}
-                      className="mt-3 w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-                      style={{ backgroundColor: clinicDetails.theme_color ?? "#0f172a" }}
+                      className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                     >
                       {submitting ? "Reservando..." : "Confirmar reserva"}
                     </button>
@@ -694,13 +682,13 @@ export default function PublicBookingPage() {
         ) : (
           <section className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-10 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
                 Reserva online
               </p>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
                 Clinica no disponible
               </h1>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
+              <p className="mt-3 text-sm leading-7 text-muted">
                 {errorMessage ?? "No se pudo cargar la clinica o este enlace ya no esta disponible."}
               </p>
             </div>

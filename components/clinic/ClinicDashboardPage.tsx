@@ -100,6 +100,21 @@ function getAppointmentStatusLabel(status: string): string {
   return APPOINTMENT_STATUS_LABELS[status] ?? status;
 }
 
+function getStatusBadgeClasses(status: string): string {
+  switch (status) {
+    case "confirmed":
+    case "completed":
+      return "bg-[var(--badge-confirmed-bg)] text-[var(--badge-confirmed-text)]";
+    case "pending":
+    case "change_requested":
+      return "bg-[var(--badge-pending-bg)] text-[var(--badge-pending-text)]";
+    case "cancelled":
+      return "bg-[var(--badge-cancelled-bg)] text-[var(--badge-cancelled-text)]";
+    default:
+      return "bg-[var(--badge-cancelled-bg)] text-[var(--badge-cancelled-text)]";
+  }
+}
+
 export function ClinicDashboardPage({
   clinicSlug = PANEL_CLINIC_SLUG,
   basePath = "/clinic",
@@ -263,9 +278,9 @@ export function ClinicDashboardPage({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[28px] border border-white/70 bg-white/90 p-7 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7">
         {loading ? (
-          <p className="text-sm text-slate-600">Cargando clínica...</p>
+          <p className="text-sm text-muted">Cargando clínica...</p>
         ) : clinic ? (
           <div className="max-w-3xl space-y-4">
             <div className="space-y-4">
@@ -273,26 +288,26 @@ export function ClinicDashboardPage({
                 <img src={clinic.logo_url} alt={clinic.name} className="h-14 object-contain" />
               ) : null}
               <div className="space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
                   Vista general
                 </p>
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                   {clinic.name}
                 </h1>
                 {clinic.description ? (
-                  <p className="max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
+                  <p className="max-w-2xl text-sm leading-7 text-muted md:text-[15px]">
                     {clinic.description}
                   </p>
                 ) : null}
               </div>
-              <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+              <div className="grid gap-3 text-sm text-muted sm:grid-cols-2">
                 {clinic.address ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="rounded-[14px] border border-border bg-background px-4 py-3">
                     {clinic.address}
                   </div>
                 ) : null}
                 {clinic.phone ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="rounded-[14px] border border-border bg-background px-4 py-3">
                     {clinic.phone}
                   </div>
                 ) : null}
@@ -305,89 +320,89 @@ export function ClinicDashboardPage({
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
-          <p className="text-sm text-slate-500">Servicios activos</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+        <article className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+          <p className="text-sm text-muted">Servicios activos</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
             {activeServices}
           </p>
         </article>
-        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
-          <p className="text-sm text-slate-500">Días activos</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+        <article className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+          <p className="text-sm text-muted">Días activos</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
             {activeDays}
           </p>
         </article>
-        <article className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.4)]">
-          <p className="text-sm text-slate-500">Citas de hoy</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+        <article className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+          <p className="text-sm text-muted">Citas de hoy</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
             {todayAppointments}
           </p>
         </article>
       </section>
 
-      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Accesos rápidos
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted">
               Atajos para las tareas más frecuentes del día.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
               href={`${basePath}/appointments/new`}
-              className="rounded-2xl border border-slate-900 bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(15,23,42,0.8)] transition-all duration-150 hover:bg-black"
+              className="rounded-[10px] bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover"
             >
               Nueva cita
             </Link>
             <Link
               href={`${basePath}/settings`}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
             >
               Configuración
             </Link>
             <Link
               href={`${basePath}/services`}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
             >
               Servicios
             </Link>
             <Link
               href={`${basePath}/hours`}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
             >
               Horarios
             </Link>
             <button
               type="button"
               onClick={() => void handleCopyBookingLink()}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100"
+              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
             >
               Copiar enlace de reservas
             </button>
           </div>
         </div>
-        {copyFeedback ? <p className="mt-4 text-sm text-slate-600">{copyFeedback}</p> : null}
+        {copyFeedback ? <p className="mt-4 text-sm text-muted">{copyFeedback}</p> : null}
       </section>
 
-      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Próximas citas
             </h2>
-            <p className="mt-1 text-sm text-slate-500">Solo citas futuras.</p>
+            <p className="mt-1 text-sm text-muted">Solo citas futuras.</p>
           </div>
         </div>
 
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
 
-        <div className="mt-5 overflow-x-auto rounded-[24px] border border-slate-200 bg-slate-50/70">
+        <div className="mt-5 overflow-x-auto rounded-[14px] border border-border bg-white">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead>
-              <tr className="text-left text-slate-500">
+              <tr className="text-left text-muted">
                 <th className="px-4 py-3 font-medium">Paciente</th>
                 <th className="px-4 py-3 font-medium">Servicio</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
@@ -399,12 +414,12 @@ export function ClinicDashboardPage({
               {upcomingAppointments.map((appointment) => (
                 <tr
                   key={appointment.id}
-                  className="text-slate-700 transition-colors hover:bg-slate-50"
+                  className="text-foreground transition-colors hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">
                     <Link
                       href={`/a/${appointment.token}`}
-                      className="font-medium text-sky-700 hover:underline"
+                      className="font-medium text-primary hover:underline"
                     >
                       {appointment.patient_name}
                     </Link>
@@ -414,7 +429,7 @@ export function ClinicDashboardPage({
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClasses(appointment.status)}`}>
                       {getAppointmentStatusLabel(appointment.status)}
                     </span>
                   </td>
@@ -427,7 +442,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "confirmed")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Confirmar
                         </button>
@@ -437,7 +452,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "cancelled")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
                         </button>
@@ -451,7 +466,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "completed")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] bg-foreground px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Asistió
                         </button>
@@ -461,17 +476,17 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "cancelled")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
                         </button>
                       </div>
                     ) : null}
                     {appointment.status === "completed" ? (
-                      <span className="text-xs font-medium text-slate-500">Asistió</span>
+                      <span className="text-xs font-medium text-muted">Asistió</span>
                     ) : null}
                     {appointment.status === "cancelled" ? (
-                      <span className="text-xs font-medium text-slate-500">Cancelada</span>
+                      <span className="text-xs font-medium text-muted">Cancelada</span>
                     ) : null}
                   </td>
                 </tr>
@@ -480,25 +495,25 @@ export function ClinicDashboardPage({
           </table>
 
           {!loading && upcomingAppointments.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-slate-600">No hay citas próximas.</p>
+            <p className="px-4 py-6 text-sm text-muted">No hay citas próximas.</p>
           ) : null}
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.38)]">
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Historial reciente
             </h2>
-            <p className="mt-1 text-sm text-slate-500">Ultimos 10 registros cerrados.</p>
+            <p className="mt-1 text-sm text-muted">Ultimos 10 registros cerrados.</p>
           </div>
         </div>
 
-        <div className="mt-5 overflow-x-auto rounded-[24px] border border-slate-200 bg-slate-50/70">
+        <div className="mt-5 overflow-x-auto rounded-[14px] border border-border bg-white">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead>
-              <tr className="text-left text-slate-500">
+              <tr className="text-left text-muted">
                 <th className="px-4 py-3 font-medium">Paciente</th>
                 <th className="px-4 py-3 font-medium">Servicio</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
@@ -509,7 +524,7 @@ export function ClinicDashboardPage({
               {recentHistoryAppointments.map((appointment) => (
                 <tr
                   key={appointment.id}
-                  className="text-slate-700 transition-colors hover:bg-slate-50"
+                  className="text-foreground transition-colors hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">{appointment.patient_name}</td>
                   <td className="px-4 py-3">{appointment.service}</td>
@@ -517,7 +532,7 @@ export function ClinicDashboardPage({
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClasses(appointment.status)}`}>
                       {getAppointmentStatusLabel(appointment.status)}
                     </span>
                   </td>
@@ -527,7 +542,7 @@ export function ClinicDashboardPage({
           </table>
 
           {!loading && recentHistoryAppointments.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-slate-600">
+            <p className="px-4 py-6 text-sm text-muted">
               No hay citas recientes en el historial.
             </p>
           ) : null}
