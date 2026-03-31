@@ -111,3 +111,10 @@ export async function sendAppointmentRescheduledEmail(appointment: AppointmentRo
     intro: "Tu cita ha sido modificada. Este es tu nuevo horario.",
   });
 }
+
+export async function sendAppointmentReminderEmail(appointment: AppointmentRow): Promise<void> {
+  await sendAppointmentEmail(appointment, {
+    subject: `Recordatorio: tu cita en ${appointment.clinic_name} es pronto`,
+    intro: "Te recordamos que tienes una cita programada. Aqui tienes los detalles.",
+  });
+}
