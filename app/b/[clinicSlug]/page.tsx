@@ -1,6 +1,11 @@
 "use client";
 
 import type { CreateAppointmentInput } from "@/lib/appointments";
+import {
+  buildGoogleCalendarUrl,
+  downloadIcsFile,
+  parseDurationFromLabel,
+} from "@/lib/calendarExport";
 import { buildDateTimeLabelFromInputs, getTodayInputValue } from "@/lib/dateFormat";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
@@ -24,29 +29,6 @@ function generateToken(): string {
   return crypto.randomUUID();
 }
 
-function buildGoogleCalendarUrl(appointment: Appointment): string | null {
-  if (!appointment.scheduledAt) return null;
-
-  const start = new Date(appointment.scheduledAt);
-  if (Number.isNaN(start.getTime())) return null;
-
-  const durationMatch = appointment.durationLabel.match(/\d+/);
-  const durationMinutes = durationMatch ? Number(durationMatch[0]) : 30;
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-  const formatGoogleDate = (date: Date) =>
-    date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: appointment.service,
-    dates: `${formatGoogleDate(start)}/${formatGoogleDate(end)}`,
-    details: `Cita: ${appointment.service}\nClinica: ${appointment.clinicName}`,
-    location: appointment.address,
-  });
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
 function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; timeLabel: string } {
   if (appointment.scheduledAt) {
     const scheduledAt = new Date(appointment.scheduledAt);
@@ -54,6 +36,7 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
     if (!Number.isNaN(scheduledAt.getTime())) {
       return {
         dateLabel: new Intl.DateTimeFormat("es-ES", {
+          weekday: "long",
           day: "numeric",
           month: "long",
           year: "numeric",
@@ -66,8 +49,163 @@ function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; ti
     }
   }
 
-  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("Â·").map((value) => value.trim());
+  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
   return { dateLabel, timeLabel };
+}
+
+function BookingConfirmation({
+  appointment,
+  manageLink,
+  clinicAddress,
+  themeColor,
+  onBookAnother,
+}: {
+  appointment: Appointment;
+  manageLink: string;
+  clinicAddress: string;
+  themeColor: string;
+  onBookAnother: () => void;
+}) {
+  const labels = getDateAndTimeLabels(appointment);
+  const durationMinutes = parseDurationFromLabel(appointment.durationLabel);
+
+  const calendarInput = appointment.scheduledAt
+    ? {
+        title: `${appointment.service} — ${appointment.clinicName}`,
+        description: [
+          `Cita: ${appointment.service}`,
+          `Clinica: ${appointment.clinicName}`,
+          `Paciente: ${appointment.patientName}`,
+          `Gestiona tu cita: ${manageLink}`,
+        ].join("\n"),
+        location: clinicAddress,
+        startDate: new Date(appointment.scheduledAt),
+        durationMinutes,
+      }
+    : null;
+
+  const googleUrl = calendarInput ? buildGoogleCalendarUrl(calendarInput) : null;
+
+  const whatsappText = [
+    `Cita confirmada en ${appointment.clinicName}`,
+    `Servicio: ${appointment.service}`,
+    `Fecha: ${labels.dateLabel}`,
+    `Hora: ${labels.timeLabel}`,
+    `Gestiona tu cita: ${manageLink}`,
+  ].join("\n");
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+
+  return (
+    <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
+      <div
+        className="px-6 py-8 md:px-8 md:py-10"
+        style={{ background: `linear-gradient(135deg, ${themeColor}08, ${themeColor}03)` }}
+      >
+        <div className="mx-auto max-w-2xl space-y-8">
+          <div className="text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50">
+              <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+              Reserva confirmada
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Tu cita ha sido registrada correctamente.
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Servicio
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {appointment.service}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Fecha
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {labels.dateLabel}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Hora
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {labels.timeLabel}
+              </p>
+            </div>
+          </div>
+
+          {calendarInput ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-900">Anadir al calendario</p>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                {googleUrl ? (
+                  <a
+                    href={googleUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 22h-15A2.5 2.5 0 012 19.5v-15A2.5 2.5 0 014.5 2H8v2H4.5a.5.5 0 00-.5.5v15a.5.5 0 00.5.5h15a.5.5 0 00.5-.5V16h2v3.5a2.5 2.5 0 01-2.5 2.5zM17 2h5v5h-2V4.41l-7.3 7.3-1.41-1.42L18.59 3H17V2zM8 11h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+                    Google Calendar
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => downloadIcsFile(calendarInput, "cita.ics")}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  Apple Calendar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadIcsFile(calendarInput, `cita-${appointment.clinicName.toLowerCase().replace(/\s+/g, "-")}.ics`)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Descargar .ics
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap justify-center gap-3">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:brightness-95"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Enviar por WhatsApp
+            </a>
+            <Link
+              href={manageLink}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+            >
+              Gestionar mi cita
+            </Link>
+            <button
+              type="button"
+              onClick={onBookAnother}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+            >
+              Reservar otra cita
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function PublicBookingPage() {
@@ -96,19 +234,6 @@ export default function PublicBookingPage() {
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null);
   const [logoVisible, setLogoVisible] = useState(true);
-  const createdCalendarLink = createdAppointment ? buildGoogleCalendarUrl(createdAppointment) : null;
-  const createdDateTime = createdAppointment ? getDateAndTimeLabels(createdAppointment) : null;
-  const whatsappLink =
-    createdLink && createdAppointment
-      ? `https://wa.me/?text=${encodeURIComponent(
-          [
-            `Cita confirmada en ${createdAppointment.clinicName}.`,
-            `Servicio: ${createdAppointment.service}`,
-            `Fecha: ${createdAppointment.datetimeLabel}`,
-            `Gestiona tu cita aqui: ${createdLink}`,
-          ].join("\n"),
-        )}`
-      : null;
 
   useEffect(() => {
     let active = true;
@@ -402,6 +527,22 @@ export default function PublicBookingPage() {
               </div>
             </section>
 
+            {createdLink && createdAppointment ? (
+              <BookingConfirmation
+                appointment={createdAppointment}
+                manageLink={createdLink}
+                clinicAddress={clinicDetails.address ?? ""}
+                themeColor={clinicDetails.theme_color ?? "#0f172a"}
+                onBookAnother={() => {
+                  setCreatedLink(null);
+                  setCreatedAppointment(null);
+                  setPatientName("");
+                  setPatientEmail("");
+                  setSelectedSlot(null);
+                  setErrorMessage(null);
+                }}
+              />
+            ) : (
             <section className="overflow-hidden rounded-[32px] border border-white/70 bg-white/92 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
               <div className="border-b border-slate-200/80 bg-slate-50/70 px-6 py-5 md:px-8">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
@@ -545,89 +686,10 @@ export default function PublicBookingPage() {
                   </div>
 
                   {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
-
-                  {createdLink && createdAppointment ? (
-                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                        Reserva completada
-                      </p>
-                      <p className="mt-2 text-base font-semibold text-emerald-900">Cita confirmada</p>
-                      <div className="mt-3 grid gap-3 md:grid-cols-3">
-                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Servicio
-                          </p>
-                          <p className="mt-2 text-sm font-medium text-emerald-950">
-                            {createdAppointment.service}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Fecha
-                          </p>
-                          <p className="mt-2 text-sm font-medium text-emerald-950">
-                            {createdDateTime?.dateLabel ?? createdAppointment.datetimeLabel}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                            Hora
-                          </p>
-                          <p className="mt-2 text-sm font-medium text-emerald-950">
-                            {createdDateTime?.timeLabel ?? ""}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="mt-4 text-sm text-emerald-700">
-                        Desde este enlace podras gestionar tu cita y consultar sus datos cuando lo necesites.
-                      </p>
-                      <Link
-                        href={createdLink}
-                        className="mt-3 block break-all text-sm font-medium text-emerald-900 underline"
-                      >
-                        {createdLink}
-                      </Link>
-                      <div className="mt-4 flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCreatedLink(null);
-                            setCreatedAppointment(null);
-                            setPatientName("");
-                            setPatientEmail("");
-                            setSelectedSlot(null);
-                            setErrorMessage(null);
-                          }}
-                          className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
-                        >
-                          Reservar otra cita
-                        </button>
-                        {createdCalendarLink ? (
-                          <a
-                            href={createdCalendarLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
-                          >
-                            Anadir a calendario
-                          </a>
-                        ) : null}
-                        {whatsappLink ? (
-                          <a
-                            href={whatsappLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
-                          >
-                            Enviar por WhatsApp
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
                 </form>
               </div>
             </section>
+            )}
           </>
         ) : (
           <section className="rounded-[32px] border border-white/70 bg-white/92 px-6 py-10 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.45)]">
