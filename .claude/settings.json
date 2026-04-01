@@ -7,7 +7,22 @@
       "WebFetch(domain:lumin-integration-production.s3.us-east-1.amazonaws.com)",
       "Bash(npx tsc:*)",
       "Bash(git config:*)",
-      "Bash(node scripts/create-clinic.mjs --help)"
+      "Bash(node scripts/create-clinic.mjs --help)",
+      "Bash(npm run:*)",
+      "Bash(npx vercel:*)",
+      "Bash(rm -rf .next .vercel/output)",
+      "Bash(npx next:*)",
+      "Bash(npm ls:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://reservas-clinicas-4uef2ig16.vercel.app/)",
+      "Bash(curl -sk \"https://reservas-clinicas-4uef2ig16.vercel.app/\")",
+      "Bash(curl -s https://app.appoclick.com/)",
+      "Bash(curl -v https://app.appoclick.com/)",
+      "Bash(curl -sk https://app.appoclick.com/)",
+      "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/\")",
+      "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/login\")",
+      "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/b/miriamlorenzo\")",
+      "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/admin/clinics\")",
+      "Bash(curl -sk -w \"\\\\nHTTP %{http_code}\" \"https://app.appoclick.com/clinic\")"
     ]
   }
 }

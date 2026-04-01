@@ -375,6 +375,19 @@ export function ClinicDashboardPage({
             >
               Horarios
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Próximas citas
+            </h2>
+            <p className="mt-1 text-sm text-muted">Solo citas futuras.</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => void handleCopyBookingLink()}
@@ -382,18 +395,7 @@ export function ClinicDashboardPage({
             >
               Copiar enlace de reservas
             </button>
-          </div>
-        </div>
-        {copyFeedback ? <p className="mt-4 text-sm text-muted">{copyFeedback}</p> : null}
-      </section>
-
-      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
-              Próximas citas
-            </h2>
-            <p className="mt-1 text-sm text-muted">Solo citas futuras.</p>
+            {copyFeedback ? <span className="text-sm text-primary">{copyFeedback}</span> : null}
           </div>
         </div>
 
@@ -405,6 +407,7 @@ export function ClinicDashboardPage({
               <tr className="text-left text-muted">
                 <th className="px-4 py-3 font-medium">Paciente</th>
                 <th className="px-4 py-3 font-medium">Servicio</th>
+                <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium">Acciones</th>
@@ -425,6 +428,16 @@ export function ClinicDashboardPage({
                     </Link>
                   </td>
                   <td className="px-4 py-3">{appointment.service}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
+                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revision" : "Primera visita"}
+                      </span>
+                      <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted">
+                        {(appointment as AppointmentRow & { modality?: string }).modality === "online" ? "Online" : "Presencial"}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>
@@ -452,7 +465,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "cancelled")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-[10px] border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
                         </button>
@@ -466,7 +479,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "completed")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-[10px] bg-foreground px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Asistió
                         </button>
@@ -476,7 +489,7 @@ export function ClinicDashboardPage({
                             void handleAppointmentStatusUpdate(appointment.token, "cancelled")
                           }
                           disabled={updatingAppointmentToken === appointment.token}
-                          className="rounded-[10px] border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
                         </button>
@@ -516,6 +529,7 @@ export function ClinicDashboardPage({
               <tr className="text-left text-muted">
                 <th className="px-4 py-3 font-medium">Paciente</th>
                 <th className="px-4 py-3 font-medium">Servicio</th>
+                <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
               </tr>
@@ -528,6 +542,16 @@ export function ClinicDashboardPage({
                 >
                   <td className="px-4 py-3">{appointment.patient_name}</td>
                   <td className="px-4 py-3">{appointment.service}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
+                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revision" : "Primera visita"}
+                      </span>
+                      <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted">
+                        {(appointment as AppointmentRow & { modality?: string }).modality === "online" ? "Online" : "Presencial"}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     {formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}
                   </td>

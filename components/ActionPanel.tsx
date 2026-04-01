@@ -1,48 +1,32 @@
 "use client";
 
-import { darkenHex } from "@/lib/color";
-import type { CSSProperties } from "react";
-import { useMemo } from "react";
-
 type ActionPanelProps = {
-  primaryColor: string;
-  accentColor: string;
+  primaryColor?: string;
+  accentColor?: string;
   showConfirm?: boolean;
   onConfirm: () => void;
   onReschedule: () => void;
 };
 
 export default function ActionPanel({
-  primaryColor,
-  accentColor,
   showConfirm = true,
   onConfirm,
   onReschedule,
 }: ActionPanelProps) {
-  const themeVars = useMemo(
-    () =>
-      ({
-        "--theme-color": primaryColor,
-        "--theme-color-dark": darkenHex(primaryColor),
-        "--accent-color": accentColor,
-      }) as CSSProperties,
-    [primaryColor, accentColor],
-  );
-
   return (
-    <div className="space-y-4" style={themeVars}>
+    <div className="space-y-4">
       <div className="space-y-3.5">
         {showConfirm ? (
           <>
             <button
               type="button"
               onClick={onConfirm}
-              className="w-full rounded-2xl bg-[var(--theme-color)] px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:bg-[var(--theme-color-dark)] active:translate-y-[1px]"
+              className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover"
             >
               Confirmar cita
             </button>
-            <p className="text-sm text-gray-500">
-              Confirmación instantánea. La clínica recibirá el aviso automáticamente.
+            <p className="text-sm text-muted">
+              Confirmacion instantanea. La clinica recibira el aviso automaticamente.
             </p>
           </>
         ) : null}
@@ -50,21 +34,18 @@ export default function ActionPanel({
         <button
           type="button"
           onClick={onReschedule}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+          className="w-full rounded-[10px] border-[1.5px] border-primary px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
         >
           Cambiar cita
         </button>
       </div>
 
-      <div
-        className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4"
-        style={{ borderColor: `${accentColor}33` }}
-      >
-        <p className="text-sm text-slate-600">
-          Evita esperas al teléfono: gestiona aquí tu cita en 10 segundos.
+      <div className="rounded-[14px] border-[0.5px] border-border bg-background p-4">
+        <p className="text-sm text-muted">
+          Evita esperas al telefono: gestiona aqui tu cita en 10 segundos.
         </p>
-        <p className="mt-1 text-sm text-slate-600">
-          La clínica recibirá el aviso automáticamente.
+        <p className="mt-1 text-sm text-muted">
+          La clinica recibira el aviso automaticamente.
         </p>
       </div>
     </div>

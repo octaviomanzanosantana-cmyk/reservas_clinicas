@@ -17,6 +17,8 @@ export type AppointmentRow = {
   address: string;
   duration_label: string;
   status: AppointmentStatus;
+  modality: string;
+  appointment_type: string;
   google_event_id: string | null;
   calendar_id: string | null;
   created_at: string;
@@ -32,7 +34,11 @@ export type CreateAppointmentInput = Omit<
   | "calendar_id"
   | "patient_email"
   | "patient_phone"
+  | "modality"
+  | "appointment_type"
 > & {
+  modality?: string;
+  appointment_type?: string;
   patient_email?: string | null;
   patient_phone?: string | null;
   google_event_id?: string | null;
@@ -112,6 +118,8 @@ export async function createAppointment(data: CreateAppointmentInput): Promise<A
     google_event_id:
       typeof data.google_event_id === "string" ? data.google_event_id.trim() || null : null,
     calendar_id: typeof data.calendar_id === "string" ? data.calendar_id.trim() || null : null,
+    modality: data.modality || "presencial",
+    appointment_type: data.appointment_type || "primera_visita",
   };
 
   const { data: created, error } = await supabaseAdmin

@@ -27,6 +27,11 @@ export async function GET(request: Request) {
         logo_url: clinic.logo_url,
         theme_color: clinic.theme_color,
         booking_enabled: clinic.booking_enabled,
+        review_url: clinic.review_url,
+        notification_email: clinic.notification_email,
+        reminder_hours: clinic.reminder_hours,
+        offers_presencial: clinic.offers_presencial,
+        offers_online: clinic.offers_online,
       },
     });
   } catch (error) {

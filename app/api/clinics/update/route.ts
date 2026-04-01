@@ -18,6 +18,11 @@ type UpdateClinicRequest = {
   google_token_scope?: string | null;
   google_token_type?: string | null;
   google_token_expires_at?: string | null;
+  notification_email?: string | null;
+  review_url?: string | null;
+  reminder_hours?: number;
+  offers_presencial?: boolean;
+  offers_online?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -45,6 +50,11 @@ export async function POST(request: Request) {
       google_token_scope: body.google_token_scope,
       google_token_type: body.google_token_type,
       google_token_expires_at: body.google_token_expires_at,
+      notification_email: body.notification_email,
+      review_url: body.review_url,
+      reminder_hours: body.reminder_hours,
+      offers_presencial: body.offers_presencial,
+      offers_online: body.offers_online,
     });
 
     if (!clinic) {

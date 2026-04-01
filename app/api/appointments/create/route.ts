@@ -186,7 +186,10 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendAppointmentCreatedEmail(nextAppointment);
+      await sendAppointmentCreatedEmail(nextAppointment, {
+        notificationEmail: clinicRow?.notification_email,
+        reviewUrl: clinicRow?.review_url,
+      });
     } catch (error) {
       console.error("[appointments.create] Failed to send appointment created email", {
         appointmentToken: nextAppointment.token,

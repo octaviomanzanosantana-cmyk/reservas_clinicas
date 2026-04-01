@@ -226,7 +226,7 @@ export default function ReschedulePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center text-sm text-muted">
           Cargando cita...
         </section>
       </div>
@@ -236,9 +236,9 @@ export default function ReschedulePage() {
   if (!appointment) {
     return (
       <div className="space-y-4">
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
-          <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Cita no encontrada</h1>
+          <p className="mt-2 text-sm text-muted">Este enlace no corresponde a una cita activa.</p>
         </section>
       </div>
     );
@@ -249,29 +249,26 @@ export default function ReschedulePage() {
       <HeaderBar
         logoText={clinic?.logoText ?? "RC"}
         clinicName={clinic?.name ?? appointment.clinicName}
-        idLabel={appointment.idLabel}
-        accentColor={clinic?.accentColor ?? "#1d4ed8"}
       />
 
       <AppointmentCard appointment={appointment} />
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-5">
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900">Selecciona un nuevo horario</h1>
-        <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
-          <p className="text-sm font-semibold text-gray-900">Tu cita actual</p>
-          <p className="mt-2 text-sm text-gray-700">{appointment.datetimeLabel}</p>
-          <p className="mt-1 text-sm text-gray-600">{appointment.service}</p>
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Selecciona un nuevo horario</h1>
+        <div className="mt-4 rounded-[14px] border-[0.5px] border-border bg-background p-4">
+          <p className="font-heading text-sm font-semibold text-foreground">Tu cita actual</p>
+          <p className="mt-2 text-sm text-foreground">{appointment.datetimeLabel}</p>
+          <p className="mt-1 text-sm text-muted">{appointment.service}</p>
         </div>
-        <p className="mt-2 text-sm text-gray-600">Selecciona un nuevo horario</p>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-muted">
           Elige un nuevo horario disponible para reprogramar tu cita.
         </p>
 
         <div className="mt-4 space-y-2">
-          <div className="rounded-[20px] border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-sm font-semibold text-gray-900">Elige un dia</p>
+          <div className="rounded-[14px] border-[0.5px] border-border bg-background p-4">
+            <p className="font-heading text-sm font-semibold text-foreground">Elige un dia</p>
             {datesLoading ? (
-              <p className="mt-2 text-sm text-gray-600">Cargando fechas disponibles...</p>
+              <p className="mt-2 text-sm text-muted">Cargando fechas disponibles...</p>
             ) : availableDates.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {availableDates.map((dateOption) => (
@@ -279,10 +276,10 @@ export default function ReschedulePage() {
                     key={dateOption.value}
                     type="button"
                     onClick={() => setSelectedDate(dateOption.value)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                    className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-all duration-150 ${
                       selectedDate === dateOption.value
-                        ? "border-slate-950 bg-slate-950 text-white"
-                        : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                        ? "border-primary bg-primary text-white"
+                        : "border-border bg-white text-foreground hover:bg-primary-soft"
                     }`}
                   >
                     {dateOption.label}
@@ -290,14 +287,14 @@ export default function ReschedulePage() {
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-muted">
                 No hay dias disponibles para reprogramar esta cita.
               </p>
             )}
           </div>
 
           {slotsLoading ? (
-            <p className="text-sm text-gray-600">Cargando disponibilidad...</p>
+            <p className="text-sm text-muted">Cargando disponibilidad...</p>
           ) : slots.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {slots.map((slot) => (
@@ -305,14 +302,14 @@ export default function ReschedulePage() {
                   key={slot.value}
                   type="button"
                   onClick={() => handleSlotSelect(slot)}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 transition-all duration-150 hover:bg-gray-50 active:translate-y-[1px]"
+                  className="rounded-[10px] border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground transition-all duration-150 hover:border-primary hover:bg-primary-soft"
                 >
                   {slot.label}
                 </button>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-600">No hay horarios disponibles para este dia. Prueba con otra fecha.</p>
+            <p className="text-sm text-muted">No hay horarios disponibles para este dia. Prueba con otra fecha.</p>
           )}
         </div>
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
@@ -320,7 +317,7 @@ export default function ReschedulePage() {
 
       <Link
         href={`/a/${token}`}
-        className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:translate-y-[1px]"
+        className="inline-flex w-full items-center justify-center rounded-[10px] border-[1.5px] border-primary px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
       >
         Volver a la cita
       </Link>

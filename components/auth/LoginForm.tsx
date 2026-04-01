@@ -43,26 +43,26 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <label className="block">
-        <span className="text-sm font-medium text-slate-700">Email</span>
+        <span className="text-sm font-medium text-foreground">Email</span>
         <input
           type="email"
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+          className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
           placeholder="tu@clinica.com"
           required
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium text-slate-700">Password</span>
+        <span className="text-sm font-medium text-foreground">Password</span>
         <input
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+          className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
           placeholder="Tu password"
           required
         />
@@ -71,7 +71,7 @@ export function LoginForm() {
       {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
       <div className="text-right">
-        <Link href="/forgot-password" className="text-sm font-medium text-slate-700 underline">
+        <Link href="/forgot-password" className="text-sm font-medium text-primary underline">
           Has olvidado tu password?
         </Link>
       </div>
@@ -79,7 +79,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Entrando..." : "Entrar"}
       </button>

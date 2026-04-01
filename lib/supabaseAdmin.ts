@@ -1,21 +1,28 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Lazy init: lee process.env en runtime (dentro del getter),
+// no en module scope. Esto evita capturar "" durante el build
+// de Vercel donde las variables aún no están disponibles.
+let _client: SupabaseClient | null = null;
 
-if (!supabaseUrl) {
-  throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_URL");
-}
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!_client) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
 
-if (!supabaseServiceRoleKey) {
-  throw new Error("Missing environment variable: SUPABASE_SERVICE_ROLE_KEY");
-}
-
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
+      if (!url || !key) {
+        throw new Error(
+          "Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL. " +
+          "Add them to your environment variables.",
+        );
+      }
+      _client = createClient(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+    }
+    return (_client as unknown as Record<string | symbol, unknown>)[prop];
   },
 });

@@ -23,6 +23,8 @@ export type Appointment = {
   patientName: string;
   address: string;
   durationLabel: string;
+  modality?: string;
+  appointmentType?: string;
   status: AppointmentStatus;
   lastUpdateLabel: string;
   idLabel: string;

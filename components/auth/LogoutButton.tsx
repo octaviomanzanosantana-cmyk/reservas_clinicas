@@ -36,7 +36,7 @@ export function LogoutButton() {
         type="button"
         onClick={() => void handleLogout()}
         disabled={submitting}
-        className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Cerrando sesion..." : "Cerrar sesion"}
       </button>

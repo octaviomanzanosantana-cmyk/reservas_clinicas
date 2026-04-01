@@ -14,6 +14,8 @@ export type AppointmentRowLike = {
   patient_name: string;
   address: string;
   duration_label: string;
+  modality?: string;
+  appointment_type?: string;
   status: AppointmentStatus;
   updated_at: string;
 };
@@ -28,6 +30,8 @@ export function toViewAppointment(row: AppointmentRowLike): Appointment {
     patientName: row.patient_name,
     address: row.address,
     durationLabel: row.duration_label,
+    modality: row.modality,
+    appointmentType: row.appointment_type,
     status: row.status,
     lastUpdateLabel: row.updated_at,
     idLabel: `${row.clinic_name.slice(0, 2).toUpperCase()}-${row.id}`,

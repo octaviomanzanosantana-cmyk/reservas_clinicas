@@ -29,7 +29,7 @@ export default function Toast({
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-5 left-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 transition-all duration-150">
+    <div className="fixed bottom-5 left-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 rounded-[10px] border-[0.5px] border-border bg-card px-4 py-3 text-sm text-foreground shadow-sm">
       {message}
     </div>
   );

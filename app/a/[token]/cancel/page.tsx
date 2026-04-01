@@ -33,10 +33,7 @@ export default function CancelPage() {
         });
 
         if (!response.ok) {
-          if (active) {
-            setAppointment(null);
-            setClinic(null);
-          }
+          if (active) { setAppointment(null); setClinic(null); }
           return;
         }
 
@@ -52,26 +49,20 @@ export default function CancelPage() {
           setCalendarWarning(data.calendarWarning ?? null);
         }
       } catch {
-        if (active) {
-          setAppointment(null);
-          setClinic(null);
-        }
+        if (active) { setAppointment(null); setClinic(null); }
       } finally {
         if (active) setLoading(false);
       }
     };
 
     void load();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [token]);
 
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center text-sm text-muted">
           Cargando cita...
         </section>
       );
@@ -79,47 +70,37 @@ export default function CancelPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
-          <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Cita no encontrada</h1>
+          <p className="mt-2 text-sm text-muted">Este enlace no corresponde a una cita activa.</p>
         </section>
       );
     }
 
-    const theme = {
-      primary: clinic?.primaryColor ?? "#2563eb",
-      accent: clinic?.accentColor ?? "#1d4ed8",
-      logoText: clinic?.logoText ?? "RC",
-      name: clinic?.name ?? appointment.clinicName,
-    };
-
     return (
       <>
         <HeaderBar
-          logoText={theme.logoText}
-          clinicName={theme.name}
-          idLabel={appointment.idLabel}
-          accentColor={theme.accent}
+          logoText={clinic?.logoText ?? "RC"}
+          clinicName={clinic?.name ?? appointment.clinicName}
         />
 
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-cancelled-bg)] text-[var(--badge-cancelled-text)]">
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" stroke="currentColor" strokeWidth="2">
               <path d="M12 8v5" strokeLinecap="round" />
               <path d="M12 16h.01" strokeLinecap="round" />
               <path d="M10.3 3.2L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.2a2 2 0 00-3.4 0z" />
             </svg>
           </div>
-          <h1 className="text-center text-xl font-semibold tracking-tight text-gray-900">Cita cancelada</h1>
-          <p className="mt-2 text-center text-sm text-gray-600">La clinica ha recibido la cancelacion.</p>
+          <h1 className="text-center font-heading text-xl font-semibold tracking-tight text-foreground">Cita cancelada</h1>
+          <p className="mt-2 text-center text-sm text-muted">La clinica ha recibido la cancelacion.</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
 
         <Link
           href={`/a/${token}`}
-          className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
-          style={{ backgroundColor: theme.primary }}
+          className="inline-flex w-full items-center justify-center rounded-[10px] bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover"
         >
           Volver a la cita
         </Link>
@@ -130,7 +111,7 @@ export default function CancelPage() {
           onHide={() => setToastVisible(false)}
         />
         {calendarWarning ? (
-          <p className="text-center text-xs text-amber-700">
+          <p className="text-center text-xs text-muted">
             Cita cancelada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}

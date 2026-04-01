@@ -57,13 +57,13 @@ function BookingConfirmation({
   appointment,
   manageLink,
   clinicAddress,
-  themeColor,
+  reviewUrl,
   onBookAnother,
 }: {
   appointment: Appointment;
   manageLink: string;
   clinicAddress: string;
-  themeColor: string;
+  reviewUrl?: string;
   onBookAnother: () => void;
 }) {
   const labels = getDateAndTimeLabels(appointment);
@@ -199,6 +199,20 @@ function BookingConfirmation({
               Reservar otra cita
             </button>
           </div>
+
+          {reviewUrl ? (
+            <div className="rounded-[14px] border-[0.5px] border-border bg-background p-5 text-center">
+              <p className="text-sm text-muted">Te ha gustado la experiencia?</p>
+              <a
+                href={reviewUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-primary px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
+              >
+                Dejanos una resena en Google
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
@@ -215,6 +229,9 @@ export default function PublicBookingPage() {
     phone?: string;
     logo_url?: string;
     theme_color?: string;
+    review_url?: string;
+    offers_presencial?: boolean;
+    offers_online?: boolean;
   } | null>(null);
   const [loadingClinic, setLoadingClinic] = useState(true);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -222,6 +239,8 @@ export default function PublicBookingPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [modality, setModality] = useState<"presencial" | "online">("presencial");
+  const [appointmentType, setAppointmentType] = useState<"primera_visita" | "revision">("primera_visita");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [loadingServices, setLoadingServices] = useState(true);
@@ -251,6 +270,9 @@ export default function PublicBookingPage() {
             phone: data.clinic.phone ?? "",
             logo_url: data.clinic.logo_url ?? "",
             theme_color: data.clinic.theme_color ?? "",
+            review_url: data.clinic.review_url ?? "",
+            offers_presencial: data.clinic.offers_presencial ?? true,
+            offers_online: data.clinic.offers_online ?? false,
           });
           setErrorMessage(null);
         } else {
@@ -399,6 +421,8 @@ export default function PublicBookingPage() {
         address: clinicDetails.address ?? "",
         duration_label: `${selectedService.duration_minutes} min`,
         status: "confirmed",
+        modality,
+        appointment_type: appointmentType,
       };
 
       const response = await fetch("/api/appointments/create", {
@@ -452,7 +476,10 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12">
+    <div
+      className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12"
+      style={{ "--clinic-color": clinicDetails?.theme_color || "#0E9E82" } as React.CSSProperties}
+    >
       <div className="mx-auto max-w-6xl space-y-8">
         {loadingClinic ? (
           <section className="rounded-[14px] border border-border bg-card px-6 py-10 text-center shadow-sm">
@@ -529,7 +556,7 @@ export default function PublicBookingPage() {
                 appointment={createdAppointment}
                 manageLink={createdLink}
                 clinicAddress={clinicDetails.address ?? ""}
-                themeColor={clinicDetails.theme_color ?? "#0f172a"}
+                reviewUrl={clinicDetails.review_url || undefined}
                 onBookAnother={() => {
                   setCreatedLink(null);
                   setCreatedAppointment(null);
@@ -568,7 +595,7 @@ export default function PublicBookingPage() {
                           setSelectedService(nextService);
                           setSelectedSlot(null);
                         }}
-                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
+                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-[var(--clinic-color)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--clinic-color)_12%,transparent)]"
                         disabled={loadingServices || services.length === 0}
                       >
                         {services.map((service) => (
@@ -591,9 +618,77 @@ export default function PublicBookingPage() {
                           setSelectedDate(event.target.value);
                           setSelectedSlot(null);
                         }}
-                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
+                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-[var(--clinic-color)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--clinic-color)_12%,transparent)]"
                       />
                     </label>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[14px] border border-border bg-white p-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                        Tipo de cita
+                      </span>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentType("primera_visita")}
+                          className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
+                            appointmentType === "primera_visita"
+                              ? "border-transparent text-white"
+                              : "border-border bg-white text-foreground hover:border-[var(--clinic-color)]"
+                          }`}
+                          style={appointmentType === "primera_visita" ? { backgroundColor: "var(--clinic-color)" } : undefined}
+                        >
+                          Primera visita
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentType("revision")}
+                          className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
+                            appointmentType === "revision"
+                              ? "border-transparent text-white"
+                              : "border-border bg-white text-foreground hover:border-[var(--clinic-color)]"
+                          }`}
+                          style={appointmentType === "revision" ? { backgroundColor: "var(--clinic-color)" } : undefined}
+                        >
+                          Revision
+                        </button>
+                      </div>
+                    </div>
+
+                    {(clinicDetails.offers_presencial && clinicDetails.offers_online) ? (
+                      <div className="rounded-[14px] border border-border bg-white p-4">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                          Modalidad
+                        </span>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setModality("presencial")}
+                            className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
+                              modality === "presencial"
+                                ? "border-transparent text-white"
+                                : "border-border bg-white text-foreground hover:border-[var(--clinic-color)]"
+                            }`}
+                            style={modality === "presencial" ? { backgroundColor: "var(--clinic-color)" } : undefined}
+                          >
+                            Presencial
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setModality("online")}
+                            className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
+                              modality === "online"
+                                ? "border-transparent text-white"
+                                : "border-border bg-white text-foreground hover:border-[var(--clinic-color)]"
+                            }`}
+                            style={modality === "online" ? { backgroundColor: "var(--clinic-color)" } : undefined}
+                          >
+                            Online
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="rounded-[14px] border border-border bg-white p-5 md:p-6">
@@ -622,9 +717,14 @@ export default function PublicBookingPage() {
                             onClick={() => setSelectedSlot(slot)}
                             className={`rounded-[10px] border px-4 py-2.5 text-sm font-medium font-heading transition-all duration-150 ${
                               selectedSlot?.value === slot.value
-                                ? "border-primary bg-primary text-white"
-                                : "border-border bg-white text-foreground hover:border-primary hover:bg-primary-soft"
+                                ? "border-transparent text-white"
+                                : "border-border bg-white text-foreground hover:border-[var(--clinic-color)]"
                             }`}
+                            style={
+                              selectedSlot?.value === slot.value
+                                ? { backgroundColor: "var(--clinic-color)" }
+                                : undefined
+                            }
                           >
                             {slot.label}
                           </button>
@@ -667,7 +767,8 @@ export default function PublicBookingPage() {
                     <button
                       type="submit"
                       disabled={submitting || !selectedService || !selectedSlot || !clinicDetails}
-                      className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                      className="w-full rounded-[10px] px-5 py-3 font-heading text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                      style={{ backgroundColor: "var(--clinic-color)" }}
                     >
                       {submitting ? "Reservando..." : "Confirmar reserva"}
                     </button>

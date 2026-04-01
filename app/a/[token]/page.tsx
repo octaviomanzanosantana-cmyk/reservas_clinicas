@@ -27,15 +27,6 @@ const STATUS_TITLE: Record<Appointment["status"], string> = {
   completed: "Cita completada",
 };
 
-function getBranding(clinic: PatientClinicData | null, appointment: Appointment | null) {
-  return {
-    clinicName: clinic?.name ?? appointment?.clinicName ?? "Clinica",
-    logoText: clinic?.logoText ?? "RC",
-    primary: clinic?.primaryColor ?? "#2563eb",
-    accent: clinic?.accentColor ?? "#1d4ed8",
-  };
-}
-
 export default function AppointmentHomePage() {
   const router = useRouter();
   const params = useParams();
@@ -76,12 +67,10 @@ export default function AppointmentHomePage() {
     };
   }, [token]);
 
-  const branding = getBranding(clinic, appointment);
-
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-7 text-center text-sm text-slate-600 md:p-8">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7 text-center text-sm text-muted md:p-8">
           Cargando cita...
         </section>
       );
@@ -89,11 +78,11 @@ export default function AppointmentHomePage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-7 text-center md:p-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7 text-center md:p-8">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
             Cita no encontrada
           </h1>
-          <p className="mt-3 text-sm text-slate-600">
+          <p className="mt-3 text-sm text-muted">
             Este enlace no corresponde a una cita activa.
           </p>
         </section>
@@ -101,119 +90,85 @@ export default function AppointmentHomePage() {
     }
 
     return (
-      <section className="rounded-[24px] border border-slate-200 bg-white p-7 md:p-8">
-        <div className="space-y-6">
-          <HeaderBar
-            logoText={branding.logoText}
-            clinicName={branding.clinicName}
-            accentColor={branding.accent}
-          />
+      <div className="space-y-4">
+        <HeaderBar
+          logoText={clinic?.logoText ?? "RC"}
+          clinicName={clinic?.name ?? appointment.clinicName}
+        />
 
-          <section
-            className="rounded-[24px] border border-slate-200 bg-white px-5 py-5"
-            style={{
-              borderColor: `${branding.accent}33`,
-              backgroundColor: `${branding.accent}12`,
+        <section className="rounded-[14px] border-[0.5px] border-primary/20 bg-primary-soft px-5 py-5">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+            {STATUS_TITLE[appointment.status]}
+          </h1>
+          <p className="mt-2 text-sm text-muted">{STATUS_MESSAGE[appointment.status]}</p>
+        </section>
+
+        <AppointmentCard appointment={appointment} />
+
+        {appointment.status === "pending" ||
+        appointment.status === "confirmed" ||
+        appointment.status === "change_requested" ? (
+          <ActionPanel
+            showConfirm={appointment.status === "pending"}
+            onConfirm={() => {
+              router.push(`/a/${token}/confirm`);
             }}
-          >
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {appointment.status === "confirmed" ? "Confirmada: " : ""}
-              {STATUS_TITLE[appointment.status]}
-            </h1>
-            <p className="mt-2 text-sm text-slate-600">{STATUS_MESSAGE[appointment.status]}</p>
-          </section>
+            onReschedule={() => {
+              router.push(`/a/${token}/reschedule`);
+            }}
+          />
+        ) : null}
 
-          <AppointmentCard appointment={appointment} />
+        {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
+          <section className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={async () => {
+                setCancelLoading(true);
+                setCancelMessage(null);
+                setCancelError(null);
 
-          {appointment.status === "pending" ||
-          appointment.status === "confirmed" ||
-          appointment.status === "change_requested" ? (
-            <div className="[&_button]:rounded-2xl [&_button]:px-5 [&_button]:py-3 [&_button]:text-sm [&_button]:font-semibold [&_.primary]:bg-slate-950 [&_.primary]:text-white [&_.secondary]:border [&_.secondary]:border-slate-200 [&_.secondary]:bg-white [&_.secondary]:text-slate-900">
-              <ActionPanel
-                primaryColor={branding.primary}
-                accentColor={branding.accent}
-                showConfirm={appointment.status === "pending"}
-                onConfirm={async () => {
-                  router.push(`/a/${token}/confirm`);
-                }}
-                onReschedule={() => {
-                  router.push(`/a/${token}/reschedule`);
-                }}
-              />
-            </div>
-          ) : null}
+                try {
+                  const response = await fetch("/api/appointments/cancel", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token }),
+                  });
 
-          {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
-            <section className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={async () => {
-                  setCancelLoading(true);
-                  setCancelMessage(null);
-                  setCancelError(null);
-
-                  try {
-                    const response = await fetch("/api/appointments/cancel", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({ token }),
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("cancel_failed");
-                    }
-
-                    setAppointment((current) =>
-                      current
-                        ? {
-                            ...current,
-                            status: "cancelled",
-                          }
-                        : current,
-                    );
-                    setCancelMessage("Tu cita ha sido cancelada.");
-                  } catch {
-                    setCancelError("No se pudo cancelar la cita. Intentalo de nuevo.");
-                  } finally {
-                    setCancelLoading(false);
+                  if (!response.ok) {
+                    throw new Error("cancel_failed");
                   }
-                }}
-                disabled={cancelLoading}
-                className="text-sm text-red-500 transition-colors duration-150 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {cancelLoading ? "Cancelando..." : "Cancelar cita"}
-              </button>
 
-              {cancelMessage ? (
-                <p className="mt-3 text-sm text-emerald-700">{cancelMessage}</p>
-              ) : null}
-              {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
-            </section>
-          ) : null}
+                  setAppointment((current) =>
+                    current ? { ...current, status: "cancelled" } : current,
+                  );
+                  setCancelMessage("Tu cita ha sido cancelada.");
+                } catch {
+                  setCancelError("No se pudo cancelar la cita. Intentalo de nuevo.");
+                } finally {
+                  setCancelLoading(false);
+                }
+              }}
+              disabled={cancelLoading}
+              className="text-sm text-muted transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {cancelLoading ? "Cancelando..." : "Cancelar cita"}
+            </button>
 
-          <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
-        </div>
-      </section>
+            {cancelMessage ? (
+              <p className="mt-3 text-sm text-primary">{cancelMessage}</p>
+            ) : null}
+            {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
+          </section>
+        ) : null}
+
+        <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
+      </div>
     );
-  }, [
-    appointment,
-    branding.accent,
-    branding.clinicName,
-    branding.logoText,
-    branding.primary,
-    cancelError,
-    cancelLoading,
-    cancelMessage,
-    clinic?.supportPhone,
-    loading,
-    router,
-    token,
-  ]);
+  }, [appointment, cancelError, cancelLoading, cancelMessage, clinic, loading, router, token]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-4 py-12">{content}</div>
     </div>
   );

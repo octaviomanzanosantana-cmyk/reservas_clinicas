@@ -4,7 +4,7 @@ type AppointmentLayoutProps = {
 
 export default function AppointmentLayout({ children }: AppointmentLayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
+    <div className="min-h-screen bg-background px-4 py-8">
       <div className="mx-auto w-full max-w-md">{children}</div>
     </div>
   );

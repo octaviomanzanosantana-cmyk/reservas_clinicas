@@ -5,57 +5,16 @@ import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import Toast from "@/components/Toast";
 import { toViewAppointmentOrNull, type AppointmentRowLike } from "@/lib/appointmentView";
+import {
+  buildGoogleCalendarUrl,
+  downloadIcsFile,
+  parseDurationFromLabel,
+} from "@/lib/calendarExport";
 import type { PatientClinicData } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-function buildGoogleCalendarUrl(appointment: Appointment): string | null {
-  if (!appointment.scheduledAt) return null;
-
-  const start = new Date(appointment.scheduledAt);
-  if (Number.isNaN(start.getTime())) return null;
-
-  const durationMatch = appointment.durationLabel.match(/\d+/);
-  const durationMinutes = durationMatch ? Number(durationMatch[0]) : 30;
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-  const formatGoogleDate = (date: Date) =>
-    date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: appointment.service,
-    dates: `${formatGoogleDate(start)}/${formatGoogleDate(end)}`,
-    details: `Cita: ${appointment.service}\nClinica: ${appointment.clinicName}`,
-    location: appointment.address,
-  });
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
-function getDateAndTimeLabels(appointment: Appointment): { dateLabel: string; timeLabel: string } {
-  if (appointment.scheduledAt) {
-    const scheduledAt = new Date(appointment.scheduledAt);
-
-    if (!Number.isNaN(scheduledAt.getTime())) {
-      return {
-        dateLabel: new Intl.DateTimeFormat("es-ES", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }).format(scheduledAt),
-        timeLabel: new Intl.DateTimeFormat("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(scheduledAt),
-      };
-    }
-  }
-
-  const [dateLabel, timeLabel = ""] = appointment.datetimeLabel.split("·").map((value) => value.trim());
-  return { dateLabel, timeLabel };
-}
 
 export default function ConfirmPage() {
   const params = useParams();
@@ -80,10 +39,7 @@ export default function ConfirmPage() {
         });
 
         if (!response.ok) {
-          if (active) {
-            setAppointment(null);
-            setClinic(null);
-          }
+          if (active) { setAppointment(null); setClinic(null); }
           return;
         }
 
@@ -99,32 +55,25 @@ export default function ConfirmPage() {
           setCalendarWarning(data.calendarWarning ?? null);
         }
       } catch {
-        if (active) {
-          setAppointment(null);
-          setClinic(null);
-        }
+        if (active) { setAppointment(null); setClinic(null); }
       } finally {
         if (active) setLoading(false);
       }
     };
 
     void load();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [token]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const currentSearchParams = new URLSearchParams(window.location.search);
-    setChanged(currentSearchParams.get("changed") === "1");
+    setChanged(new URLSearchParams(window.location.search).get("changed") === "1");
   }, []);
 
   const content = useMemo(() => {
     if (loading) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center text-sm text-muted">
           Cargando cita...
         </section>
       );
@@ -132,88 +81,94 @@ export default function ConfirmPage() {
 
     if (!appointment) {
       return (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-6 text-center">
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900">Cita no encontrada</h1>
-          <p className="mt-2 text-sm text-gray-600">Este enlace no corresponde a una cita activa.</p>
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Cita no encontrada</h1>
+          <p className="mt-2 text-sm text-muted">Este enlace no corresponde a una cita activa.</p>
         </section>
       );
     }
 
-    const theme = {
-      primary: clinic?.primaryColor ?? "#2563eb",
-      accent: clinic?.accentColor ?? "#1d4ed8",
-      logoText: clinic?.logoText ?? "RC",
-      name: clinic?.name ?? appointment.clinicName,
-    };
-    const isChangeRequested = appointment.status === "change_requested";
-    const title = isChangeRequested ? "Solicitud de cambio enviada" : "Tu cita esta confirmada";
-    const description = isChangeRequested
+    const clinicName = clinic?.name ?? appointment.clinicName;
+    const title = appointment.status === "change_requested"
+      ? "Solicitud de cambio enviada"
+      : "Tu cita esta confirmada";
+    const description = appointment.status === "change_requested"
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : appointment.datetimeLabel;
-    const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
-    const { dateLabel, timeLabel } = getDateAndTimeLabels(appointment);
-    const whatsappUrl =
-      changed && appointment.status === "confirmed" && dateLabel && timeLabel
-        ? `https://wa.me/?text=${encodeURIComponent(
-            [
-              "Hola, esta es mi nueva cita:",
-              "",
-              theme.name,
-              appointment.service,
-              `${dateLabel} · ${timeLabel}`,
-              "",
-              `Gestionar cita: ${
-                typeof window !== "undefined"
-                  ? `${window.location.origin}/a/${token}`
-                  : `/a/${token}`
-              }`,
-            ].join("\n"),
-          )}`
-        : null;
+
+    const calendarInput = appointment.scheduledAt
+      ? {
+          title: `${appointment.service} — ${clinicName}`,
+          description: `Cita: ${appointment.service}\nClinica: ${clinicName}`,
+          location: appointment.address,
+          startDate: new Date(appointment.scheduledAt),
+          durationMinutes: parseDurationFromLabel(appointment.durationLabel),
+        }
+      : null;
+
+    const googleUrl = calendarInput ? buildGoogleCalendarUrl(calendarInput) : null;
+
+    const whatsappUrl = changed && appointment.status === "confirmed"
+      ? `https://wa.me/?text=${encodeURIComponent(
+          [
+            `Hola, esta es mi nueva cita:`,
+            `${clinicName} — ${appointment.service}`,
+            appointment.datetimeLabel,
+            `Gestionar: ${typeof window !== "undefined" ? `${window.location.origin}/a/${token}` : `/a/${token}`}`,
+          ].join("\n"),
+        )}`
+      : null;
 
     return (
       <>
         <HeaderBar
-          logoText={theme.logoText}
-          clinicName={theme.name}
-          idLabel={appointment.idLabel}
-          accentColor={theme.accent}
+          logoText={clinic?.logoText ?? "RC"}
+          clinicName={clinicName}
         />
 
-        <section className="rounded-[24px] border border-slate-200 bg-white px-6 py-5">
-          <div
-            className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full ${
-              isChangeRequested ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
-            }`}
-          >
+        <section className="rounded-[14px] border-[0.5px] border-primary/20 bg-primary-soft px-6 py-5">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
             <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="2.1">
               <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1 className="text-center text-lg font-semibold tracking-tight text-gray-900">{title}</h1>
-          <p className="mt-1.5 text-center text-sm text-gray-600">{description}</p>
+          <h1 className="text-center font-heading text-lg font-semibold tracking-tight text-foreground">{title}</h1>
+          <p className="mt-1.5 text-center text-sm text-muted">{description}</p>
         </section>
 
         <AppointmentCard appointment={appointment} />
 
-        {googleCalendarUrl ? (
-          <a
-            href={googleCalendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition-all duration-150 hover:brightness-95 active:translate-y-[1px]"
-            style={{ backgroundColor: theme.primary }}
-          >
-            Anadir a mi calendario
-          </a>
+        {calendarInput ? (
+          <div className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+            <p className="font-heading text-sm font-semibold text-foreground">Anadir al calendario</p>
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              {googleUrl ? (
+                <a
+                  href={googleUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:text-foreground"
+                >
+                  Google Calendar
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => downloadIcsFile(calendarInput, "cita.ics")}
+                className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:text-foreground"
+              >
+                Descargar .ics
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {whatsappUrl ? (
           <a
             href={whatsappUrl}
             target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 transition-all duration-150 hover:bg-emerald-100"
+            rel="noreferrer"
+            className="inline-flex w-full items-center justify-center rounded-[10px] bg-[#25D366] px-5 py-2.5 font-heading text-sm font-semibold text-white transition-all duration-150 hover:brightness-95"
           >
             Enviar a WhatsApp
           </a>
@@ -221,7 +176,7 @@ export default function ConfirmPage() {
 
         <Link
           href={`/a/${token}`}
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:translate-y-[1px]"
+          className="inline-flex w-full items-center justify-center rounded-[10px] border-[1.5px] border-primary px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
         >
           Volver a la cita
         </Link>
@@ -232,7 +187,7 @@ export default function ConfirmPage() {
           onHide={() => setToastVisible(false)}
         />
         {calendarWarning ? (
-          <p className="text-center text-xs text-amber-700">
+          <p className="text-center text-xs text-muted">
             Cita confirmada. No se pudo actualizar Google Calendar: {calendarWarning}
           </p>
         ) : null}

@@ -18,6 +18,11 @@ export type ClinicRow = {
   google_token_scope: string | null;
   google_token_type: string | null;
   google_token_expires_at: string | null;
+  notification_email: string | null;
+  review_url: string | null;
+  reminder_hours: number;
+  offers_presencial: boolean;
+  offers_online: boolean;
 };
 
 export async function getClinicBySlug(slug: string): Promise<ClinicRow | null> {
@@ -139,6 +144,11 @@ export async function updateClinicBySlug(
       | "google_token_scope"
       | "google_token_type"
       | "google_token_expires_at"
+      | "notification_email"
+      | "review_url"
+      | "reminder_hours"
+      | "offers_presencial"
+      | "offers_online"
     >
   >,
 ): Promise<ClinicRow | null> {
@@ -208,6 +218,25 @@ export async function updateClinicBySlug(
       : input.google_token_expires_at === null
         ? { google_token_expires_at: null }
         : {}),
+    ...(typeof input.notification_email === "string"
+      ? { notification_email: input.notification_email.trim() || null }
+      : input.notification_email === null
+        ? { notification_email: null }
+        : {}),
+    ...(typeof input.review_url === "string"
+      ? { review_url: input.review_url.trim() || null }
+      : input.review_url === null
+        ? { review_url: null }
+        : {}),
+    ...(typeof input.reminder_hours === "number"
+      ? { reminder_hours: input.reminder_hours }
+      : {}),
+    ...(typeof input.offers_presencial === "boolean"
+      ? { offers_presencial: input.offers_presencial }
+      : {}),
+    ...(typeof input.offers_online === "boolean"
+      ? { offers_online: input.offers_online }
+      : {}),
   };
 
   const { data, error } = await supabaseAdmin

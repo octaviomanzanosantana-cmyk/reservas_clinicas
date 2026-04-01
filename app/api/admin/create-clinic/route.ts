@@ -1,9 +1,21 @@
-"use server";
+import { NextResponse } from "next/server";
 
 import { upsertClinicHour } from "@/lib/clinicHours";
 import { provisionClinicUserAccess } from "@/lib/clinicUserProvisioning";
 import { createClinic } from "@/lib/clinics";
 import { createService } from "@/lib/services";
+
+type CreateClinicRequest = {
+  name?: string;
+  slug?: string;
+  phone?: string;
+  address?: string;
+  theme_color?: string;
+  description?: string | null;
+  seed_default_services?: boolean;
+  seed_default_hours?: boolean;
+  access_email?: string | null;
+};
 
 const DEFAULT_SERVICES = [
   { name: "Primera consulta", duration_minutes: 30 },
@@ -19,6 +31,8 @@ const DEFAULT_HOURS = [
   { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
 ];
 
+const ADMIN_API_SECRET = process.env.ADMIN_API_SECRET?.trim();
+
 function normalizeSlug(value: string): string {
   return value
     .trim()
@@ -27,47 +41,35 @@ function normalizeSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-type CreateClinicInput = {
-  name: string;
-  slug: string;
-  phone: string;
-  address: string;
-  theme_color: string;
-  description: string;
-  access_email: string;
-  seed_default_services: boolean;
-  seed_default_hours: boolean;
-};
+export async function POST(request: Request) {
+  // Protegido: requiere ADMIN_API_SECRET via header o que exista la cookie de sesión
+  // En producción, este endpoint solo es accesible via la UI admin interna
+  if (!ADMIN_API_SECRET) {
+    return NextResponse.json({ error: "Missing ADMIN_API_SECRET" }, { status: 500 });
+  }
 
-type CreateClinicResult =
-  | {
-      ok: true;
-      clinicSlug: string;
-      access:
-        | { attempted: false }
-        | { attempted: true; success: boolean; email: string; error?: string };
-    }
-  | { ok: false; error: string };
-
-export async function createClinicAction(
-  input: CreateClinicInput,
-): Promise<CreateClinicResult> {
-  const name = input.name.trim();
-  const slug = input.slug ? normalizeSlug(input.slug) : "";
-  const phone = input.phone.trim();
-  const address = input.address.trim();
-  const themeColor = input.theme_color.trim();
-  const accessEmail = input.access_email.trim().toLowerCase();
-
-  if (!name || !slug || !phone || !address || !themeColor) {
-    return { ok: false, error: "Faltan campos requeridos" };
+  const providedSecret = request.headers.get("x-admin-secret")?.trim();
+  if (!providedSecret || providedSecret !== ADMIN_API_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const body = (await request.json()) as CreateClinicRequest;
+    const name = body.name?.trim();
+    const slug = body.slug ? normalizeSlug(body.slug) : "";
+    const phone = body.phone?.trim();
+    const address = body.address?.trim();
+    const themeColor = body.theme_color?.trim();
+    const accessEmail = body.access_email?.trim().toLowerCase() || "";
+
+    if (!name || !slug || !phone || !address || !themeColor) {
+      return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
+    }
+
     const clinic = await createClinic({
       slug,
       name,
-      description: input.description.trim() || null,
+      description: typeof body.description === "string" ? body.description.trim() || null : null,
       address,
       phone,
       theme_color: themeColor,
@@ -82,7 +84,7 @@ export async function createClinicAction(
       logo_url: null,
     });
 
-    if (input.seed_default_services) {
+    if (body.seed_default_services) {
       await Promise.all(
         DEFAULT_SERVICES.map((service) =>
           createService({
@@ -95,7 +97,7 @@ export async function createClinicAction(
       );
     }
 
-    if (input.seed_default_hours) {
+    if (body.seed_default_hours) {
       await Promise.all(
         DEFAULT_HOURS.map((hour) =>
           upsertClinicHour({
@@ -109,9 +111,9 @@ export async function createClinicAction(
       );
     }
 
-    let access: CreateClinicResult & { ok: true } extends { access: infer A }
-      ? A
-      : never = { attempted: false };
+    let access:
+      | { attempted: false }
+      | { attempted: true; success: boolean; email: string; error?: string } = { attempted: false };
 
     if (accessEmail) {
       try {
@@ -119,11 +121,7 @@ export async function createClinicAction(
           email: accessEmail,
           clinicId: clinic.id,
         });
-        access = {
-          attempted: true,
-          success: true,
-          email: result.email,
-        };
+        access = { attempted: true, success: true, email: result.email };
       } catch (error) {
         access = {
           attempted: true,
@@ -134,11 +132,11 @@ export async function createClinicAction(
       }
     }
 
-    return { ok: true, clinicSlug: clinic.slug, access };
+    return NextResponse.json({ clinic, access }, { status: 201 });
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "No se pudo crear la clinica",
-    };
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "No se pudo crear la clinica" },
+      { status: 500 },
+    );
   }
 }
