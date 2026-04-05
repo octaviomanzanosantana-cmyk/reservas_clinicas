@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/Users/oms_g/reservas_clinicas/.claude/worktrees/nervous-khayyam/app/*.tsx /c/Users/oms_g/reservas_clinicas/.claude/worktrees/nervous-khayyam/app/*.ts)",
+      "Bash(wc -l /c/Users/oms_g/reservas_clinicas/.claude/worktrees/nervous-khayyam/app/b/[clinicSlug]/page.tsx)"
+    ]
+  }
+}
