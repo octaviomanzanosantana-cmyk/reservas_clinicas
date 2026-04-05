@@ -142,7 +142,7 @@ function BookingConfirmation({
 
           {calendarInput ? (
             <div className="rounded-[14px] border border-border bg-white p-5">
-              <p className="text-sm font-semibold text-foreground">Anadir al calendario</p>
+              <p className="text-sm font-semibold text-foreground">Añadir al calendario</p>
               <div className="mt-3 flex flex-wrap gap-2.5">
                 {googleUrl ? (
                   <a
@@ -243,6 +243,7 @@ export default function PublicBookingPage() {
   const [appointmentType, setAppointmentType] = useState<"primera_visita" | "revision">("primera_visita");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
+  const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -406,6 +407,9 @@ export default function PublicBookingPage() {
       if (!patientName.trim()) {
         throw new Error("Introduce tu nombre");
       }
+      if (!privacidadAceptada) {
+        throw new Error("Debes aceptar la política de privacidad para continuar");
+      }
 
       const token = generateToken();
       const datetimeLabel = buildDateTimeLabelFromInputs(selectedDate, selectedSlot.label);
@@ -480,7 +484,7 @@ export default function PublicBookingPage() {
       className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12"
       style={{ "--clinic-color": clinicDetails?.theme_color || "#0E9E82" } as React.CSSProperties}
     >
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-6xl space-y-4">
         {loadingClinic ? (
           <section className="rounded-[14px] border border-border bg-card px-6 py-10 text-center shadow-sm">
             <p className="text-sm text-muted">Cargando clinica...</p>
@@ -488,9 +492,9 @@ export default function PublicBookingPage() {
         ) : clinicDetails ? (
           <>
             <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
-              <div className="px-6 py-8 md:px-8 md:py-9">
-                <div className="max-w-3xl space-y-6">
-                  <div className="space-y-4">
+              <div className="px-6 py-5 md:px-8 md:py-6">
+                <div className="max-w-3xl space-y-4">
+                  <div className="space-y-3">
                     {clinicDetails.logo_url && logoVisible ? (
                       <img
                         src={clinicDetails.logo_url}
@@ -562,6 +566,7 @@ export default function PublicBookingPage() {
                   setCreatedAppointment(null);
                   setPatientName("");
                   setPatientEmail("");
+                  setPrivacidadAceptada(false);
                   setSelectedSlot(null);
                   setErrorMessage(null);
                 }}
@@ -763,10 +768,32 @@ export default function PublicBookingPage() {
                     />
                   </label>
 
-                  <div className="pt-2">
+                  <div className="space-y-4 pt-2">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={privacidadAceptada}
+                        onChange={(event) => setPrivacidadAceptada(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[var(--clinic-color)]"
+                        required
+                      />
+                      <span className="text-sm text-muted">
+                        He leído y acepto la{" "}
+                        <a
+                          href="/politica-de-privacidad"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-foreground underline"
+                        >
+                          política de privacidad
+                        </a>
+                        . Consiento el tratamiento de mis datos para gestionar mi cita.
+                      </span>
+                    </label>
+
                     <button
                       type="submit"
-                      disabled={submitting || !selectedService || !selectedSlot || !clinicDetails}
+                      disabled={submitting || !selectedService || !selectedSlot || !clinicDetails || !privacidadAceptada}
                       className="w-full rounded-[10px] px-5 py-3 font-heading text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                       style={{ backgroundColor: "var(--clinic-color)" }}
                     >

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { wrapEmailHtml } from "@/lib/emailLayout";
+
 type SendClinicAccessRecoveryEmailInput = {
   to: string;
   clinicName: string;
@@ -38,15 +40,27 @@ export async function sendClinicAccessRecoveryEmail(
     "Si no esperabas este correo, puedes ignorarlo.",
   ].join("\n");
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.6;">
-      <p>Hola,</p>
-      <p>Ya tienes acceso a <strong>${input.clinicName}</strong>.</p>
-      <p>Usa este enlace para establecer o cambiar tu contrasena:</p>
-      <p><a href="${input.resetLink}">Configurar contrasena</a></p>
-      <p>Si no esperabas este correo, puedes ignorarlo.</p>
-    </div>
-  `.trim();
+  const html = wrapEmailHtml(`
+    <p style="margin:0 0 8px">Hola,</p>
+    <p style="margin:0 0 24px;color:#374151">
+      Ya tienes acceso a <strong>${input.clinicName}</strong>.
+      Usa el enlace de abajo para establecer tu contraseña.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="border-radius:8px;background-color:#0E9E82;">
+          <a href="${input.resetLink}" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">
+            Configurar contraseña
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="font-size:13px;color:#6B7280;margin:0">
+      Si no esperabas este correo, puedes ignorarlo.
+    </p>
+  `);
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",

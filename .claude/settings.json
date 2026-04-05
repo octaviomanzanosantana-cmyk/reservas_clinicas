@@ -22,7 +22,18 @@
       "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/login\")",
       "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/b/miriamlorenzo\")",
       "Bash(curl -sk -w \"\\\\n---HTTP %{http_code}---\" \"https://app.appoclick.com/admin/clinics\")",
-      "Bash(curl -sk -w \"\\\\nHTTP %{http_code}\" \"https://app.appoclick.com/clinic\")"
+      "Bash(curl -sk -w \"\\\\nHTTP %{http_code}\" \"https://app.appoclick.com/clinic\")",
+      "Bash(ls c:/Users/oms_g/reservas_clinicas/public/logo_appoclick* c:/Users/oms_g/reservas_clinicas/public/favicon*)",
+      "Bash(npx supabase:*)",
+      "Bash(node -e ':*)",
+      "Bash(curl -sk \"https://app.appoclick.com/\")",
+      "Bash(curl -sk -o /dev/null -w \"HTTP %{http_code}, size: %{size_download} bytes, content-type: %{content_type}\" \"https://app.appoclick.com/logo_appoclick.png\")",
+      "Read(//c/Users/oms_g/Downloads/**)",
+      "Bash(ls -la c:/Users/oms_g/reservas_clinicas/public/logo_appoclick*.png)",
+      "Bash(ls -la c:/Users/oms_g/reservas_clinicas/public/logo_appoclick_transparent*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\oms_g\\Downloads"
     ]
   }
 }

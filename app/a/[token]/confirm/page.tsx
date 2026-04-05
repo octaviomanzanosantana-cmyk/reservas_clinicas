@@ -140,7 +140,7 @@ export default function ConfirmPage() {
 
         {calendarInput ? (
           <div className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
-            <p className="font-heading text-sm font-semibold text-foreground">Anadir al calendario</p>
+            <p className="font-heading text-sm font-semibold text-foreground">Añadir al calendario</p>
             <div className="mt-3 flex flex-wrap gap-2.5">
               {googleUrl ? (
                 <a

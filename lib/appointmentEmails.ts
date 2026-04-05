@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { AppointmentRow } from "@/lib/appointments";
+import { wrapEmailHtml } from "@/lib/emailLayout";
 
 type AppointmentEmailCopy = {
   subject: string;
@@ -105,26 +106,58 @@ async function sendAppointmentEmail(
     reviewSection,
   ].join("\n");
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #1A1A1A; line-height: 1.6;">
-      <p>Hola ${appointment.patient_name},</p>
-      <p>${copy.intro}</p>
-      <ul>
-        <li><strong>Clinica:</strong> ${appointment.clinic_name}</li>
-        <li><strong>Servicio:</strong> ${appointment.service}</li>
-        <li><strong>Tipo:</strong> ${typeLabel}</li>
-        <li><strong>Modalidad:</strong> ${modalityLabel}</li>
-        <li><strong>Fecha y hora:</strong> ${appointment.datetime_label}</li>
-      </ul>
-      <p><a href="${appointmentLink}" style="color:#0E9E82">Gestionar cita</a></p>
-      <p>
-        <a href="${confirmLink}" style="color:#0E9E82">Confirmar</a><br />
-        <a href="${rescheduleLink}" style="color:#0E9E82">Cambiar</a><br />
-        <a href="${cancelLink}" style="color:#0E9E82">Cancelar</a>
-      </p>
-      ${reviewHtml}
-    </div>
-  `.trim();
+  const bodyHtml = `
+    <p style="margin:0 0 8px">Hola <strong>${appointment.patient_name}</strong>,</p>
+    <p style="margin:0 0 24px;color:#374151">${copy.intro}</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:24px;">
+      <tr><td style="padding:20px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6B7280;width:120px;">Clínica</td>
+            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.clinic_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Servicio</td>
+            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.service}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Tipo</td>
+            <td style="padding:6px 0;font-size:13px;color:#111827;">${typeLabel}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Modalidad</td>
+            <td style="padding:6px 0;font-size:13px;color:#111827;">${modalityLabel}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Fecha y hora</td>
+            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.datetime_label}</td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+      <tr>
+        <td style="border-radius:8px;background-color:#0E9E82;">
+          <a href="${appointmentLink}" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">
+            Gestionar mi cita
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="font-size:13px;color:#6B7280;margin:0 0 4px">
+      <a href="${confirmLink}" style="color:#0E9E82;text-decoration:none;">Confirmar cita</a>
+      &nbsp;·&nbsp;
+      <a href="${rescheduleLink}" style="color:#0E9E82;text-decoration:none;">Cambiar horario</a>
+      &nbsp;·&nbsp;
+      <a href="${cancelLink}" style="color:#0E9E82;text-decoration:none;">Cancelar</a>
+    </p>
+    ${reviewHtml}
+  `;
+
+  const html = wrapEmailHtml(bodyHtml);
 
   // Enviar al paciente
   await sendEmail({ apiKey, from, to: [patientEmail], subject: copy.subject, text, html });
@@ -135,12 +168,12 @@ async function sendAppointmentEmail(
     try {
       const clinicSubject = `[Copia] ${copy.subject}`;
       const clinicText = `Copia de notificacion enviada a ${patientEmail}:\n\n${text}`;
-      const clinicHtml = `
-        <div style="font-family: Arial, sans-serif; color: #6B7280; font-size: 13px; margin-bottom: 12px;">
-          Copia de notificacion enviada a ${patientEmail}
-        </div>
-        ${html}
-      `.trim();
+      const clinicHtml = wrapEmailHtml(`
+        <p style="font-size:13px;color:#6B7280;margin:0 0 16px;padding:10px 14px;background:#F3F4F6;border-radius:6px;">
+          Copia de notificación enviada a ${patientEmail}
+        </p>
+        ${bodyHtml}
+      `);
       await sendEmail({ apiKey, from, to: [clinicEmail], subject: clinicSubject, text: clinicText, html: clinicHtml });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic copy", {
