@@ -1,4 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { sendAppointmentCancelledEmail } from "@/lib/appointmentEmails";
+import { getClinicById } from "@/lib/clinics";
 import { deleteCalendarEvent } from "@/lib/googleCalendar";
 import { getPatientClinicContext } from "@/lib/patientContext";
 import { NextResponse } from "next/server";
@@ -54,6 +56,23 @@ export async function POST(request: Request) {
             ? error.message
             : "No se pudo cancelar el evento en Google Calendar";
       }
+    }
+
+    // Enviar email de cancelación
+    try {
+      const clinic = current.clinic_id ? await getClinicById(current.clinic_id) : null;
+      const bookingUrl = clinic?.slug
+        ? `https://app.appoclick.com/b/${clinic.slug}`
+        : undefined;
+      await sendAppointmentCancelledEmail(cancelled as AppointmentRow, {
+        notificationEmail: clinic?.notification_email,
+        bookingUrl,
+      });
+    } catch (emailError) {
+      console.error("[cancel] Failed to send cancellation email", {
+        token: current.token,
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+      });
     }
 
     return NextResponse.json({

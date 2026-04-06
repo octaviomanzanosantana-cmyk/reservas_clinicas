@@ -4,20 +4,15 @@ import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import { toViewAppointment } from "@/lib/appointmentView";
-import { toDateInputValue } from "@/lib/dateFormat";
+import { getTodayInputValue, toDateInputValue } from "@/lib/dateFormat";
 import type { PatientClinicData } from "@/lib/patientClient";
 import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type AvailabilitySlot = {
-  value: string;
-  label: string;
-};
-
-type AvailabilityDateOption = {
   value: string;
   label: string;
 };
@@ -31,16 +26,11 @@ export default function ReschedulePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
-  const [availableDates, setAvailableDates] = useState<AvailabilityDateOption[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(true);
-  const [datesLoading, setDatesLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fecha base para buscar disponibilidad — se fija una vez al cargar la cita
-  // y no cambia al seleccionar fechas, evitando re-fetchs innecesarios.
-  const baseDateRef = useRef<string>("");
-
+  // Cargar cita y clínica
   useEffect(() => {
     let active = true;
 
@@ -57,98 +47,22 @@ export default function ReschedulePage() {
           ? new Date(details.appointment.scheduled_at)
           : new Date();
         const safeBaseDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
-        const dateValue = toDateInputValue(safeBaseDate);
-        baseDateRef.current = dateValue;
-        setSelectedDate(dateValue);
+        setSelectedDate(toDateInputValue(safeBaseDate));
       } catch {
         if (active) {
           setAppointment(null);
           setClinic(null);
-          setSelectedDate("");
         }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
     void load();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [token]);
 
-  // Cargar fechas disponibles UNA SOLA VEZ cuando la cita y clínica están listas.
-  // Usa baseDateRef (la fecha de la cita original) como punto de partida,
-  // NO selectedDate — así el usuario puede navegar por fechas sin re-fetch.
-  useEffect(() => {
-    let active = true;
-
-    const loadDates = async () => {
-      const clinicSlug = clinic?.slug;
-      const service = appointment?.service;
-      const baseDate = baseDateRef.current;
-
-      if (!clinicSlug || !service || !baseDate) {
-        setAvailableDates([]);
-        setDatesLoading(false);
-        return;
-      }
-
-      setDatesLoading(true);
-      try {
-        const searchParams = new URLSearchParams({
-          date: baseDate,
-          clinicSlug,
-          service,
-          excludeToken: token,
-          mode: "dates",
-          limit: "14",
-        });
-
-        const response = await fetch(`/api/availability?${searchParams.toString()}`);
-        const data = (await response.json()) as {
-          dates?: AvailabilityDateOption[];
-          error?: string;
-        };
-
-        if (!active) return;
-
-        if (!response.ok) {
-          throw new Error(data.error ?? "No se pudieron cargar las fechas disponibles");
-        }
-
-        const nextDates = data.dates ?? [];
-        setAvailableDates(nextDates);
-
-        // Auto-seleccionar la primera fecha disponible si la actual no está en la lista
-        setSelectedDate((current) => {
-          if (nextDates.some((item) => item.value === current)) {
-            return current;
-          }
-          return nextDates[0]?.value ?? current;
-        });
-      } catch {
-        if (!active) return;
-        setAvailableDates([]);
-      } finally {
-        if (active) {
-          setDatesLoading(false);
-        }
-      }
-    };
-
-    void loadDates();
-
-    return () => {
-      active = false;
-    };
-  }, [appointment?.service, clinic?.slug, token]);
-
-  // Cargar slots disponibles para la fecha seleccionada.
-  // SIEMPRE pasa clinicSlug para que la API use clinic_hours.
+  // Cargar slots cuando cambia la fecha — misma lógica que /b/[clinicSlug]
   useEffect(() => {
     let active = true;
 
@@ -179,21 +93,14 @@ export default function ReschedulePage() {
           setSlots(response.ok ? (data.slots ?? []) : []);
         }
       } catch {
-        if (active) {
-          setSlots([]);
-        }
+        if (active) setSlots([]);
       } finally {
-        if (active) {
-          setSlotsLoading(false);
-        }
+        if (active) setSlotsLoading(false);
       }
     };
 
     void loadSlots();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [appointment?.service, clinic?.slug, selectedDate, token]);
 
   const handleSlotSelect = async (slot: AvailabilitySlot) => {
@@ -217,7 +124,7 @@ export default function ReschedulePage() {
 
       router.push(`/a/${token}/confirm?changed=1`);
     } catch {
-      setErrorMessage("No se pudo reprogramar la cita. Intentalo de nuevo.");
+      setErrorMessage("No se pudo reprogramar la cita. Inténtalo de nuevo.");
     } finally {
       setSubmitting(false);
     }
@@ -254,64 +161,54 @@ export default function ReschedulePage() {
       <AppointmentCard appointment={appointment} />
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
-        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Selecciona un nuevo horario</h1>
+        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Cambiar cita</h1>
+
         <div className="mt-4 rounded-[14px] border-[0.5px] border-border bg-background p-4">
           <p className="font-heading text-sm font-semibold text-foreground">Tu cita actual</p>
           <p className="mt-2 text-sm text-foreground">{appointment.datetimeLabel}</p>
           <p className="mt-1 text-sm text-muted">{appointment.service}</p>
         </div>
-        <p className="mt-2 text-sm text-muted">
-          Elige un nuevo horario disponible para reprogramar tu cita.
-        </p>
 
-        <div className="mt-4 space-y-2">
-          <div className="rounded-[14px] border-[0.5px] border-border bg-background p-4">
-            <p className="font-heading text-sm font-semibold text-foreground">Elige un dia</p>
-            {datesLoading ? (
-              <p className="mt-2 text-sm text-muted">Cargando fechas disponibles...</p>
-            ) : availableDates.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {availableDates.map((dateOption) => (
+        {/* Selector de fecha — igual que /b/[clinicSlug] */}
+        <div className="mt-4">
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">Nueva fecha</span>
+            <input
+              type="date"
+              value={selectedDate}
+              min={getTodayInputValue()}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
+            />
+          </label>
+        </div>
+
+        {/* Slots de hora */}
+        <div className="mt-4">
+          <p className="text-sm font-medium text-foreground">Horarios disponibles</p>
+          <div className="mt-2">
+            {slotsLoading ? (
+              <p className="text-sm text-muted">Cargando disponibilidad...</p>
+            ) : slots.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {slots.map((slot) => (
                   <button
-                    key={dateOption.value}
+                    key={slot.value}
                     type="button"
-                    onClick={() => setSelectedDate(dateOption.value)}
-                    className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-all duration-150 ${
-                      selectedDate === dateOption.value
-                        ? "border-primary bg-primary text-white"
-                        : "border-border bg-white text-foreground hover:bg-primary-soft"
-                    }`}
+                    disabled={submitting}
+                    onClick={() => handleSlotSelect(slot)}
+                    className="rounded-[10px] border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground transition-all duration-150 hover:border-primary hover:bg-primary-soft disabled:opacity-60"
                   >
-                    {dateOption.label}
+                    {slot.label}
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-muted">
-                No hay dias disponibles para reprogramar esta cita.
-              </p>
+              <p className="text-sm text-muted">No hay horarios disponibles para este día.</p>
             )}
           </div>
-
-          {slotsLoading ? (
-            <p className="text-sm text-muted">Cargando disponibilidad...</p>
-          ) : slots.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {slots.map((slot) => (
-                <button
-                  key={slot.value}
-                  type="button"
-                  onClick={() => handleSlotSelect(slot)}
-                  className="rounded-[10px] border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground transition-all duration-150 hover:border-primary hover:bg-primary-soft"
-                >
-                  {slot.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">No hay horarios disponibles para este dia. Prueba con otra fecha.</p>
-          )}
         </div>
+
         {errorMessage ? <p className="mt-3 text-sm text-red-600">{errorMessage}</p> : null}
       </section>
 

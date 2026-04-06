@@ -27,4 +27,5 @@ values
   ('fisio-demo', 'Readaptación', 60, true),
   ('dental-demo', 'Revisión dental', 30, true),
   ('dental-demo', 'Higiene', 45, true),
-  ('dental-demo', 'Ortodoncia', 45, true);
+  ('dental-demo', 'Ortodoncia', 45, true)
+on conflict (clinic_slug, name) do nothing;

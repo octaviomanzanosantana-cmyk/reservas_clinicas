@@ -129,11 +129,14 @@ export async function getAvailableSlotsForClinicDate({
     return [];
   }
 
+  const clinicTimezone = clinic.timezone ?? "Atlantic/Canary";
+
   const daySlots = buildDaySlotsFromTimeRange(
     date,
     clinicHour.start_time,
     clinicHour.end_time,
     slotMinutes,
+    clinicTimezone,
   );
 
   return daySlots
@@ -145,7 +148,7 @@ export async function getAvailableSlotsForClinicDate({
     })
     .map((slot) => ({
       value: slot.toISOString(),
-      label: formatTimeLabel(slot),
+      label: formatTimeLabel(slot, clinicTimezone),
     }));
 }
 

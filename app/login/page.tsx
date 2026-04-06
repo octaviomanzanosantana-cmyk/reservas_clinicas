@@ -1,8 +1,15 @@
 import { LoginForm } from "@/components/auth/LoginForm";
+import { getAdminUser } from "@/lib/adminAuth";
 import { getCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { redirect } from "next/navigation";
 
 export default async function LoginPage() {
+  // Admin users must go to the admin panel, not their clinic
+  const adminUser = await getAdminUser();
+  if (adminUser) {
+    redirect("/admin/clinics");
+  }
+
   const clinicAccess = await getCurrentClinicForRequest();
 
   if (clinicAccess) {

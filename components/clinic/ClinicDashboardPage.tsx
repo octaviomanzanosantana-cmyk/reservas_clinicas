@@ -52,7 +52,7 @@ const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmada",
   cancelled: "Cancelada",
   completed: "Asistió",
-  change_requested: "Cambio solicitado",
+  change_requested: "Reprogramada",
 };
 
 function isTodayLocal(value: string | null): boolean {
@@ -126,7 +126,8 @@ export function ClinicDashboardPage({
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingAppointmentToken, setUpdatingAppointmentToken] = useState<string | null>(null);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const [completedFeedback, setCompletedFeedback] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -210,14 +211,31 @@ export function ClinicDashboardPage({
   const recentHistoryAppointments = useMemo(
     () =>
       appointments
-        .filter((appointment) => !isFutureAppointment(appointment))
-        .sort((left, right) => getAppointmentTimestamp(right) - getAppointmentTimestamp(left))
+        .filter(
+          (appointment) =>
+            appointment.status === "completed" ||
+            appointment.status === "cancelled" ||
+            appointment.status === "change_requested" ||
+            !isFutureAppointment(appointment),
+        )
+        .sort((left, right) => {
+          const leftTime = new Date(left.updated_at).getTime() || 0;
+          const rightTime = new Date(right.updated_at).getTime() || 0;
+          return rightTime - leftTime;
+        })
         .slice(0, 10),
     [appointments],
   );
 
-  const publicBookingUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/b/${clinicSlug}` : `/b/${clinicSlug}`;
+  const handleCopyAppointmentLink = async (token: string) => {
+    try {
+      await navigator.clipboard.writeText(`https://app.appoclick.com/a/${token}`);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 2000);
+    } catch {
+      // Silenciar error de clipboard
+    }
+  };
 
   const handleAppointmentStatusUpdate = async (
     token: string,
@@ -255,6 +273,11 @@ export function ClinicDashboardPage({
         ),
       );
 
+      if (status === "completed") {
+        setCompletedFeedback("Marcada como asistida. Email de reseña enviado.");
+        setTimeout(() => setCompletedFeedback(null), 4000);
+      }
+
       if (data.calendarWarning) {
         setErrorMessage(
           `La cita se actualizo, pero Google Calendar no se pudo sincronizar: ${data.calendarWarning}`,
@@ -264,15 +287,6 @@ export function ClinicDashboardPage({
       setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la cita");
     } finally {
       setUpdatingAppointmentToken(null);
-    }
-  };
-
-  const handleCopyBookingLink = async () => {
-    try {
-      await navigator.clipboard.writeText(publicBookingUrl);
-      setCopyFeedback("Enlace copiado");
-    } catch {
-      setCopyFeedback("No se pudo copiar el enlace");
     }
   };
 
@@ -387,16 +401,6 @@ export function ClinicDashboardPage({
             </h2>
             <p className="mt-1 text-sm text-muted">Solo citas futuras.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handleCopyBookingLink()}
-              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
-            >
-              Copiar enlace de reservas
-            </button>
-            {copyFeedback ? <span className="text-sm text-primary">{copyFeedback}</span> : null}
-          </div>
         </div>
 
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
@@ -410,6 +414,7 @@ export function ClinicDashboardPage({
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Enlace</th>
                 <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
@@ -431,7 +436,7 @@ export function ClinicDashboardPage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
-                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revision" : "Primera visita"}
+                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revisión" : "Primera visita"}
                       </span>
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted">
                         {(appointment as AppointmentRow & { modality?: string }).modality === "online" ? "Online" : "Presencial"}
@@ -445,6 +450,24 @@ export function ClinicDashboardPage({
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClasses(appointment.status)}`}>
                       {getAppointmentStatusLabel(appointment.status)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyAppointmentLink(appointment.token)}
+                      className="relative inline-flex items-center text-muted transition-colors hover:text-foreground"
+                      title="Copiar enlace de la cita"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                      </svg>
+                      {copiedToken === appointment.token ? (
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-white">
+                          Copiado!
+                        </span>
+                      ) : null}
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     {appointment.status === "pending" ? (
@@ -496,7 +519,10 @@ export function ClinicDashboardPage({
                       </div>
                     ) : null}
                     {appointment.status === "completed" ? (
-                      <span className="text-xs font-medium text-muted">Asistió</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Asistió
+                      </span>
                     ) : null}
                     {appointment.status === "cancelled" ? (
                       <span className="text-xs font-medium text-muted">Cancelada</span>
@@ -511,6 +537,12 @@ export function ClinicDashboardPage({
             <p className="px-4 py-6 text-sm text-muted">No hay citas próximas.</p>
           ) : null}
         </div>
+        {completedFeedback ? (
+          <p className="mt-3 flex items-center gap-1.5 text-sm text-primary">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {completedFeedback}
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
@@ -519,7 +551,7 @@ export function ClinicDashboardPage({
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Historial reciente
             </h2>
-            <p className="mt-1 text-sm text-muted">Ultimos 10 registros cerrados.</p>
+            <p className="mt-1 text-sm text-muted">Completadas, canceladas y reprogramadas.</p>
           </div>
         </div>
 
@@ -532,6 +564,7 @@ export function ClinicDashboardPage({
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -545,7 +578,7 @@ export function ClinicDashboardPage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
-                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revision" : "Primera visita"}
+                        {(appointment as AppointmentRow & { appointment_type?: string }).appointment_type === "revision" ? "Revisión" : "Primera visita"}
                       </span>
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted">
                         {(appointment as AppointmentRow & { modality?: string }).modality === "online" ? "Online" : "Presencial"}
@@ -559,6 +592,18 @@ export function ClinicDashboardPage({
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClasses(appointment.status)}`}>
                       {getAppointmentStatusLabel(appointment.status)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {appointment.status === "completed" ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
+                        disabled={updatingAppointmentToken === appointment.token}
+                        className="text-xs text-muted underline transition-colors hover:text-foreground disabled:opacity-60"
+                      >
+                        Revertir
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

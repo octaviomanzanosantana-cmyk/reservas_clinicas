@@ -24,7 +24,7 @@ export function LogoutButton() {
       router.replace("/login");
       router.refresh();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo cerrar sesion");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo cerrar sesión");
     } finally {
       setSubmitting(false);
     }
@@ -38,7 +38,7 @@ export function LogoutButton() {
         disabled={submitting}
         className="inline-flex w-full items-center justify-center rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? "Cerrando sesion..." : "Cerrar sesion"}
+        {submitting ? "Cerrando sesión..." : "Cerrar sesión"}
       </button>
       {errorMessage ? <p className="text-xs text-red-600">{errorMessage}</p> : null}
     </div>

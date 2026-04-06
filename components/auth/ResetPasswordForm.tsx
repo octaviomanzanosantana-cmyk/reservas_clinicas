@@ -76,7 +76,7 @@ export function ResetPasswordForm() {
         throw error;
       }
 
-      setSuccessMessage("Tu password se ha actualizado correctamente. Ya puedes iniciar sesion.");
+      setSuccessMessage("Tu password se ha actualizado correctamente. Ya puedes iniciar sesión.");
       setPassword("");
       setConfirmPassword("");
     } catch (error) {

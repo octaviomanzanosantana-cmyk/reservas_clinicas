@@ -39,7 +39,15 @@ export function parseDurationMinutes(durationLabel: string | null | undefined): 
   return minutes;
 }
 
-export function formatTimeLabel(date: Date): string {
+export function formatTimeLabel(date: Date, timezone?: string): string {
+  if (timezone) {
+    return new Intl.DateTimeFormat("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: timezone,
+      hour12: false,
+    }).format(date);
+  }
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
@@ -77,11 +85,54 @@ export function buildDaySlots(
   return slots;
 }
 
+/**
+ * Construye un Date para una hora local de una timezone específica.
+ * Ej: dateInTimezone("2026-04-03", "17:30", "Atlantic/Canary")
+ * devuelve el Date UTC que corresponde a 17:30 en Canarias.
+ */
+function dateAtTimezoneHour(
+  date: Date,
+  hours: number,
+  minutes: number,
+  timezone?: string,
+): Date {
+  if (!timezone) {
+    const result = new Date(date);
+    result.setHours(hours, minutes, 0, 0);
+    return result;
+  }
+
+  // Construir una fecha ISO en la timezone deseada y dejar que el
+  // motor JS la convierta a UTC.
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const h = String(hours).padStart(2, "0");
+  const m = String(minutes).padStart(2, "0");
+
+  // Obtener el offset UTC de esa hora en esa timezone
+  const probe = new Date(`${year}-${month}-${day}T${h}:${m}:00Z`);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(probe);
+  const probeHour = Number(parts.find((p) => p.type === "hour")?.value ?? hours);
+  const probeMinute = Number(parts.find((p) => p.type === "minute")?.value ?? minutes);
+
+  // Diferencia entre lo que pedimos y lo que salió = offset
+  const diffMinutes = (probeHour * 60 + probeMinute) - (hours * 60 + minutes);
+  return new Date(probe.getTime() - diffMinutes * 60_000);
+}
+
 export function buildDaySlotsFromTimeRange(
   date: Date,
   startTime: string,
   endTime: string,
   slotMinutes = DEFAULT_DURATION_MINUTES,
+  timezone?: string,
 ): Date[] {
   const safeSlotMinutes = slotMinutes > 0 ? slotMinutes : DEFAULT_DURATION_MINUTES;
   const slotDurationMs = safeSlotMinutes * 60_000;
@@ -97,11 +148,8 @@ export function buildDaySlotsFromTimeRange(
   const endHours = Number.parseInt(endMatch[1], 10);
   const endMinutes = Number.parseInt(endMatch[2], 10);
 
-  const start = new Date(date);
-  start.setHours(startHours, startMinutes, 0, 0);
-
-  const end = new Date(date);
-  end.setHours(endHours, endMinutes, 0, 0);
+  const start = dateAtTimezoneHour(date, startHours, startMinutes, timezone);
+  const end = dateAtTimezoneHour(date, endHours, endMinutes, timezone);
 
   if (
     Number.isNaN(start.getTime()) ||
@@ -114,7 +162,7 @@ export function buildDaySlotsFromTimeRange(
   const slots: Date[] = [];
   for (
     let cursor = new Date(start);
-    cursor.getTime() + slotDurationMs <= end.getTime();
+    cursor.getTime() <= end.getTime();
     cursor = new Date(cursor.getTime() + slotDurationMs)
   ) {
     slots.push(new Date(cursor));

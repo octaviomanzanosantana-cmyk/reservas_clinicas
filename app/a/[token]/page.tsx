@@ -12,8 +12,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const STATUS_MESSAGE: Record<Appointment["status"], string> = {
-  pending: "Tu cita esta pendiente de confirmacion",
-  confirmed: "Tu cita esta confirmada",
+  pending: "Tu cita está pendiente de confirmación",
+  confirmed: "Tu cita está confirmada",
   cancelled: "Esta cita ha sido cancelada",
   change_requested: "Hemos recibido tu solicitud de cambio",
   completed: "Esta cita ya ha sido completada",
@@ -144,13 +144,13 @@ export default function AppointmentHomePage() {
                   );
                   setCancelMessage("Tu cita ha sido cancelada.");
                 } catch {
-                  setCancelError("No se pudo cancelar la cita. Intentalo de nuevo.");
+                  setCancelError("No se pudo cancelar la cita. Inténtalo de nuevo.");
                 } finally {
                   setCancelLoading(false);
                 }
               }}
               disabled={cancelLoading}
-              className="text-sm text-muted transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-[10px] border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition-all duration-150 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {cancelLoading ? "Cancelando..." : "Cancelar cita"}
             </button>

@@ -57,13 +57,11 @@ function BookingConfirmation({
   appointment,
   manageLink,
   clinicAddress,
-  reviewUrl,
   onBookAnother,
 }: {
   appointment: Appointment;
   manageLink: string;
   clinicAddress: string;
-  reviewUrl?: string;
   onBookAnother: () => void;
 }) {
   const labels = getDateAndTimeLabels(appointment);
@@ -87,11 +85,14 @@ function BookingConfirmation({
   const googleUrl = calendarInput ? buildGoogleCalendarUrl(calendarInput) : null;
 
   const whatsappText = [
-    `Cita confirmada en ${appointment.clinicName}`,
+    `*Cita confirmada en ${appointment.clinicName}*`,
+    "",
     `Servicio: ${appointment.service}`,
     `Fecha: ${labels.dateLabel}`,
     `Hora: ${labels.timeLabel}`,
+    "",
     `Gestiona tu cita: ${manageLink}`,
+    `*Cancelar cita:* ${manageLink}/cancel`,
   ].join("\n");
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
@@ -200,19 +201,12 @@ function BookingConfirmation({
             </button>
           </div>
 
-          {reviewUrl ? (
-            <div className="rounded-[14px] border-[0.5px] border-border bg-background p-5 text-center">
-              <p className="text-sm text-muted">Te ha gustado la experiencia?</p>
-              <a
-                href={reviewUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-primary px-5 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft"
-              >
-                Dejanos una resena en Google
-              </a>
-            </div>
-          ) : null}
+          <p className="mt-6 text-center text-[11px] text-muted/50">
+            Reserva gestionada con{" "}
+            <a href="https://appoclick.com" target="_blank" rel="noreferrer" className="hover:text-muted">
+              Appoclick
+            </a>
+          </p>
         </div>
       </div>
     </section>
@@ -232,6 +226,7 @@ export default function PublicBookingPage() {
     review_url?: string;
     offers_presencial?: boolean;
     offers_online?: boolean;
+    logo_has_dark_bg?: boolean;
   } | null>(null);
   const [loadingClinic, setLoadingClinic] = useState(true);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -274,6 +269,7 @@ export default function PublicBookingPage() {
             review_url: data.clinic.review_url ?? "",
             offers_presencial: data.clinic.offers_presencial ?? true,
             offers_online: data.clinic.offers_online ?? false,
+            logo_has_dark_bg: data.clinic.logo_has_dark_bg ?? false,
           });
           setErrorMessage(null);
         } else {
@@ -492,10 +488,23 @@ export default function PublicBookingPage() {
         ) : clinicDetails ? (
           <>
             <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
+              {clinicDetails.logo_url && logoVisible && clinicDetails.logo_has_dark_bg ? (
+                <div
+                  className="px-6 py-6 md:px-8"
+                  style={{ backgroundColor: "var(--clinic-color)" }}
+                >
+                  <img
+                    src={clinicDetails.logo_url}
+                    alt={clinicDetails.clinicName}
+                    className="h-12 object-contain"
+                    onError={() => setLogoVisible(false)}
+                  />
+                </div>
+              ) : null}
               <div className="px-6 py-5 md:px-8 md:py-6">
                 <div className="max-w-3xl space-y-4">
                   <div className="space-y-3">
-                    {clinicDetails.logo_url && logoVisible ? (
+                    {clinicDetails.logo_url && logoVisible && !clinicDetails.logo_has_dark_bg ? (
                       <img
                         src={clinicDetails.logo_url}
                         alt={clinicDetails.clinicName}
@@ -560,7 +569,6 @@ export default function PublicBookingPage() {
                 appointment={createdAppointment}
                 manageLink={createdLink}
                 clinicAddress={clinicDetails.address ?? ""}
-                reviewUrl={clinicDetails.review_url || undefined}
                 onBookAnother={() => {
                   setCreatedLink(null);
                   setCreatedAppointment(null);
@@ -822,6 +830,19 @@ export default function PublicBookingPage() {
             </div>
           </section>
         )}
+        <footer className="mt-8 text-center text-xs text-muted">
+          <a href="/privacy" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+            Política de privacidad
+          </a>
+          <span className="mx-2">·</span>
+          <a href="/legal" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+            Aviso legal
+          </a>
+          <span className="mx-2">·</span>
+          <a href="https://appoclick.com" target="_blank" rel="noreferrer" className="hover:text-foreground">
+            Reservas gestionadas con Appoclick
+          </a>
+        </footer>
       </div>
     </div>
   );

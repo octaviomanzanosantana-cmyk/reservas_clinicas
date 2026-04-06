@@ -5,6 +5,8 @@ import {
   isGoogleCalendarConnected,
   type GoogleCalendarStatus,
 } from "@/lib/googleCalendarStatus";
+import { PlanUpgrade } from "@/components/PlanUpgrade";
+import type { Plan } from "@/lib/plan";
 import { useEffect, useState } from "react";
 
 type ClinicResponse = {
@@ -23,6 +25,8 @@ type ClinicResponse = {
     reminder_hours: number;
     offers_presencial: boolean;
     offers_online: boolean;
+    logo_has_dark_bg: boolean;
+    plan?: string;
   };
   error?: string;
 };
@@ -46,6 +50,8 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
   const [reminderHours, setReminderHours] = useState(48);
   const [offersPresencial, setOffersPresencial] = useState(true);
   const [offersOnline, setOffersOnline] = useState(false);
+  const [logoHasDarkBg, setLogoHasDarkBg] = useState(false);
+  const [clinicPlan, setClinicPlan] = useState<Plan>("free");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -72,7 +78,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         if (!active) return;
 
         if (!clinicResponse.ok || !clinicData.clinic) {
-          throw new Error(clinicData.error ?? "No se pudo cargar la clinica");
+          throw new Error(clinicData.error ?? "No se pudo cargar la clínica");
         }
 
         if (!googleResponse.ok) {
@@ -90,11 +96,13 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         setReminderHours(clinicData.clinic.reminder_hours ?? 48);
         setOffersPresencial(clinicData.clinic.offers_presencial ?? true);
         setOffersOnline(clinicData.clinic.offers_online ?? false);
+        setLogoHasDarkBg(clinicData.clinic.logo_has_dark_bg ?? false);
+        setClinicPlan((clinicData.clinic.plan as Plan) ?? "free");
         setGoogleConnected(isGoogleCalendarConnected(googleData));
         setGoogleEmail(googleData.email ?? null);
       } catch (error) {
         if (!active) return;
-        setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar la clinica");
+        setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar la clínica");
       } finally {
         if (active) setLoading(false);
       }
@@ -127,18 +135,19 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
           reminder_hours: reminderHours,
           offers_presencial: offersPresencial,
           offers_online: offersOnline,
+          logo_has_dark_bg: logoHasDarkBg,
         }),
       });
 
       const data = (await response.json()) as ClinicResponse;
 
       if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo guardar la clinica");
+        throw new Error(data.error ?? "No se pudo guardar la clínica");
       }
 
       setMessage("Guardado correctamente");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar la clinica");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar la clínica");
     } finally {
       setSaving(false);
     }
@@ -177,7 +186,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
     <div className="space-y-6">
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-          Configuracion de clinica
+          Configuración de clínica
         </h1>
         <p className="mt-2 text-sm text-muted">Editar datos de {clinicSlug}</p>
       </section>
@@ -202,12 +211,12 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Direccion</span>
+                  <span className="text-sm font-medium text-foreground">Dirección</span>
                   <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className={INPUT_CLASS} />
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Telefono</span>
+                  <span className="text-sm font-medium text-foreground">Teléfono</span>
                   <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} className={INPUT_CLASS} />
                   <p className="mt-1.5 text-xs text-muted">Se muestra a los pacientes en la pagina de reservas.</p>
                 </label>
@@ -220,6 +229,19 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                       <img src={logoUrl} alt="Preview logo" className="h-16 object-contain" />
                     </div>
                   ) : null}
+                </label>
+
+                <label className="flex items-center gap-3 rounded-[10px] border border-border bg-white px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={logoHasDarkBg}
+                    onChange={(e) => setLogoHasDarkBg(e.target.checked)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <div>
+                    <span className="text-sm text-foreground">Logo con fondo corporativo</span>
+                    <p className="text-xs text-muted">Activa esto si tu logo es blanco o claro y necesita fondo de color para verse.</p>
+                  </div>
                 </label>
 
                 <label className="block">
@@ -238,7 +260,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
             </div>
 
             <div className="rounded-[14px] border-[0.5px] border-border bg-background p-5">
-              <p className="font-heading text-sm font-semibold text-foreground">Notificaciones y resenas</p>
+              <p className="font-heading text-sm font-semibold text-foreground">Notificaciones y reseñas</p>
 
               <div className="mt-4 space-y-4">
                 <label className="block">
@@ -256,7 +278,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Enlace de resenas Google</span>
+                  <span className="text-sm font-medium text-foreground">Enlace de reseñas Google</span>
                   <input
                     type="url"
                     value={reviewUrl}
@@ -289,7 +311,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
             <div className="rounded-[14px] border-[0.5px] border-border bg-background p-5">
               <p className="font-heading text-sm font-semibold text-foreground">Modalidades de cita</p>
-              <p className="mt-1 text-xs text-muted">Selecciona que modalidades ofrece tu clinica. Si ambas estan activas, el paciente podra elegir al reservar.</p>
+              <p className="mt-1 text-xs text-muted">Selecciona qué modalidades ofrece tu clínica. Si ambas están activas, el paciente podrá elegir al reservar.</p>
 
               <div className="mt-4 space-y-3">
                 <label className="flex items-center gap-3 rounded-[10px] border border-border bg-white px-4 py-3">
@@ -325,6 +347,14 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
         {message ? <p className="mt-4 text-sm text-primary">{message}</p> : null}
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
+      </section>
+
+      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
+        <h2 className="font-heading text-lg font-semibold text-foreground">Tu plan</h2>
+        <p className="mt-2 text-sm text-muted">Gestiona tu suscripción a AppoClick.</p>
+        <div className="mt-5">
+          <PlanUpgrade currentPlan={clinicPlan} clinicSlug={clinicSlug} />
+        </div>
       </section>
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">

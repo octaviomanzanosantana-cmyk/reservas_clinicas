@@ -32,6 +32,9 @@ export async function GET(request: Request) {
         reminder_hours: clinic.reminder_hours,
         offers_presencial: clinic.offers_presencial,
         offers_online: clinic.offers_online,
+        logo_has_dark_bg: clinic.logo_has_dark_bg,
+        timezone: clinic.timezone,
+        plan: clinic.plan ?? "free",
       },
     });
   } catch (error) {

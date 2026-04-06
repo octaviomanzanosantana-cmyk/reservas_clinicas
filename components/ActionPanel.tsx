@@ -26,7 +26,7 @@ export default function ActionPanel({
               Confirmar cita
             </button>
             <p className="text-sm text-muted">
-              Confirmacion instantanea. La clinica recibira el aviso automaticamente.
+              Confirmación instantánea. La clínica recibirá el aviso automáticamente.
             </p>
           </>
         ) : null}
@@ -42,10 +42,10 @@ export default function ActionPanel({
 
       <div className="rounded-[14px] border-[0.5px] border-border bg-background p-4">
         <p className="text-sm text-muted">
-          Evita esperas al telefono: gestiona aqui tu cita en 10 segundos.
+          Evita esperas al teléfono: gestiona aquí tu cita en 10 segundos.
         </p>
         <p className="mt-1 text-sm text-muted">
-          La clinica recibira el aviso automaticamente.
+          La clínica recibirá el aviso automáticamente.
         </p>
       </div>
     </div>

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
     const updated = await updateAppointment(token, {
       scheduled_at: requestedSlot,
-      datetime_label: buildDateTimeLabel(scheduledDate),
+      datetime_label: buildDateTimeLabel(scheduledDate, clinic?.timezone),
       status: "confirmed",
     });
 

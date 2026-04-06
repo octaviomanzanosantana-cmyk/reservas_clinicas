@@ -1,8 +1,10 @@
 "use client";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import AppoclickLogo from "@/components/ui/AppoclickLogo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type ClinicPanelLayoutProps = {
   children: React.ReactNode;
@@ -12,6 +14,18 @@ type ClinicPanelLayoutProps = {
 
 export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPanelLayoutProps) {
   const pathname = usePathname();
+  const [clinicName, setClinicName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/clinics?slug=${encodeURIComponent(clinicSlug)}`)
+      .then((r) => r.json())
+      .then((data: { clinic?: { name?: string } }) => {
+        if (active && data.clinic?.name) setClinicName(data.clinic.name);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [clinicSlug]);
 
   const navItems = [
     { href: basePath, label: "Dashboard" },
@@ -30,11 +44,8 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
               Panel de clínica
             </p>
-            <p className="mt-2 font-heading text-xl font-semibold tracking-tight text-foreground">
-              {clinicSlug}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Agenda, servicios y configuración.
+            <p className="mt-2 font-heading text-lg font-semibold tracking-tight text-foreground">
+              {clinicName ?? clinicSlug}
             </p>
           </div>
 
@@ -69,6 +80,16 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
               <LogoutButton />
             </div>
           </div>
+
+          <a
+            href="https://appoclick.com"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 flex flex-col items-center gap-1.5 opacity-40 transition-opacity hover:opacity-70"
+          >
+            <AppoclickLogo variant="color" width={90} />
+            <span className="text-[10px] text-muted">Powered by Appoclick</span>
+          </a>
         </aside>
 
         <main className="min-w-0 flex-1 pb-6">{children}</main>

@@ -91,7 +91,7 @@ export default function ConfirmPage() {
     const clinicName = clinic?.name ?? appointment.clinicName;
     const title = appointment.status === "change_requested"
       ? "Solicitud de cambio enviada"
-      : "Tu cita esta confirmada";
+      : "Tu cita está confirmada";
     const description = appointment.status === "change_requested"
       ? `Tu cita ha sido reprogramada para ${appointment.datetimeLabel}.`
       : appointment.datetimeLabel;
@@ -182,7 +182,7 @@ export default function ConfirmPage() {
         </Link>
 
         <Toast
-          message="Accion realizada. La clinica ha sido notificada."
+          message="Acción realizada. La clínica ha sido notificada."
           visible={toastVisible}
           onHide={() => setToastVisible(false)}
         />

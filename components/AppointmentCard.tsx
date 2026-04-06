@@ -26,7 +26,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
       <div className="mt-2 flex flex-wrap gap-2">
         {appointment.appointmentType ? (
           <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium text-primary">
-            {appointment.appointmentType === "revision" ? "Revision" : "Primera visita"}
+            {appointment.appointmentType === "revision" ? "Revisión" : "Primera visita"}
           </span>
         ) : null}
         {appointment.modality ? (
@@ -69,7 +69,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
 
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Direccion</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Dirección</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
             <IconWrap>
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">
@@ -82,7 +82,7 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
 
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Duracion</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Duración</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
             <IconWrap>
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8">

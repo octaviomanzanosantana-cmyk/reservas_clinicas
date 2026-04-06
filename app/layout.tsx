@@ -17,6 +17,12 @@ const dm = DM_Sans({
 export const metadata: Metadata = {
   title: "Appoclick",
   description: "Gestión de citas para clínicas privadas",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -30,7 +30,14 @@
       "Bash(curl -sk -o /dev/null -w \"HTTP %{http_code}, size: %{size_download} bytes, content-type: %{content_type}\" \"https://app.appoclick.com/logo_appoclick.png\")",
       "Read(//c/Users/oms_g/Downloads/**)",
       "Bash(ls -la c:/Users/oms_g/reservas_clinicas/public/logo_appoclick*.png)",
-      "Bash(ls -la c:/Users/oms_g/reservas_clinicas/public/logo_appoclick_transparent*)"
+      "Bash(ls -la c:/Users/oms_g/reservas_clinicas/public/logo_appoclick_transparent*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.Stripe.LATEST_API_VERSION || 'not found'\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_fake'\\); console.log\\(typeof s\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); console.log\\(Stripe.Stripe?.LATEST_API_VERSION ?? Stripe.LATEST_API_VERSION ?? 'N/A'\\)\")",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(Object.keys\\(s\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.API_VERSION\\)\")",
+      "Bash(node -e \" const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_fake'\\); // Check the type definition \")"
     ],
     "additionalDirectories": [
       "c:\\Users\\oms_g\\Downloads"

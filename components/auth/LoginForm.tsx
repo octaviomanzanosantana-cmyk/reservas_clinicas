@@ -28,7 +28,7 @@ export function LoginForm() {
       });
 
       if (error || !data.user) {
-        throw new Error(error?.message ?? "No se pudo iniciar sesion");
+        throw new Error(error?.message ?? "No se pudo iniciar sesión");
       }
 
       router.replace(nextPath || "/clinic");

@@ -13,6 +13,9 @@ type ClinicNotificationOptions = {
   notificationEmail?: string | null;
 };
 
+const LOGO_URL = "https://app.appoclick.com/logo_appoclick_transparent.png";
+const BRAND_COLOR = "#0E9E82";
+
 function getAppUrl(): string | null {
   const appUrl = process.env.APP_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim() || "";
   return appUrl ? appUrl.replace(/\/+$/, "") : null;
@@ -54,6 +57,140 @@ async function sendEmail(params: {
   }
 }
 
+function getModalityLabel(appointment: AppointmentRow): string {
+  return appointment.modality === "online" ? "Online" : "Presencial";
+}
+
+function getTypeLabel(appointment: AppointmentRow): string {
+  return appointment.appointment_type === "revision" ? "Revision" : "Primera visita";
+}
+
+function buildDetailRows(appointment: AppointmentRow): string {
+  const rows = [
+    { label: "Servicio", value: appointment.service },
+    { label: "Tipo", value: getTypeLabel(appointment) },
+    { label: "Modalidad", value: getModalityLabel(appointment) },
+    { label: "Fecha y hora", value: appointment.datetime_label },
+  ];
+
+  if (appointment.modality !== "online" && appointment.address) {
+    rows.push({ label: "Dirección", value: appointment.address });
+  }
+
+  rows.push({ label: "Duración", value: appointment.duration_label });
+
+  return rows
+    .map(
+      (r) => `
+      <tr>
+        <td style="padding:8px 12px;color:#6B7280;font-size:13px;white-space:nowrap;vertical-align:top">${r.label}</td>
+        <td style="padding:8px 12px;color:#1A1A1A;font-size:14px;font-weight:500">${r.value}</td>
+      </tr>`,
+    )
+    .join("");
+}
+
+function buildHtmlEmail(params: {
+  appointment: AppointmentRow;
+  intro: string;
+  ctaUrl: string;
+  ctaLabel: string;
+  reviewUrl?: string | null;
+  extraHtml?: string;
+}): string {
+  const { appointment, intro, ctaUrl, ctaLabel, reviewUrl, extraHtml } = params;
+
+  const reviewBlock = reviewUrl
+    ? `<p style="margin:20px 0 0;text-align:center"><a href="${reviewUrl}" style="color:${BRAND_COLOR};font-size:13px">¿Te ha gustado? Déjanos una reseña</a></p>`
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F2F0;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2F0">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;border:1px solid #E5E7EB">
+
+<!-- Logo -->
+<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;padding:20px 24px">
+  <img src="${LOGO_URL}" alt="Appoclick" width="180" style="display:block;max-width:180px;height:auto" />
+</td></tr>
+
+<!-- Saludo -->
+<tr><td style="padding:24px 28px 0">
+  <p style="margin:0;font-size:16px;font-weight:600;color:#1A1A1A">Hola ${appointment.patient_name},</p>
+  <p style="margin:8px 0 0;font-size:14px;color:#6B7280;line-height:1.5">${intro}</p>
+</td></tr>
+
+<!-- Datos de la cita -->
+<tr><td style="padding:20px 28px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2F0;border-radius:10px">
+    <tr><td style="padding:4px 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td colspan="2" style="padding:12px 12px 4px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em">${appointment.clinic_name}</td>
+        </tr>
+        ${buildDetailRows(appointment)}
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- CTA -->
+<tr><td align="center" style="padding:4px 28px 8px">
+  <a href="${ctaUrl}" style="display:inline-block;padding:12px 32px;background:${BRAND_COLOR};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:10px">${ctaLabel}</a>
+</td></tr>
+
+${extraHtml ? `<tr><td style="padding:0 28px 8px">${extraHtml}</td></tr>` : ""}
+${reviewBlock ? `<tr><td style="padding:0 28px 8px">${reviewBlock}</td></tr>` : ""}
+
+<!-- Pie -->
+<tr><td style="padding:20px 28px;border-top:1px solid #E5E7EB">
+  <p style="margin:0;font-size:12px;color:#6B7280;text-align:center">${appointment.clinic_name}${appointment.address ? ` · ${appointment.address}` : ""}</p>
+  <p style="margin:6px 0 0;font-size:11px;color:#9CA3AF;text-align:center">Enviado con <a href="https://appoclick.com" style="color:#9CA3AF">Appoclick</a></p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`.trim();
+}
+
+function buildPlainText(params: {
+  appointment: AppointmentRow;
+  intro: string;
+  ctaUrl: string;
+  reviewUrl?: string | null;
+}): string {
+  const { appointment, intro, ctaUrl, reviewUrl } = params;
+  const lines = [
+    `Hola ${appointment.patient_name},`,
+    "",
+    intro,
+    "",
+    `Clinica: ${appointment.clinic_name}`,
+    `Servicio: ${appointment.service}`,
+    `Tipo: ${getTypeLabel(appointment)}`,
+    `Modalidad: ${getModalityLabel(appointment)}`,
+    `Fecha y hora: ${appointment.datetime_label}`,
+  ];
+
+  if (appointment.modality !== "online" && appointment.address) {
+    lines.push(`Dirección: ${appointment.address}`);
+  }
+  lines.push(`Duración: ${appointment.duration_label}`);
+  lines.push("", `Gestionar cita: ${ctaUrl}`);
+
+  if (reviewUrl) {
+    lines.push("", `Dejanos una reseña: ${reviewUrl}`);
+  }
+
+  return lines.join("\n");
+}
+
 async function sendAppointmentEmail(
   appointment: AppointmentRow,
   copy: AppointmentEmailCopy,
@@ -75,106 +212,36 @@ async function sendAppointmentEmail(
   }
 
   const appointmentLink = `${appUrl}/a/${appointment.token}`;
-  const confirmLink = `${appointmentLink}/confirm`;
-  const rescheduleLink = `${appointmentLink}/reschedule`;
-  const cancelLink = `${appointmentLink}/cancel`;
 
-  const reviewSection = copy.reviewUrl
-    ? `\nTe ha gustado? Dejanos una resena: ${copy.reviewUrl}`
-    : "";
-  const reviewHtml = copy.reviewUrl
-    ? `<p style="margin-top:16px"><a href="${copy.reviewUrl}" style="color:#0E9E82">Te ha gustado? Dejanos una resena</a></p>`
-    : "";
+  const text = buildPlainText({
+    appointment,
+    intro: copy.intro,
+    ctaUrl: appointmentLink,
+    reviewUrl: copy.reviewUrl,
+  });
 
-  const modalityLabel = appointment.modality === "online" ? "Online" : "Presencial";
-  const typeLabel = appointment.appointment_type === "revision" ? "Revision" : "Primera visita";
+  const html = buildHtmlEmail({
+    appointment,
+    intro: copy.intro,
+    ctaUrl: appointmentLink,
+    ctaLabel: "Gestionar mi cita",
+    reviewUrl: copy.reviewUrl,
+  });
 
-  const text = [
-    `Hola ${appointment.patient_name},`,
-    "",
-    copy.intro,
-    `Clinica: ${appointment.clinic_name}`,
-    `Servicio: ${appointment.service}`,
-    `Tipo: ${typeLabel}`,
-    `Modalidad: ${modalityLabel}`,
-    `Fecha y hora: ${appointment.datetime_label}`,
-    "",
-    `Gestionar cita: ${appointmentLink}`,
-    `Confirmar: ${confirmLink}`,
-    `Cambiar: ${rescheduleLink}`,
-    `Cancelar: ${cancelLink}`,
-    reviewSection,
-  ].join("\n");
-
-  const bodyHtml = `
-    <p style="margin:0 0 8px">Hola <strong>${appointment.patient_name}</strong>,</p>
-    <p style="margin:0 0 24px;color:#374151">${copy.intro}</p>
-
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:24px;">
-      <tr><td style="padding:20px 24px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="padding:6px 0;font-size:13px;color:#6B7280;width:120px;">Clínica</td>
-            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.clinic_name}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Servicio</td>
-            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.service}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Tipo</td>
-            <td style="padding:6px 0;font-size:13px;color:#111827;">${typeLabel}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Modalidad</td>
-            <td style="padding:6px 0;font-size:13px;color:#111827;">${modalityLabel}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;font-size:13px;color:#6B7280;">Fecha y hora</td>
-            <td style="padding:6px 0;font-size:13px;color:#111827;font-weight:600;">${appointment.datetime_label}</td>
-          </tr>
-        </table>
-      </td></tr>
-    </table>
-
-    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
-      <tr>
-        <td style="border-radius:8px;background-color:#0E9E82;">
-          <a href="${appointmentLink}" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">
-            Gestionar mi cita
-          </a>
-        </td>
-      </tr>
-    </table>
-
-    <p style="font-size:13px;color:#6B7280;margin:0 0 4px">
-      <a href="${confirmLink}" style="color:#0E9E82;text-decoration:none;">Confirmar cita</a>
-      &nbsp;·&nbsp;
-      <a href="${rescheduleLink}" style="color:#0E9E82;text-decoration:none;">Cambiar horario</a>
-      &nbsp;·&nbsp;
-      <a href="${cancelLink}" style="color:#0E9E82;text-decoration:none;">Cancelar</a>
-    </p>
-    ${reviewHtml}
-  `;
-
-  const html = wrapEmailHtml(bodyHtml);
-
-  // Enviar al paciente
   await sendEmail({ apiKey, from, to: [patientEmail], subject: copy.subject, text, html });
 
-  // Copia a la clínica si está configurado
+  // Copia a la clínica
   const clinicEmail = options?.notificationEmail?.trim();
   if (clinicEmail) {
     try {
-      const clinicSubject = `[Copia] ${copy.subject}`;
-      const clinicText = `Copia de notificacion enviada a ${patientEmail}:\n\n${text}`;
-      const clinicHtml = wrapEmailHtml(`
-        <p style="font-size:13px;color:#6B7280;margin:0 0 16px;padding:10px 14px;background:#F3F4F6;border-radius:6px;">
-          Copia de notificación enviada a ${patientEmail}
-        </p>
-        ${bodyHtml}
-      `);
-      await sendEmail({ apiKey, from, to: [clinicEmail], subject: clinicSubject, text: clinicText, html: clinicHtml });
+      await sendEmail({
+        apiKey,
+        from,
+        to: [clinicEmail],
+        subject: `[Copia] ${copy.subject}`,
+        text: `Copia de notificacion enviada a ${patientEmail}:\n\n${text}`,
+        html: `<div style="font-family:Arial,sans-serif;color:#6B7280;font-size:13px;padding:12px 16px;background:#F2F2F0;border-radius:10px;margin-bottom:16px">Copia de notificacion enviada a ${patientEmail}</div>${html}`,
+      });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic copy", {
         clinicEmail,
@@ -193,7 +260,7 @@ export async function sendAppointmentCreatedEmail(
     appointment,
     {
       subject: `Tu cita en ${appointment.clinic_name}`,
-      intro: "Tu cita ha sido creada correctamente.",
+      intro: "Tu cita ha sido registrada correctamente. Aqui tienes los detalles.",
       reviewUrl: options?.reviewUrl,
     },
     options,
@@ -207,8 +274,8 @@ export async function sendAppointmentRescheduledEmail(
   await sendAppointmentEmail(
     appointment,
     {
-      subject: `Tu cita ha sido modificada en ${appointment.clinic_name}`,
-      intro: "Tu cita ha sido modificada. Este es tu nuevo horario.",
+      subject: `Cita modificada en ${appointment.clinic_name}`,
+      intro: "Tu cita ha sido reprogramada. Este es tu nuevo horario.",
     },
     options,
   );
@@ -221,10 +288,199 @@ export async function sendAppointmentReminderEmail(
   await sendAppointmentEmail(
     appointment,
     {
-      subject: `Recordatorio: tu cita en ${appointment.clinic_name} es pronto`,
-      intro: "Te recordamos que tienes una cita programada. Aqui tienes los detalles.",
+      subject: `Recordatorio: tu cita en ${appointment.clinic_name}`,
+      intro: "Te recordamos que tienes una cita programada pronto.",
       reviewUrl: options?.reviewUrl,
     },
     options,
   );
+}
+
+export async function sendAppointmentCancelledEmail(
+  appointment: AppointmentRow,
+  options?: ClinicNotificationOptions & { bookingUrl?: string | null },
+): Promise<void> {
+  const patientEmail = appointment.patient_email?.trim();
+  const { apiKey, from, appUrl } = getEmailConfig();
+
+  if (!patientEmail || !apiKey || !from || !appUrl) return;
+
+  const bookingUrl = options?.bookingUrl ?? appUrl;
+
+  const text = buildPlainText({
+    appointment,
+    intro: "Tu cita ha sido cancelada. Aquí tienes el resumen.",
+    ctaUrl: bookingUrl,
+  });
+
+  const html = buildHtmlEmail({
+    appointment,
+    intro: "Tu cita ha sido cancelada correctamente. Si necesitas una nueva cita, puedes reservar desde el enlace.",
+    ctaUrl: bookingUrl,
+    ctaLabel: "Reservar nueva cita",
+  });
+
+  await sendEmail({ apiKey, from, to: [patientEmail], subject: `Tu cita en ${appointment.clinic_name} ha sido cancelada`, text, html });
+
+  const clinicEmail = options?.notificationEmail?.trim();
+  if (clinicEmail) {
+    try {
+      await sendEmail({
+        apiKey,
+        from,
+        to: [clinicEmail],
+        subject: `[Cancelación] Cita cancelada — ${appointment.patient_name}`,
+        text: `Cita cancelada por ${appointment.patient_name}:\n\n${text}`,
+        html: `<div style="font-family:Arial,sans-serif;color:#6B7280;font-size:13px;padding:12px 16px;background:#F2F2F0;border-radius:10px;margin-bottom:16px">Cita cancelada por ${appointment.patient_name}</div>${html}`,
+      });
+    } catch (error) {
+      console.error("[appointments.email] Failed to send clinic cancellation copy", {
+        clinicEmail,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
+export async function sendAppointmentReviewEmail(
+  appointment: AppointmentRow,
+  reviewUrl: string,
+): Promise<void> {
+  const patientEmail = appointment.patient_email?.trim();
+  const { apiKey, from, appUrl } = getEmailConfig();
+
+  if (!patientEmail || !apiKey || !from || !appUrl) return;
+
+  const text = [
+    `Hola ${appointment.patient_name},`,
+    "",
+    `Gracias por tu visita a ${appointment.clinic_name}.`,
+    "",
+    `Si la experiencia ha sido buena, nos ayudaría mucho que dejaras una reseña:`,
+    reviewUrl,
+    "",
+    "Gracias por tu confianza.",
+  ].join("\n");
+
+  const html = buildHtmlEmail({
+    appointment,
+    intro: `Gracias por tu visita a ${appointment.clinic_name}. Esperamos que la experiencia haya sido buena.`,
+    ctaUrl: reviewUrl,
+    ctaLabel: "Dejar una reseña",
+  });
+
+  await sendEmail({
+    apiKey,
+    from,
+    to: [patientEmail],
+    subject: `Gracias por tu visita a ${appointment.clinic_name}`,
+    text,
+    html,
+  });
+}
+
+/**
+ * Email de bienvenida.
+ * invited=true  → flujo admin: botón "Crear mi contraseña" con passwordResetUrl
+ * invited=false → flujo autoservicio: solo info, sin botón de activación
+ */
+export async function sendClinicWelcomeEmail(
+  email: string,
+  clinicName: string,
+  options?: { invited?: boolean; passwordResetUrl?: string },
+): Promise<void> {
+  const { apiKey, from } = getEmailConfig();
+  if (!apiKey || !from) {
+    console.warn("[clinic.welcome] Missing email configuration");
+    return;
+  }
+
+  const appUrl = process.env.APP_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
+  const isInvited = options?.invited ?? false;
+  const loginUrl = `${appUrl.replace(/\/+$/, "")}/login`;
+
+  const subject = isInvited
+    ? `Bienvenido/a a Appoclick — Crea tu contraseña`
+    : `¡Bienvenido/a a Appoclick!`;
+
+  const ctaUrl = isInvited ? (options?.passwordResetUrl ?? loginUrl) : loginUrl;
+  const ctaLabel = isInvited ? "Crear mi contraseña" : "Acceder a mi panel";
+  const introText = isInvited
+    ? `Tu clínica "${clinicName}" ya está lista en Appoclick. Crea tu contraseña para acceder a tu panel.`
+    : `Tu clínica "${clinicName}" ya está lista en Appoclick. Accede cuando quieras.`;
+
+  const text = [
+    `¡Bienvenido/a a Appoclick!`,
+    "",
+    introText,
+    "",
+    `${isInvited ? "Crea tu contraseña" : "Accede a tu panel"}: ${ctaUrl}`,
+    "",
+    `Una vez dentro, podrás:`,
+    `- Gestionar tus citas desde el panel`,
+    `- Compartir tu página de reservas con tus pacientes`,
+    `- Configurar servicios, horarios y notificaciones`,
+    "",
+    `¿Necesitas ayuda? Escríbenos a hola@appoclick.com`,
+  ].join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F2F0;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2F0">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;border:1px solid #E5E7EB">
+
+<!-- Logo -->
+<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;padding:20px 24px">
+  <img src="${LOGO_URL}" alt="Appoclick" width="180" style="display:block;max-width:180px;height:auto" />
+</td></tr>
+
+<!-- Bienvenida -->
+<tr><td style="padding:24px 28px 0">
+  <h1 style="margin:0;font-size:22px;font-weight:700;color:#1A1A1A;text-align:center">¡Bienvenido/a a Appoclick!</h1>
+  <p style="margin:12px 0 0;font-size:14px;color:#6B7280;line-height:1.6;text-align:center">
+    Tu clínica <strong style="color:#1A1A1A">${clinicName}</strong> ya está lista.
+    ${isInvited ? "Crea tu contraseña para empezar." : "Accede cuando quieras desde tu panel."}
+  </p>
+</td></tr>
+
+<!-- CTA -->
+<tr><td align="center" style="padding:24px 28px">
+  <a href="${ctaUrl}" style="display:inline-block;padding:14px 36px;background:${BRAND_COLOR};color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px">${ctaLabel}</a>
+</td></tr>
+
+<!-- Qué puedes hacer -->
+<tr><td style="padding:0 28px 20px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2F0;border-radius:10px">
+    <tr><td style="padding:16px">
+      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#1A1A1A">Una vez dentro podrás:</p>
+      <p style="margin:0;font-size:13px;color:#6B7280;line-height:1.8">
+        ✓ Gestionar tus citas desde el panel<br/>
+        ✓ Compartir tu página de reservas con pacientes<br/>
+        ✓ Configurar servicios, horarios y notificaciones
+      </p>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- Pie -->
+<tr><td style="padding:20px 28px;border-top:1px solid #E5E7EB">
+  <p style="margin:0;font-size:12px;color:#9CA3AF;text-align:center">
+    ¿Necesitas ayuda? <a href="mailto:hola@appoclick.com" style="color:${BRAND_COLOR}">hola@appoclick.com</a>
+  </p>
+  <p style="margin:8px 0 0;font-size:11px;color:#9CA3AF;text-align:center">
+    Appoclick · ANALÓGICAMENTE DIGITALES, S.L.
+  </p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`.trim();
+
+  await sendEmail({ apiKey, from, to: [email], subject, text, html });
 }

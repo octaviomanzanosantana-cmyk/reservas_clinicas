@@ -23,6 +23,8 @@ type UpdateClinicRequest = {
   reminder_hours?: number;
   offers_presencial?: boolean;
   offers_online?: boolean;
+  logo_has_dark_bg?: boolean;
+  timezone?: string;
 };
 
 export async function POST(request: Request) {
@@ -55,6 +57,8 @@ export async function POST(request: Request) {
       reminder_hours: body.reminder_hours,
       offers_presencial: body.offers_presencial,
       offers_online: body.offers_online,
+      logo_has_dark_bg: body.logo_has_dark_bg,
+      timezone: body.timezone,
     });
 
     if (!clinic) {

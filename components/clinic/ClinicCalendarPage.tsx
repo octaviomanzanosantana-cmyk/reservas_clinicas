@@ -380,14 +380,14 @@ export function ClinicCalendarPage({
               </div>
 
               <div className="flex flex-col gap-3 sm:items-end">
-                <div className="rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm">
+                <div className="rounded-[10px] border border-border bg-white p-1">
                   <button
                     type="button"
                     onClick={() => setViewMode("day")}
-                    className={`rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-[8px] px-3 py-2 font-heading text-sm font-medium transition-all ${
                       viewMode === "day"
-                        ? "bg-slate-950 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-slate-50"
+                        ? "bg-primary text-white"
+                        : "text-muted hover:text-foreground"
                     }`}
                   >
                     Día
@@ -395,10 +395,10 @@ export function ClinicCalendarPage({
                   <button
                     type="button"
                     onClick={() => setViewMode("week")}
-                    className={`rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-[8px] px-3 py-2 font-heading text-sm font-medium transition-all ${
                       viewMode === "week"
-                        ? "bg-slate-950 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-slate-50"
+                        ? "bg-primary text-white"
+                        : "text-muted hover:text-foreground"
                     }`}
                   >
                     Semana

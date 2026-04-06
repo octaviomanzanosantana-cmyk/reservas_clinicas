@@ -1,5 +1,7 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { sendAppointmentReviewEmail } from "@/lib/appointmentEmails";
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
+import { getClinicById } from "@/lib/clinics";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
@@ -57,6 +59,21 @@ export async function POST(request: Request) {
         error instanceof Error
           ? error.message
           : "No se pudo sincronizar Google Calendar";
+    }
+
+    // Enviar email de reseña al marcar como "Asistió"
+    if (body.status === "completed" && appointment.patient_email && appointment.clinic_id) {
+      try {
+        const clinic = await getClinicById(appointment.clinic_id);
+        if (clinic?.review_url) {
+          await sendAppointmentReviewEmail(appointment as AppointmentRow, clinic.review_url);
+        }
+      } catch (emailError) {
+        console.error("[update-status] Failed to send review email", {
+          token: appointment.token,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
     }
 
     return NextResponse.json({ appointment, calendarWarning });

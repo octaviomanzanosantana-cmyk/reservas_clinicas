@@ -23,6 +23,13 @@ export type ClinicRow = {
   reminder_hours: number;
   offers_presencial: boolean;
   offers_online: boolean;
+  logo_has_dark_bg: boolean;
+  timezone: string;
+  is_demo: boolean;
+  plan: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  plan_expires_at: string | null;
 };
 
 export async function getClinicBySlug(slug: string): Promise<ClinicRow | null> {
@@ -70,6 +77,37 @@ export async function listClinics(): Promise<ClinicRow[]> {
   }
 
   return data ?? [];
+}
+
+export async function listDemoClinics(): Promise<ClinicRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from("clinics")
+    .select("*")
+    .eq("is_demo", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function deleteClinicById(id: string): Promise<void> {
+  const safeId = id.trim();
+  if (!safeId) return;
+
+  // clinic_users tiene ON DELETE CASCADE desde clinics
+  // appointments, services, clinic_hours usan clinic_slug, no FK cascade
+  // Borramos manualmente primero
+  const clinic = await getClinicById(safeId);
+  if (!clinic) return;
+
+  await supabaseAdmin.from("appointments").delete().eq("clinic_id", safeId);
+  await supabaseAdmin.from("services").delete().eq("clinic_slug", clinic.slug);
+  await supabaseAdmin.from("clinic_hours").delete().eq("clinic_slug", clinic.slug);
+  // clinic_users se borra en cascade
+  await supabaseAdmin.from("clinics").delete().eq("id", safeId);
 }
 
 export async function createClinic(
@@ -149,6 +187,8 @@ export async function updateClinicBySlug(
       | "reminder_hours"
       | "offers_presencial"
       | "offers_online"
+      | "logo_has_dark_bg"
+      | "timezone"
     >
   >,
 ): Promise<ClinicRow | null> {
@@ -236,6 +276,12 @@ export async function updateClinicBySlug(
       : {}),
     ...(typeof input.offers_online === "boolean"
       ? { offers_online: input.offers_online }
+      : {}),
+    ...(typeof input.logo_has_dark_bg === "boolean"
+      ? { logo_has_dark_bg: input.logo_has_dark_bg }
+      : {}),
+    ...(typeof input.timezone === "string"
+      ? { timezone: input.timezone.trim() || "Atlantic/Canary" }
       : {}),
   };
 
