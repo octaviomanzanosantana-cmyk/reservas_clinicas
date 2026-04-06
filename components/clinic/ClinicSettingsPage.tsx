@@ -5,8 +5,6 @@ import {
   isGoogleCalendarConnected,
   type GoogleCalendarStatus,
 } from "@/lib/googleCalendarStatus";
-import { PlanUpgrade } from "@/components/PlanUpgrade";
-import type { Plan } from "@/lib/plan";
 import { useEffect, useState } from "react";
 
 type ClinicResponse = {
@@ -26,7 +24,6 @@ type ClinicResponse = {
     offers_presencial: boolean;
     offers_online: boolean;
     logo_has_dark_bg: boolean;
-    plan?: string;
   };
   error?: string;
 };
@@ -51,7 +48,6 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
   const [offersPresencial, setOffersPresencial] = useState(true);
   const [offersOnline, setOffersOnline] = useState(false);
   const [logoHasDarkBg, setLogoHasDarkBg] = useState(false);
-  const [clinicPlan, setClinicPlan] = useState<Plan>("free");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -97,7 +93,6 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         setOffersPresencial(clinicData.clinic.offers_presencial ?? true);
         setOffersOnline(clinicData.clinic.offers_online ?? false);
         setLogoHasDarkBg(clinicData.clinic.logo_has_dark_bg ?? false);
-        setClinicPlan((clinicData.clinic.plan as Plan) ?? "free");
         setGoogleConnected(isGoogleCalendarConnected(googleData));
         setGoogleEmail(googleData.email ?? null);
       } catch (error) {
@@ -347,14 +342,6 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
         {message ? <p className="mt-4 text-sm text-primary">{message}</p> : null}
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
-      </section>
-
-      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
-        <h2 className="font-heading text-lg font-semibold text-foreground">Tu plan</h2>
-        <p className="mt-2 text-sm text-muted">Gestiona tu suscripción a AppoClick.</p>
-        <div className="mt-5">
-          <PlanUpgrade currentPlan={clinicPlan} clinicSlug={clinicSlug} />
-        </div>
       </section>
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
