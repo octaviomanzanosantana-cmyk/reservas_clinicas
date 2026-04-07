@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#0E9E82"/>
-  <circle cx="600" cy="220" r="86" fill="#FFFFFF"/>
-  <path d="M558 222 L590 254 L646 192" stroke="#0E9E82" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <text x="600" y="410" font-family="'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif" font-size="104" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="-2">AppoClick</text>
-  <text x="600" y="490" font-family="'DM Sans', 'Segoe UI', Arial, sans-serif" font-size="34" font-weight="400" fill="#FFFFFF" fill-opacity="0.85" text-anchor="middle">Reserva citas en tu clínica en minutos,</text>
-  <text x="600" y="534" font-family="'DM Sans', 'Segoe UI', Arial, sans-serif" font-size="34" font-weight="400" fill="#FFFFFF" fill-opacity="0.85" text-anchor="middle">sin complicaciones</text>
-</svg>

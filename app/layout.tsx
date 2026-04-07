@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: "AppoClick",
     images: [
       {
-        url: "https://appoclick.com/og-image.png",
+        url: "https://appoclick.com/api/og",
         width: 1200,
         height: 630,
         alt: "AppoClick — Reserva citas online para tu clínica",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AppoClick — Reserva de citas para clínicas",
     description: "Página de reservas online para tu clínica en minutos.",
-    images: ["https://appoclick.com/og-image.png"],
+    images: ["https://appoclick.com/api/og"],
   },
 };
 
