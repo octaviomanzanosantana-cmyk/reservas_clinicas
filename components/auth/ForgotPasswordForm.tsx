@@ -29,11 +29,11 @@ export function ForgotPasswordForm() {
       }
 
       setSuccessMessage(
-        "Si el email existe, te hemos enviado un enlace para restablecer tu password.",
+        "Si el email existe, te hemos enviado un enlace para restablecer tu contraseña.",
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo enviar el email de recuperacion",
+        error instanceof Error ? error.message : "No se pudo enviar el email de recuperación",
       );
     } finally {
       setSubmitting(false);
@@ -63,7 +63,7 @@ export function ForgotPasswordForm() {
         disabled={submitting}
         className="w-full rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? "Enviando..." : "Enviar enlace de recuperacion"}
+        {submitting ? "Enviando..." : "Enviar enlace de recuperación"}
       </button>
     </form>
   );

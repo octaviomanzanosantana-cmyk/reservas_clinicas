@@ -62,7 +62,7 @@ function getModalityLabel(appointment: AppointmentRow): string {
 }
 
 function getTypeLabel(appointment: AppointmentRow): string {
-  return appointment.appointment_type === "revision" ? "Revision" : "Primera visita";
+  return appointment.appointment_type === "revision" ? "Revisión" : "Primera visita";
 }
 
 function buildDetailRows(appointment: AppointmentRow): string {

@@ -60,14 +60,14 @@ export function LoginForm() {
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium text-foreground">Password</span>
+        <span className="text-sm font-medium text-foreground">Contraseña</span>
         <input
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
-          placeholder="Tu password"
+          placeholder="Tu contraseña"
           required
         />
       </label>
@@ -76,7 +76,7 @@ export function LoginForm() {
 
       <div className="text-right">
         <Link href="/forgot-password" className="text-sm font-medium text-primary underline">
-          Has olvidado tu password?
+          ¿Has olvidado tu contraseña?
         </Link>
       </div>
 

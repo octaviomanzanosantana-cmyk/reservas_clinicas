@@ -229,7 +229,9 @@ export function ClinicDashboardPage({
 
   const handleCopyAppointmentLink = async (token: string) => {
     try {
-      await navigator.clipboard.writeText(`https://app.appoclick.com/a/${token}`);
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
+      await navigator.clipboard.writeText(`${baseUrl.replace(/\/+$/, "")}/a/${token}`);
       setCopiedToken(token);
       setTimeout(() => setCopiedToken(null), 2000);
     } catch {

@@ -522,7 +522,7 @@ export default function PublicBookingPage() {
                       </h1>
                       <p className="max-w-2xl text-base leading-7 text-muted">
                         {clinicDetails.description ||
-                          "Reserva tu proxima cita en una experiencia clara, rapida y disenada para una atencion clinica moderna."}
+                          "Reserva tu próxima cita en una experiencia clara, rápida y diseñada para una atención clínica moderna."}
                       </p>
                     </div>
                   </div>
@@ -537,7 +537,7 @@ export default function PublicBookingPage() {
                           className="rounded-[14px] border border-border bg-white p-4 transition-all duration-150 hover:border-primary/30 hover:bg-primary-soft/30"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                            Direccion
+                            Dirección
                           </p>
                           <p className="mt-3 text-sm leading-6 text-foreground">
                             {clinicDetails.address}
@@ -551,7 +551,7 @@ export default function PublicBookingPage() {
                           className="rounded-[14px] border border-border bg-white p-4 transition-all duration-150 hover:border-primary/30 hover:bg-primary-soft/30"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                            Telefono
+                            Teléfono
                           </p>
                           <p className="mt-3 text-sm leading-6 text-foreground">
                             {clinicDetails.phone}
@@ -664,7 +664,7 @@ export default function PublicBookingPage() {
                           }`}
                           style={appointmentType === "revision" ? { backgroundColor: "var(--clinic-color)" } : undefined}
                         >
-                          Revision
+                          Revisión
                         </button>
                       </div>
                     </div>
@@ -744,7 +744,7 @@ export default function PublicBookingPage() {
                         ))
                       ) : (
                         <p className="text-sm text-muted">
-                          No hay horarios disponibles para este dia.
+                          No hay horarios disponibles para este día.
                         </p>
                       )}
                     </div>
@@ -822,10 +822,10 @@ export default function PublicBookingPage() {
                 Reserva online
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
-                Clinica no disponible
+                Clínica no disponible
               </h1>
               <p className="mt-3 text-sm leading-7 text-muted">
-                {errorMessage ?? "No se pudo cargar la clinica o este enlace ya no esta disponible."}
+                {errorMessage ?? "No se pudo cargar la clínica o este enlace ya no está disponible."}
               </p>
             </div>
           </section>
