@@ -445,7 +445,7 @@ export async function updateCalendarEvent(
     ...statusMeta.lines,
     "",
     `Paciente: ${appointment.patient_name}`,
-    `Clinica: ${appointment.clinic_name}`,
+    `Clínica: ${appointment.clinic_name}`,
     `Token: ${appointment.token}`,
   ].join("\n");
 

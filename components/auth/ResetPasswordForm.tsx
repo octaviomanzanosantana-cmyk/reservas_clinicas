@@ -57,7 +57,7 @@ export function ResetPasswordForm() {
 
     try {
       if (!hasRecoverySession) {
-        throw new Error("El enlace de recuperacion no es valido o ha expirado.");
+        throw new Error("El enlace de recuperación no es válido o ha expirado.");
       }
 
       if (password.length < 8) {
@@ -89,7 +89,7 @@ export function ResetPasswordForm() {
   };
 
   if (checkingSession) {
-    return <p className="text-sm text-slate-600">Validando enlace de recuperacion...</p>;
+    return <p className="text-sm text-slate-600">Validando enlace de recuperación...</p>;
   }
 
   return (
@@ -97,7 +97,7 @@ export function ResetPasswordForm() {
       {!hasRecoverySession ? (
         <div className="space-y-4">
           <p className="text-sm text-red-600">
-            El enlace de recuperacion no es valido o ya ha expirado.
+            El enlace de recuperación no es válido o ya ha expirado.
           </p>
           <Link href="/forgot-password" className="text-sm font-medium text-slate-900 underline">
             Solicitar un nuevo enlace

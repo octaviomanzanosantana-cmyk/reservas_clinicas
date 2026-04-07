@@ -99,7 +99,7 @@ export default function ConfirmPage() {
     const calendarInput = appointment.scheduledAt
       ? {
           title: `${appointment.service} — ${clinicName}`,
-          description: `Cita: ${appointment.service}\nClinica: ${clinicName}`,
+          description: `Cita: ${appointment.service}\nClínica: ${clinicName}`,
           location: appointment.address,
           startDate: new Date(appointment.scheduledAt),
           durationMinutes: parseDurationFromLabel(appointment.durationLabel),

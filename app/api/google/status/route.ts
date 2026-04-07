@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const clinic = await getClinicBySlug(access.clinicSlug);
 
     if (!clinic) {
-      return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
     }
 
     const authorized = await isGoogleCalendarAuthorized(access.clinicSlug);

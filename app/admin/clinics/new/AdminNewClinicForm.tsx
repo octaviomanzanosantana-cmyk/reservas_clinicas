@@ -70,17 +70,17 @@ export default function AdminNewClinicForm() {
       };
 
       if (!response.ok || !data.clinic) {
-        throw new Error(data.error ?? "No se pudo crear la clinica");
+        throw new Error(data.error ?? "No se pudo crear la clínica");
       }
 
       setCreatedClinicSlug(data.clinic.slug);
-      setSuccessMessage("Clinica creada correctamente.");
+      setSuccessMessage("Clínica creada correctamente.");
 
       if (data.access?.attempted) {
         setAccessMessage(
           data.access.success
             ? `Acceso principal creado para ${data.access.email}. Ya se ha enviado el email para definir password.`
-            : `Clinica creada, pero no se pudo crear el acceso para ${data.access.email}: ${data.access.error ?? "error desconocido"}`,
+            : `Clínica creada, pero no se pudo crear el acceso para ${data.access.email}: ${data.access.error ?? "error desconocido"}`,
         );
       } else {
         setAccessMessage(
@@ -89,7 +89,7 @@ export default function AdminNewClinicForm() {
       }
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo crear la clinica",
+        error instanceof Error ? error.message : "No se pudo crear la clínica",
       );
     } finally {
       setSubmitting(false);
@@ -149,7 +149,7 @@ export default function AdminNewClinicForm() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="text-sm font-medium text-foreground">Telefono</span>
+                <span className="text-sm font-medium text-foreground">Teléfono</span>
                 <input
                   type="text"
                   value={phone}
@@ -178,7 +178,7 @@ export default function AdminNewClinicForm() {
             </div>
 
             <label className="block">
-              <span className="text-sm font-medium text-foreground">Direccion</span>
+              <span className="text-sm font-medium text-foreground">Dirección</span>
               <input
                 type="text"
                 value={address}

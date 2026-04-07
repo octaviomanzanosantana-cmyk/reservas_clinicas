@@ -19,7 +19,7 @@ type CreateClinicRequest = {
 
 const DEFAULT_SERVICES = [
   { name: "Primera consulta", duration_minutes: 30 },
-  { name: "Revision", duration_minutes: 20 },
+  { name: "Revisión", duration_minutes: 20 },
   { name: "Seguimiento", duration_minutes: 30 },
 ];
 

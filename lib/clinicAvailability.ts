@@ -88,7 +88,7 @@ export async function getAvailableSlotsForClinicDate({
   const clinic = await getClinicBySlug(safeClinicSlug);
 
   if (!clinic?.id) {
-    throw new Error("Clinica no encontrada");
+    throw new Error("Clínica no encontrada");
   }
 
   const startOfDay = startOfLocalDay(date);

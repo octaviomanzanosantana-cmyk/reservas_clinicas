@@ -73,7 +73,7 @@ export function RegisterForm() {
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium text-foreground">Password</span>
+        <span className="text-sm font-medium text-foreground">Contraseña</span>
         <input
           type="password"
           autoComplete="new-password"

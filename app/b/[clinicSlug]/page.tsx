@@ -72,7 +72,7 @@ function BookingConfirmation({
         title: `${appointment.service} — ${appointment.clinicName}`,
         description: [
           `Cita: ${appointment.service}`,
-          `Clinica: ${appointment.clinicName}`,
+          `Clínica: ${appointment.clinicName}`,
           `Paciente: ${appointment.patientName}`,
           `Gestiona tu cita: ${manageLink}`,
         ].join("\n"),

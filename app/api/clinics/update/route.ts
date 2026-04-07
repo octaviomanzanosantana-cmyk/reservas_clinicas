@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     });
 
     if (!clinic) {
-      return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
     }
 
     return NextResponse.json({ clinic });

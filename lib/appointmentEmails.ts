@@ -171,7 +171,7 @@ function buildPlainText(params: {
     "",
     intro,
     "",
-    `Clinica: ${appointment.clinic_name}`,
+    `Clínica: ${appointment.clinic_name}`,
     `Servicio: ${appointment.service}`,
     `Tipo: ${getTypeLabel(appointment)}`,
     `Modalidad: ${getModalityLabel(appointment)}`,
@@ -185,7 +185,7 @@ function buildPlainText(params: {
   lines.push("", `Gestionar cita: ${ctaUrl}`);
 
   if (reviewUrl) {
-    lines.push("", `Dejanos una reseña: ${reviewUrl}`);
+    lines.push("", `Déjanos una reseña: ${reviewUrl}`);
   }
 
   return lines.join("\n");
@@ -239,8 +239,8 @@ async function sendAppointmentEmail(
         from,
         to: [clinicEmail],
         subject: `[Copia] ${copy.subject}`,
-        text: `Copia de notificacion enviada a ${patientEmail}:\n\n${text}`,
-        html: `<div style="font-family:Arial,sans-serif;color:#6B7280;font-size:13px;padding:12px 16px;background:#F2F2F0;border-radius:10px;margin-bottom:16px">Copia de notificacion enviada a ${patientEmail}</div>${html}`,
+        text: `Copia de notificación enviada a ${patientEmail}:\n\n${text}`,
+        html: `<div style="font-family:Arial,sans-serif;color:#6B7280;font-size:13px;padding:12px 16px;background:#F2F2F0;border-radius:10px;margin-bottom:16px">Copia de notificación enviada a ${patientEmail}</div>${html}`,
       });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic copy", {

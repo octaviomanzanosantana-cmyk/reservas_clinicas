@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     if (resolvedClinicSlug) {
       const clinic = await getClinicBySlug(resolvedClinicSlug);
       if (!clinic?.id) {
-        return NextResponse.json({ error: "Clinica no encontrada" }, { status: 404 });
+        return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
       }
 
       if (mode === "dates") {
