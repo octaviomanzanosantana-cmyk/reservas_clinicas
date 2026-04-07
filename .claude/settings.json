@@ -37,7 +37,9 @@
       "Bash(node -e \"const Stripe = require\\('stripe'\\); console.log\\(Stripe.Stripe?.LATEST_API_VERSION ?? Stripe.LATEST_API_VERSION ?? 'N/A'\\)\")",
       "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(Object.keys\\(s\\).slice\\(0,10\\)\\)\")",
       "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.API_VERSION\\)\")",
-      "Bash(node -e \" const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_fake'\\); // Check the type definition \")"
+      "Bash(node -e \" const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_fake'\\); // Check the type definition \")",
+      "Bash(grep -n \"console\\\\\\\\.log\\\\|console\\\\\\\\.error\\\\|console\\\\\\\\.warn\\\\|console\\\\\\\\.debug\" c:/Users/oms_g/reservas_clinicas/app/api/appointments/update-status/route.ts)",
+      "Bash(node -e \"console.log\\(require\\('sharp/package.json'\\).version\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\oms_g\\Downloads"
