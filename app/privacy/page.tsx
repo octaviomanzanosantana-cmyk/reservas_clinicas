@@ -18,17 +18,17 @@ export default function PrivacyPage() {
 
           <div className="mt-6 rounded-[10px] border border-border bg-background p-4 text-sm text-muted leading-6">
             <p><strong className="text-foreground">Responsable:</strong> ANALÓGICAMENTE DIGITALES, SOCIEDAD LIMITADA</p>
-            <p>NIF: B76357201 · Calle Fresno, 2. 35200 Telde (Las Palmas)</p>
+            <p>NIF: B76357201 · Calle Fresno 32, 35212 Telde, Las Palmas, España</p>
             <p>Email: hola@appoclick.com · Web: app.appoclick.com</p>
           </div>
 
           <div className="mt-10 space-y-8 text-[15px] leading-7 text-foreground">
 
             <section>
-              <h2 className="font-heading text-lg font-semibold text-foreground">1. Rol de Appoclick</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground">1. Rol de AppoClick</h2>
               <p className="mt-3 text-muted">
-                Appoclick actúa como <strong className="text-foreground">Encargado del Tratamiento</strong> respecto a los datos de pacientes
-                (modelo Calendly/Docplanner) y como <strong className="text-foreground">Responsable del Tratamiento</strong> respecto a los datos
+                AppoClick actúa como <strong className="text-foreground">Encargado del Tratamiento</strong> respecto a los datos de pacientes
+                y como <strong className="text-foreground">Responsable del Tratamiento</strong> respecto a los datos
                 de sus clientes (clínicas).
               </p>
             </section>
@@ -87,9 +87,9 @@ export default function PrivacyPage() {
                     </tr>
                   </thead>
                   <tbody className="text-muted">
-                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Supabase</td><td className="py-2.5">Base de datos</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Vercel</td><td className="py-2.5">Hosting</td></tr>
-                    <tr><td className="py-2.5 pr-4">Resend</td><td className="py-2.5">Envío de emails</td></tr>
+                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Proveedor de base de datos</td><td className="py-2.5">Almacenamiento de datos en la UE</td></tr>
+                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Proveedor de hosting</td><td className="py-2.5">Infraestructura web</td></tr>
+                    <tr><td className="py-2.5 pr-4">Proveedor de envío de email</td><td className="py-2.5">Notificaciones transaccionales</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
           </div>
 
           <div className="mt-12 border-t border-border pt-6 text-center text-xs text-muted">
-            Appoclick · ANALÓGICAMENTE DIGITALES, S.L. · B76357201
+            AppoClick · ANALÓGICAMENTE DIGITALES, S.L. · B76357201
           </div>
         </article>
       </div>

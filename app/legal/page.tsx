@@ -18,7 +18,7 @@ export default function LegalPage() {
 
           <div className="mt-6 rounded-[10px] border border-border bg-background p-4 text-sm text-muted leading-6">
             <p><strong className="text-foreground">Titular:</strong> ANALÓGICAMENTE DIGITALES, SOCIEDAD LIMITADA</p>
-            <p>NIF: B76357201 · Calle Fresno, 2. 35200 Telde (Las Palmas)</p>
+            <p>NIF: B76357201 · Calle Fresno 32, 35212 Telde, Las Palmas, España</p>
             <p>Registro Mercantil: Las Palmas de Gran Canaria. Tomo 2227; Folio 182; Hoja GC-56181</p>
             <p>Email: hola@appoclick.com · Web: app.appoclick.com</p>
           </div>
@@ -28,7 +28,7 @@ export default function LegalPage() {
             <section>
               <h2 className="font-heading text-lg font-semibold text-foreground">1. Objeto</h2>
               <p className="mt-3 text-muted">
-                Appoclick es una plataforma SaaS de gestión de citas médicas. El acceso y uso de la plataforma
+                AppoClick es una plataforma SaaS de gestión de citas médicas. El acceso y uso de la plataforma
                 implica la aceptación de estas condiciones.
               </p>
             </section>
@@ -36,7 +36,7 @@ export default function LegalPage() {
             <section>
               <h2 className="font-heading text-lg font-semibold text-foreground">2. Responsabilidad</h2>
               <p className="mt-3 text-muted">
-                Appoclick no asume responsabilidad por datos incorrectos introducidos por usuarios, ni por
+                AppoClick no asume responsabilidad por datos incorrectos introducidos por usuarios, ni por
                 la calidad del servicio sanitario prestado por los profesionales — dicha responsabilidad
                 recae íntegramente en la clínica o profesional correspondiente.
               </p>
@@ -73,7 +73,7 @@ export default function LegalPage() {
           </div>
 
           <div className="mt-12 border-t border-border pt-6 text-center text-xs text-muted">
-            Appoclick · ANALÓGICAMENTE DIGITALES, S.L. · B76357201
+            AppoClick · ANALÓGICAMENTE DIGITALES, S.L. · B76357201
           </div>
         </article>
       </div>
