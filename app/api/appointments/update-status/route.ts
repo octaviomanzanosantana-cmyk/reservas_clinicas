@@ -79,17 +79,24 @@ export async function POST(request: Request) {
     }
 
     // Enviar email de reseña al marcar como "Asistió"
-    if (body.status === "completed" && appointment.patient_email && appointment.clinic_id) {
-      try {
-        const clinic = await getClinicById(appointment.clinic_id);
-        if (clinic?.review_url) {
-          await sendAppointmentReviewEmail(appointment as AppointmentRow, clinic.review_url);
+    if (body.status === "completed") {
+      const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
+      console.log("[review email] status:", body.status);
+      console.log("[review email] review_url:", clinic?.review_url ?? null);
+      console.log("[review email] patient_email:", appointment.patient_email ?? null);
+
+      if (appointment.patient_email) {
+        try {
+          await sendAppointmentReviewEmail(
+            appointment as AppointmentRow,
+            clinic?.review_url ?? null,
+          );
+        } catch (emailError) {
+          console.error("[update-status] Failed to send review email", {
+            token: appointment.token,
+            error: emailError instanceof Error ? emailError.message : String(emailError),
+          });
         }
-      } catch (emailError) {
-        console.error("[update-status] Failed to send review email", {
-          token: appointment.token,
-          error: emailError instanceof Error ? emailError.message : String(emailError),
-        });
       }
     }
 

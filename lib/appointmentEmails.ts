@@ -344,34 +344,57 @@ export async function sendAppointmentCancelledEmail(
 
 export async function sendAppointmentReviewEmail(
   appointment: AppointmentRow,
-  reviewUrl: string,
+  reviewUrl: string | null | undefined,
 ): Promise<void> {
   const patientEmail = appointment.patient_email?.trim();
   const { apiKey, from, appUrl } = getEmailConfig();
 
-  if (!patientEmail || !apiKey || !from || !appUrl) return;
+  if (!patientEmail || !apiKey || !from || !appUrl) {
+    console.warn("[review email] Missing config or recipient", {
+      hasEmail: Boolean(patientEmail),
+      hasApiKey: Boolean(apiKey),
+      hasFrom: Boolean(from),
+      hasAppUrl: Boolean(appUrl),
+    });
+    return;
+  }
+
+  const safeReviewUrl = reviewUrl?.trim() || null;
 
   const text = [
     `Hola ${appointment.patient_name},`,
     "",
     `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}.`,
     "",
-    `Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones.`,
+    safeReviewUrl
+      ? `Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones.`
+      : `Esperamos que la experiencia haya sido buena.`,
     "",
-    "Solo tarda 30 segundos.",
-    "",
-    `Dejar mi opinión: ${reviewUrl}`,
+    safeReviewUrl ? "Solo tarda 30 segundos." : "",
+    safeReviewUrl ? `Dejar mi opinión: ${safeReviewUrl}` : "",
     "",
     `Gracias por confiar en ${appointment.clinic_name}`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
-  const html = buildHtmlEmail({
-    appointment,
-    intro: `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones. Solo tarda 30 segundos.`,
-    ctaUrl: reviewUrl,
-    ctaLabel: "Dejar mi opinión →",
-    extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
-  });
+  const intro = safeReviewUrl
+    ? `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones. Solo tarda 30 segundos.`
+    : `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Esperamos que la experiencia haya sido buena y agradecemos tu confianza.`;
+
+  const html = safeReviewUrl
+    ? buildHtmlEmail({
+        appointment,
+        intro,
+        ctaUrl: safeReviewUrl,
+        ctaLabel: "Dejar mi opinión →",
+        extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
+      })
+    : buildHtmlEmail({
+        appointment,
+        intro,
+        ctaUrl: `${appUrl}/a/${appointment.token}`,
+        ctaLabel: "Ver mi cita",
+        extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
+      });
 
   await sendEmail({
     apiKey,
