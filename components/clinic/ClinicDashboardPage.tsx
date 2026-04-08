@@ -596,7 +596,7 @@ export function ClinicDashboardPage({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {appointment.status === "completed" ? (
+                    {appointment.status === "completed" || appointment.status === "cancelled" ? (
                       <button
                         type="button"
                         onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
