@@ -87,9 +87,22 @@ export default function PrivacyPage() {
                     </tr>
                   </thead>
                   <tbody className="text-muted">
-                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Proveedor de base de datos</td><td className="py-2.5">Almacenamiento de datos en la UE</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Proveedor de hosting</td><td className="py-2.5">Infraestructura web</td></tr>
-                    <tr><td className="py-2.5 pr-4">Proveedor de envío de email</td><td className="py-2.5">Notificaciones transaccionales</td></tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-2.5 pr-4">Supabase Inc.</td>
+                      <td className="py-2.5">Base de datos y autenticación · <a href="https://supabase.com/privacy" target="_blank" rel="noreferrer" className="text-primary hover:underline">Política</a></td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-2.5 pr-4">Vercel Inc.</td>
+                      <td className="py-2.5">Infraestructura y hosting · <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer" className="text-primary hover:underline">Política</a></td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-2.5 pr-4">Resend Inc.</td>
+                      <td className="py-2.5">Envío de emails transaccionales · <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noreferrer" className="text-primary hover:underline">Política</a></td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5 pr-4">Stripe Inc.</td>
+                      <td className="py-2.5">Procesamiento de pagos (solo datos de clínicas, no de pacientes) · <a href="https://stripe.com/es/privacy" target="_blank" rel="noreferrer" className="text-primary hover:underline">Política</a></td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
