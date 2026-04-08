@@ -1,11 +1,12 @@
 "use client";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function RegisterForm() {
-  const [supabase] = useState(() => createSupabaseBrowserClient());
+  const router = useRouter();
+  const [clinicName, setClinicName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -18,18 +19,28 @@ export function RegisterForm() {
     setErrorMessage(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          clinicName: clinicName.trim(),
+        }),
       });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = (await res.json()) as { error?: string };
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "No se pudo crear la cuenta");
       }
 
       setSuccess(true);
+      setTimeout(() => router.push("/login"), 2500);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la cuenta");
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo crear la cuenta",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -39,13 +50,23 @@ export function RegisterForm() {
     return (
       <div className="space-y-4 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
-          <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          <svg
+            className="h-6 w-6 text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
           </svg>
         </div>
         <p className="text-sm font-semibold text-foreground">Cuenta creada</p>
         <p className="text-sm text-muted">
-          Revisa tu email para confirmar tu cuenta antes de acceder.
+          Tu panel está listo. Redirigiendo al login...
         </p>
         <Link
           href="/login"
@@ -59,6 +80,20 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <label className="block">
+        <span className="text-sm font-medium text-foreground">
+          Nombre de tu clínica
+        </span>
+        <input
+          type="text"
+          value={clinicName}
+          onChange={(event) => setClinicName(event.target.value)}
+          className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
+          placeholder="Clínica San Juan"
+          required
+        />
+      </label>
+
       <label className="block">
         <span className="text-sm font-medium text-foreground">Email</span>
         <input
@@ -86,7 +121,9 @@ export function RegisterForm() {
         />
       </label>
 
-      {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <p className="text-sm text-red-600">{errorMessage}</p>
+      ) : null}
 
       <button
         type="submit"
