@@ -115,16 +115,7 @@ function buildHtmlEmail(params: {
 
 <!-- Logo -->
 <tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;height:80px;padding:0 24px">
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
-    <td style="vertical-align:middle;padding-right:12px">
-      <div style="width:40px;height:40px;border-radius:50%;background:#ffffff;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:40px">
-        <svg viewBox="0 0 30 30" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M8 15.5L12.5 20L22 10" stroke="#0E9E82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-    </td>
-    <td style="vertical-align:middle">
-      <span style="color:#ffffff;font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.01em">AppoClick</span>
-    </td>
-  </tr></table>
+  <span style="color:#ffffff;font-size:24px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.5px">AppoClick</span>
 </td></tr>
 
 <!-- Saludo -->
@@ -448,16 +439,7 @@ export async function sendClinicWelcomeEmail(
 
 <!-- Logo -->
 <tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;height:80px;padding:0 24px">
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
-    <td style="vertical-align:middle;padding-right:12px">
-      <div style="width:40px;height:40px;border-radius:50%;background:#ffffff;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:40px">
-        <svg viewBox="0 0 30 30" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M8 15.5L12.5 20L22 10" stroke="#0E9E82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-    </td>
-    <td style="vertical-align:middle">
-      <span style="color:#ffffff;font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.01em">AppoClick</span>
-    </td>
-  </tr></table>
+  <span style="color:#ffffff;font-size:24px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.5px">AppoClick</span>
 </td></tr>
 
 <!-- Bienvenida -->
