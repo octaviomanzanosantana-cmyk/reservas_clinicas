@@ -37,10 +37,22 @@ const PLAN_FEATURES: Record<Plan, Feature[]> = {
   ],
 };
 
-export function canUseFeature(plan: Plan, feature: Feature): boolean {
-  return PLAN_FEATURES[plan]?.includes(feature) ?? false;
+export function canUseFeature(plan: Plan | null | undefined, feature: Feature): boolean {
+  const resolved = resolvePlan(plan);
+  return PLAN_FEATURES[resolved]?.includes(feature) ?? false;
 }
 
-export function getPlanFeatures(plan: Plan): Feature[] {
-  return PLAN_FEATURES[plan] ?? PLAN_FEATURES.free;
+export function getPlanFeatures(
+  plan: Plan | null | undefined,
+  context?: { clinicId?: string | null },
+): Feature[] {
+  if (plan == null) {
+    console.warn("clinic.plan is NULL for clinic:", context?.clinicId ?? "unknown");
+  }
+  return PLAN_FEATURES[resolvePlan(plan)] ?? PLAN_FEATURES.free;
+}
+
+function resolvePlan(plan: Plan | null | undefined): Plan {
+  if (plan === "starter" || plan === "pro" || plan === "free") return plan;
+  return "free";
 }

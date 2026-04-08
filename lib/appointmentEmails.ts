@@ -114,8 +114,17 @@ function buildHtmlEmail(params: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;border:1px solid #E5E7EB">
 
 <!-- Logo -->
-<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;padding:20px 24px">
-  <img src="${LOGO_URL}" alt="Appoclick" width="180" style="display:block;max-width:180px;height:auto" />
+<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;height:80px;padding:0 24px">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
+    <td style="vertical-align:middle;padding-right:12px">
+      <div style="width:40px;height:40px;border-radius:50%;background:#ffffff;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:40px">
+        <svg viewBox="0 0 30 30" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M8 15.5L12.5 20L22 10" stroke="#0E9E82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </td>
+    <td style="vertical-align:middle">
+      <span style="color:#ffffff;font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.01em">AppoClick</span>
+    </td>
+  </tr></table>
 </td></tr>
 
 <!-- Saludo -->
@@ -354,26 +363,30 @@ export async function sendAppointmentReviewEmail(
   const text = [
     `Hola ${appointment.patient_name},`,
     "",
-    `Gracias por tu visita a ${appointment.clinic_name}.`,
+    `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}.`,
     "",
-    `Si la experiencia ha sido buena, nos ayudaría mucho que dejaras una reseña:`,
-    reviewUrl,
+    `Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones.`,
     "",
-    "Gracias por tu confianza.",
+    "Solo tarda 30 segundos.",
+    "",
+    `Dejar mi opinión: ${reviewUrl}`,
+    "",
+    `Gracias por confiar en ${appointment.clinic_name}`,
   ].join("\n");
 
   const html = buildHtmlEmail({
     appointment,
-    intro: `Gracias por tu visita a ${appointment.clinic_name}. Esperamos que la experiencia haya sido buena.`,
+    intro: `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones. Solo tarda 30 segundos.`,
     ctaUrl: reviewUrl,
-    ctaLabel: "Dejar una reseña",
+    ctaLabel: "Dejar mi opinión →",
+    extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
   });
 
   await sendEmail({
     apiKey,
     from,
     to: [patientEmail],
-    subject: `Gracias por tu visita a ${appointment.clinic_name}`,
+    subject: `¿Cómo fue tu consulta con ${appointment.clinic_name}?`,
     text,
     html,
   });
@@ -434,8 +447,17 @@ export async function sendClinicWelcomeEmail(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;border:1px solid #E5E7EB">
 
 <!-- Logo -->
-<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;padding:20px 24px">
-  <img src="${LOGO_URL}" alt="Appoclick" width="180" style="display:block;max-width:180px;height:auto" />
+<tr><td align="center" style="background:${BRAND_COLOR};border-radius:14px 14px 0 0;height:80px;padding:0 24px">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
+    <td style="vertical-align:middle;padding-right:12px">
+      <div style="width:40px;height:40px;border-radius:50%;background:#ffffff;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:40px">
+        <svg viewBox="0 0 30 30" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M8 15.5L12.5 20L22 10" stroke="#0E9E82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </td>
+    <td style="vertical-align:middle">
+      <span style="color:#ffffff;font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif;letter-spacing:-0.01em">AppoClick</span>
+    </td>
+  </tr></table>
 </td></tr>
 
 <!-- Bienvenida -->

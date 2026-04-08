@@ -157,7 +157,7 @@ export default function ConfirmPage() {
                 onClick={() => downloadIcsFile(calendarInput, "cita.ics")}
                 className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:text-foreground"
               >
-                Descargar .ics
+                Apple Calendar
               </button>
             </div>
           </div>

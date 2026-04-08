@@ -21,12 +21,19 @@ export function wrapEmailHtml(bodyHtml: string): string {
       <td align="center" style="padding:32px 16px;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
 
-          <!-- Header teal con wordmark en blanco -->
+          <!-- Header teal con check + wordmark -->
           <tr>
-            <td style="background-color:#0E9E82;border-radius:12px 12px 0 0;padding:24px 32px;">
-              <span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
-                Appoclick
-              </span>
+            <td align="center" style="background-color:#0E9E82;border-radius:12px 12px 0 0;height:80px;padding:0 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr>
+                <td style="vertical-align:middle;padding-right:12px">
+                  <div style="width:40px;height:40px;border-radius:50%;background:#ffffff;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:40px">
+                    <svg viewBox="0 0 30 30" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M8 15.5L12.5 20L22 10" stroke="#0E9E82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </td>
+                <td style="vertical-align:middle">
+                  <span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">AppoClick</span>
+                </td>
+              </tr></table>
             </td>
           </tr>
 

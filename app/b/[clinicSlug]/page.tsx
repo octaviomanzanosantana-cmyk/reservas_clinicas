@@ -522,7 +522,7 @@ export default function PublicBookingPage() {
                       </h1>
                       <p className="max-w-2xl text-base leading-7 text-muted">
                         {clinicDetails.description ||
-                          "Reserva tu próxima cita en una experiencia clara, rápida y diseñada para una atención clínica moderna."}
+                          "¿Necesitas cambiar o cancelar tu cita? Usa el enlace que te enviamos por email."}
                       </p>
                     </div>
                   </div>
@@ -788,7 +788,7 @@ export default function PublicBookingPage() {
                       <span className="text-sm text-muted">
                         He leído y acepto la{" "}
                         <a
-                          href="/politica-de-privacidad"
+                          href="/privacy"
                           target="_blank"
                           rel="noreferrer"
                           className="font-medium text-foreground underline"

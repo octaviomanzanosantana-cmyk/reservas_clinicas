@@ -1,4 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
+import { sendAppointmentCreatedEmail } from "@/lib/appointmentEmails";
+import { getClinicById } from "@/lib/clinics";
 import { getPatientClinicContext } from "@/lib/patientContext";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
@@ -46,6 +48,21 @@ export async function POST(request: Request) {
           error instanceof Error
             ? error.message
             : "No se pudo actualizar el evento en Google Calendar";
+      }
+    }
+
+    if (confirmed.patient_email) {
+      try {
+        const clinic = confirmed.clinic_id ? await getClinicById(confirmed.clinic_id) : null;
+        await sendAppointmentCreatedEmail(confirmed as AppointmentRow, {
+          notificationEmail: clinic?.notification_email,
+          reviewUrl: clinic?.review_url,
+        });
+      } catch (emailError) {
+        console.error("[confirm] Failed to send confirmation email", {
+          token: confirmed.token,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
       }
     }
 

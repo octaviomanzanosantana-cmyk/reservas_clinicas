@@ -1,5 +1,5 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
-import { sendAppointmentReviewEmail } from "@/lib/appointmentEmails";
+import { sendAppointmentCancelledEmail, sendAppointmentReviewEmail } from "@/lib/appointmentEmails";
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
 import { getClinicById } from "@/lib/clinics";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
@@ -59,6 +59,23 @@ export async function POST(request: Request) {
         error instanceof Error
           ? error.message
           : "No se pudo sincronizar Google Calendar";
+    }
+
+    // Email de cancelación al paciente cuando la clínica cancela
+    if (body.status === "cancelled" && appointment.patient_email) {
+      try {
+        const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
+        const bookingUrl = clinic?.slug ? `https://app.appoclick.com/b/${clinic.slug}` : undefined;
+        await sendAppointmentCancelledEmail(appointment as AppointmentRow, {
+          notificationEmail: clinic?.notification_email,
+          bookingUrl,
+        });
+      } catch (emailError) {
+        console.error("[update-status] Failed to send cancellation email", {
+          token: appointment.token,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
     }
 
     // Enviar email de reseña al marcar como "Asistió"

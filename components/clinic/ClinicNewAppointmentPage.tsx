@@ -218,7 +218,7 @@ function ClinicNewAppointmentContent({
         datetime_label: buildDateTimeLabelFromInputs(selectedDate, selectedSlot.label),
         address: clinic.address ?? "",
         duration_label: `${selectedService.duration_minutes} min`,
-        status: "pending",
+        status: "confirmed",
       };
 
       const response = await fetch("/api/appointments/create", {

@@ -7,6 +7,11 @@ import PatientFooter from "@/components/patient/PatientFooter";
 import type { PatientClinicData } from "@/lib/patientClient";
 import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
 import { toViewAppointment } from "@/lib/appointmentView";
+import {
+  buildGoogleCalendarUrl,
+  downloadIcsFile,
+  parseDurationFromLabel,
+} from "@/lib/calendarExport";
 import type { Appointment } from "@/lib/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -104,6 +109,51 @@ export default function AppointmentHomePage() {
         </section>
 
         <AppointmentCard appointment={appointment} />
+
+        {appointment.status === "cancelled" && clinic?.slug ? (
+          <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">
+            <p className="text-sm text-muted">Esta cita ha sido cancelada</p>
+            <a
+              href={`/b/${clinic.slug}`}
+              className="mt-4 inline-flex items-center justify-center rounded-[10px] bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-white transition-all duration-150 hover:bg-primary-hover"
+            >
+              Reservar nueva cita →
+            </a>
+          </section>
+        ) : null}
+
+        {appointment.scheduledAt && appointment.status !== "cancelled" && appointment.status !== "completed" ? (() => {
+          const calendarInput = {
+            title: `${appointment.service} — ${clinic?.name ?? appointment.clinicName}`,
+            description: `Paciente: ${appointment.patientName}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nClínica: ${clinic?.name ?? appointment.clinicName}`,
+            location: appointment.modality === "online" ? "" : appointment.address,
+            startDate: new Date(appointment.scheduledAt!),
+            durationMinutes: parseDurationFromLabel(appointment.durationLabel),
+          };
+          const googleUrl = buildGoogleCalendarUrl(calendarInput);
+          return (
+            <div className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
+              <p className="font-heading text-sm font-semibold text-foreground">Añadir al calendario</p>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                <a
+                  href={googleUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:text-foreground"
+                >
+                  Google Calendar
+                </a>
+                <button
+                  type="button"
+                  onClick={() => downloadIcsFile(calendarInput, "cita.ics")}
+                  className="inline-flex items-center gap-2 rounded-[10px] border-[0.5px] border-border px-4 py-2.5 text-sm font-medium text-muted transition-all duration-150 hover:text-foreground"
+                >
+                  Apple Calendar
+                </button>
+              </div>
+            </div>
+          );
+        })() : null}
 
         {appointment.status === "pending" ||
         appointment.status === "confirmed" ||

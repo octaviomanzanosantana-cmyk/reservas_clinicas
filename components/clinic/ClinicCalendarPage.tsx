@@ -25,6 +25,7 @@ type AppointmentRow = {
   patient_name: string;
   patient_phone: string | null;
   service: string;
+  modality?: string | null;
   scheduled_at: string | null;
   datetime_label: string;
   status: string;
@@ -465,7 +466,7 @@ export function ClinicCalendarPage({
                       {appointment ? (
                         <Link
                           href={`/a/${appointment.token}`}
-                          title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                          title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
                           className="flex rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_32px_-26px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
                         >
                           <div
@@ -476,6 +477,7 @@ export function ClinicCalendarPage({
                               {appointment.patient_name}
                             </p>
                             <p className="mt-1 text-sm text-slate-600">{appointment.service}</p>
+                            <p className="mt-1 text-xs font-medium text-slate-500">{appointment.modality === "online" ? "Online" : "Presencial"}</p>
                             {statusMeta ? (
                               <span
                                 className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
@@ -565,7 +567,7 @@ export function ClinicCalendarPage({
                             {!slotExists ? null : appointment ? (
                               <Link
                                 href={`/a/${appointment.token}`}
-                                title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
+                                title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
                                 className="flex w-full min-w-0 max-w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-white"
                               >
                                 <div
@@ -577,6 +579,9 @@ export function ClinicCalendarPage({
                                   </p>
                                   <p className="mt-1 truncate text-xs text-slate-600">
                                     {appointment.service}
+                                  </p>
+                                  <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
+                                    {appointment.modality === "online" ? "Online" : "Presencial"}
                                   </p>
                                   {statusMeta ? (
                                     <span

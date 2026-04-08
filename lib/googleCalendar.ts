@@ -137,26 +137,52 @@ async function getAuthorizedOAuthClient(clinicSlug?: string | null) {
 
   const client = getOAuthClient();
 
+  // Cuando google-auth-library refresca el token automáticamente, emite "tokens".
+  // Persistimos el nuevo access_token / expiry para evitar refrescos innecesarios.
   client.on("tokens", async (tokens) => {
     if (!clinic.slug) return;
 
-    await updateClinicBySlug(clinic.slug, {
-      google_connected: true,
-      google_refresh_token: tokens.refresh_token ?? clinic.google_refresh_token,
-      google_calendar_id: clinic.google_calendar_id ?? "primary",
-      google_email: clinic.google_email,
-      google_token_scope: tokens.scope?.trim() || clinic.google_token_scope,
-      google_token_type: tokens.token_type?.trim() || clinic.google_token_type,
-      google_token_expires_at:
-        typeof tokens.expiry_date === "number"
-          ? new Date(tokens.expiry_date).toISOString()
-          : clinic.google_token_expires_at,
-    });
+    try {
+      await updateClinicBySlug(clinic.slug, {
+        google_connected: true,
+        google_refresh_token: tokens.refresh_token ?? clinic.google_refresh_token,
+        google_calendar_id: clinic.google_calendar_id ?? "primary",
+        google_email: clinic.google_email,
+        google_token_scope: tokens.scope?.trim() || clinic.google_token_scope,
+        google_token_type: tokens.token_type?.trim() || clinic.google_token_type,
+        google_token_expires_at:
+          typeof tokens.expiry_date === "number"
+            ? new Date(tokens.expiry_date).toISOString()
+            : clinic.google_token_expires_at,
+      });
+    } catch (persistError) {
+      console.warn("[google.calendar] Failed to persist refreshed token", {
+        clinicSlug: clinic.slug,
+        error: persistError instanceof Error ? persistError.message : String(persistError),
+      });
+    }
   });
 
   client.setCredentials({
     refresh_token: clinic.google_refresh_token,
   });
+
+  // Forzar refresh anticipado si el access_token está vencido — evita 401 silenciosos.
+  try {
+    await client.getAccessToken();
+  } catch (refreshError) {
+    const message = refreshError instanceof Error ? refreshError.message : String(refreshError);
+    // invalid_grant = refresh token revocado por el usuario en su cuenta de Google.
+    if (message.includes("invalid_grant") && clinic.slug) {
+      await updateClinicBySlug(clinic.slug, {
+        google_connected: false,
+        google_refresh_token: null,
+        google_token_expires_at: null,
+      });
+      throw new Error("Google Calendar: el acceso fue revocado. Reconecta la cuenta.");
+    }
+    throw refreshError;
+  }
 
   return { client, clinic };
 }
@@ -341,11 +367,11 @@ export async function createCalendarEvent(
       description,
       start: {
         dateTime: start.toISOString(),
-        timeZone: DEFAULT_TIMEZONE,
+        timeZone: clinic.timezone || DEFAULT_TIMEZONE,
       },
       end: {
         dateTime: end.toISOString(),
-        timeZone: DEFAULT_TIMEZONE,
+        timeZone: clinic.timezone || DEFAULT_TIMEZONE,
       },
     },
   });
@@ -457,11 +483,11 @@ export async function updateCalendarEvent(
       description,
       start: {
         dateTime: start.toISOString(),
-        timeZone: DEFAULT_TIMEZONE,
+        timeZone: clinic.timezone || DEFAULT_TIMEZONE,
       },
       end: {
         dateTime: end.toISOString(),
-        timeZone: DEFAULT_TIMEZONE,
+        timeZone: clinic.timezone || DEFAULT_TIMEZONE,
       },
     },
   });
