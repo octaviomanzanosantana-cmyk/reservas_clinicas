@@ -35,10 +35,17 @@ export function LoginForm() {
       router.refresh();
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
+      const lower = raw.toLowerCase();
       const isInvalidCredentials =
-        raw.toLowerCase().includes("invalid login credentials") ||
-        raw.toLowerCase().includes("invalid email or password");
-      setErrorMessage(isInvalidCredentials ? "Email o contraseña incorrectos" : (raw || "No se pudo iniciar sesión"));
+        lower.includes("invalid login credentials") ||
+        lower.includes("invalid email or password");
+      const isEmailNotConfirmed = lower.includes("email not confirmed");
+      const msg = isInvalidCredentials
+        ? "Email o contraseña incorrectos"
+        : isEmailNotConfirmed
+          ? "Debes confirmar tu email antes de acceder. Revisa tu bandeja de entrada."
+          : raw || "No se pudo iniciar sesión";
+      setErrorMessage(msg);
     } finally {
       setSubmitting(false);
     }
