@@ -34,6 +34,7 @@ type AppointmentRow = {
   id: number;
   token: string;
   patient_name: string;
+  patient_email?: string | null;
   patient_phone?: string | null;
   service: string;
   scheduled_at: string | null;
@@ -129,6 +130,12 @@ export function ClinicDashboardPage({
   const [updatingAppointmentToken, setUpdatingAppointmentToken] = useState<string | null>(null);
   const [completedFeedback, setCompletedFeedback] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<AppointmentRow | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editFeedback, setEditFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -296,8 +303,116 @@ export function ClinicDashboardPage({
     }
   };
 
+  const openEditModal = (appointment: AppointmentRow) => {
+    setEditingAppointment(appointment);
+    setEditName(appointment.patient_name);
+    setEditEmail(appointment.patient_email ?? "");
+    setEditPhone(appointment.patient_phone ?? "");
+    setEditFeedback(null);
+  };
+
+  const handleSavePatient = async () => {
+    if (!editingAppointment) return;
+    if (!editName.trim()) {
+      setErrorMessage("El nombre es obligatorio");
+      return;
+    }
+
+    setEditSaving(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/appointments/update-patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: editingAppointment.token,
+          patient_name: editName.trim(),
+          patient_email: editEmail.trim() || null,
+          patient_phone: editPhone.trim() || null,
+        }),
+      });
+      const data = (await response.json()) as { appointment?: AppointmentRow; error?: string };
+
+      if (!response.ok || !data.appointment) {
+        throw new Error(data.error ?? "No se pudo actualizar");
+      }
+
+      setAppointments((current) =>
+        current.map((a) =>
+          a.token === editingAppointment.token ? { ...a, ...data.appointment! } : a,
+        ),
+      );
+      setEditingAppointment(null);
+      setEditFeedback("Datos actualizados correctamente");
+      setTimeout(() => setEditFeedback(null), 4000);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {/* Modal editar datos paciente */}
+      {editingAppointment ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
+            <h2 className="font-heading text-lg font-semibold text-foreground">Editar datos del paciente</h2>
+            <p className="mt-1 text-sm text-muted">{editingAppointment.service} · {formatAppointmentDate(editingAppointment.scheduled_at, editingAppointment.datetime_label)}</p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="text-sm font-medium text-foreground">Nombre completo</span>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-foreground">Email</span>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-foreground">Teléfono</span>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => void handleSavePatient()}
+                disabled={editSaving || !editName.trim()}
+                className="rounded-[10px] bg-[#0E9E82] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {editSaving ? "Guardando..." : "Guardar cambios"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingAppointment(null)}
+                className="rounded-[10px] border-[0.5px] border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#6B7280] transition-colors hover:text-foreground"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7">
         {loading ? (
           <p className="text-sm text-muted">Cargando clínica...</p>
@@ -498,6 +613,13 @@ export function ClinicDashboardPage({
                         >
                           Cancelar
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(appointment)}
+                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground"
+                        >
+                          Editar datos
+                        </button>
                       </div>
                     ) : null}
                     {appointment.status === "confirmed" ? (
@@ -521,6 +643,13 @@ export function ClinicDashboardPage({
                           className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(appointment)}
+                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground"
+                        >
+                          Editar datos
                         </button>
                       </div>
                     ) : null}
@@ -547,6 +676,12 @@ export function ClinicDashboardPage({
           <p className="mt-3 flex items-center gap-1.5 text-sm text-primary">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
             {completedFeedback}
+          </p>
+        ) : null}
+        {editFeedback ? (
+          <p className="mt-3 flex items-center gap-1.5 text-sm text-primary">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {editFeedback}
           </p>
         ) : null}
       </section>
