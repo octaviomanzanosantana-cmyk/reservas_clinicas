@@ -17,6 +17,7 @@ export type PatientClinicContext = {
   accentColor: string;
   logoText: string;
   cancelHoursLimit: number;
+  timezone: string;
 };
 
 export type PatientAppointmentDetails = {
@@ -53,6 +54,7 @@ export async function getPatientClinicContext(
     accentColor: darkenHex(primaryColor, 12) || DEFAULT_ACCENT_COLOR,
     logoText: buildLogoText(name),
     cancelHoursLimit: clinic?.cancel_hours_limit ?? 24,
+    timezone: clinic?.timezone?.trim() || "Atlantic/Canary",
   };
 }
 

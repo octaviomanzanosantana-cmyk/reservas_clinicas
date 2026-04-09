@@ -136,7 +136,7 @@ export default function ConfirmPage() {
           <p className="mt-1.5 text-center text-sm text-muted">{description}</p>
         </section>
 
-        <AppointmentCard appointment={appointment} />
+        <AppointmentCard appointment={appointment} timezone={clinic?.timezone} />
 
         {calendarInput ? (
           <div className="rounded-[14px] border-[0.5px] border-border bg-card p-5">

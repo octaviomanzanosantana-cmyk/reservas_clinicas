@@ -128,7 +128,7 @@ export default function CancelPage() {
             <p className="mt-2 text-center text-sm text-muted">La clínica ha recibido la cancelación.</p>
           </section>
 
-          <AppointmentCard appointment={appointment} />
+          <AppointmentCard appointment={appointment} timezone={clinic?.timezone} />
 
           <Link
             href={`/a/${token}`}
@@ -193,7 +193,7 @@ export default function CancelPage() {
           </div>
         </section>
 
-        <AppointmentCard appointment={appointment} />
+        <AppointmentCard appointment={appointment} timezone={clinic?.timezone} />
 
         <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>

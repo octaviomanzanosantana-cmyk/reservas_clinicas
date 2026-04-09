@@ -4,14 +4,41 @@ import type { ReactNode } from "react";
 
 type AppointmentCardProps = {
   appointment: Appointment;
+  timezone?: string | null;
 };
+
+function formatFullDate(scheduledAt: string, timezone?: string | null): { day: string; hour: string } {
+  const date = new Date(scheduledAt);
+  if (Number.isNaN(date.getTime())) return { day: "", hour: "" };
+
+  const tz = timezone?.trim() || "Atlantic/Canary";
+  const fecha = date.toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: tz,
+  });
+  const hora = date.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: tz,
+  });
+
+  return { day: fecha.charAt(0).toUpperCase() + fecha.slice(1), hour: hora };
+}
 
 function IconWrap({ children }: { children: ReactNode }) {
   return <span className="inline-flex h-4 w-4 items-center justify-center text-muted">{children}</span>;
 }
 
-export default function AppointmentCard({ appointment }: AppointmentCardProps) {
-  const [day = appointment.datetimeLabel, hour = ""] = appointment.datetimeLabel.split("·").map((v) => v.trim());
+export default function AppointmentCard({ appointment, timezone }: AppointmentCardProps) {
+  const formatted = appointment.scheduledAt
+    ? formatFullDate(appointment.scheduledAt, timezone)
+    : null;
+  const [day = appointment.datetimeLabel, hour = ""] = formatted
+    ? [formatted.day, formatted.hour]
+    : appointment.datetimeLabel.split("·").map((v) => v.trim());
 
   return (
     <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">

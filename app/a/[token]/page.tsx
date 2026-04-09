@@ -108,7 +108,7 @@ export default function AppointmentHomePage() {
           <p className="mt-2 text-sm text-muted">{STATUS_MESSAGE[appointment.status]}</p>
         </section>
 
-        <AppointmentCard appointment={appointment} />
+        <AppointmentCard appointment={appointment} timezone={clinic?.timezone} />
 
         {appointment.status === "cancelled" && clinic?.slug ? (
           <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">

@@ -10,6 +10,7 @@ export type PatientClinicData = {
   accentColor: string;
   logoText: string;
   cancelHoursLimit: number;
+  timezone: string;
 };
 
 export type PatientAppointmentResponse = {

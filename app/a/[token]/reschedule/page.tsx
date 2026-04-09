@@ -158,7 +158,7 @@ export default function ReschedulePage() {
         clinicName={clinic?.name ?? appointment.clinicName}
       />
 
-      <AppointmentCard appointment={appointment} />
+      <AppointmentCard appointment={appointment} timezone={clinic?.timezone} />
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-5">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">Cambiar cita</h1>
