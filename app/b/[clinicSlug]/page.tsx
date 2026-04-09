@@ -237,6 +237,7 @@ export default function PublicBookingPage() {
   const [modality, setModality] = useState<"presencial" | "online">("presencial");
   const [appointmentType, setAppointmentType] = useState<"primera_visita" | "revision">("primera_visita");
   const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
@@ -403,6 +404,9 @@ export default function PublicBookingPage() {
       if (!patientName.trim()) {
         throw new Error("Introduce tu nombre");
       }
+      if (!patientEmail.trim()) {
+        throw new Error("Introduce tu email");
+      }
       if (!privacidadAceptada) {
         throw new Error("Debes aceptar la política de privacidad para continuar");
       }
@@ -414,7 +418,8 @@ export default function PublicBookingPage() {
         clinic_id: null,
         clinic_name: clinicDetails.clinicName,
         patient_name: patientName.trim(),
-        patient_email: patientEmail.trim() || null,
+        patient_email: patientEmail.trim(),
+        patient_phone: patientPhone.trim() || null,
         service: selectedService.name,
         scheduled_at: selectedSlot.value,
         datetime_label: datetimeLabel,
@@ -765,13 +770,27 @@ export default function PublicBookingPage() {
 
                   <label className="block rounded-[14px] border border-border bg-white p-4">
                     <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-                      5. Email
+                      5. Teléfono (opcional)
+                    </span>
+                    <input
+                      type="tel"
+                      value={patientPhone}
+                      onChange={(event) => setPatientPhone(event.target.value)}
+                      placeholder="Ej: 600 000 000"
+                      className="mt-2 w-full rounded-2xl border border-border bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
+                    />
+                  </label>
+
+                  <label className="block rounded-[14px] border border-border bg-white p-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                      6. Email *
                     </span>
                     <input
                       type="email"
                       value={patientEmail}
                       onChange={(event) => setPatientEmail(event.target.value)}
                       placeholder="Ej: marta@email.com"
+                      required
                       className="mt-2 w-full rounded-2xl border border-border bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
                     />
                   </label>
@@ -801,7 +820,7 @@ export default function PublicBookingPage() {
 
                     <button
                       type="submit"
-                      disabled={submitting || !selectedService || !selectedSlot || !clinicDetails || !privacidadAceptada}
+                      disabled={submitting || !selectedService || !selectedSlot || !clinicDetails || !patientEmail.trim() || !privacidadAceptada}
                       className="w-full rounded-[10px] px-5 py-3 font-heading text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                       style={{ backgroundColor: "var(--clinic-color)" }}
                     >
@@ -840,7 +859,7 @@ export default function PublicBookingPage() {
           </a>
           <span className="mx-2">·</span>
           <a href="https://appoclick.com" target="_blank" rel="noreferrer" className="hover:text-foreground">
-            Reservas gestionadas con Appoclick
+            Reservas gestionadas con AppoClick
           </a>
         </footer>
       </div>
