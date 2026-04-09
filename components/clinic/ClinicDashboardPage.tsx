@@ -271,7 +271,10 @@ export function ClinicDashboardPage({
       setAppointments((current) =>
         current.map((appointment) =>
           appointment.token === token
-            ? { ...appointment, status: data.appointment!.status }
+            ? {
+                ...appointment,
+                ...data.appointment!,
+              }
             : appointment,
         ),
       );

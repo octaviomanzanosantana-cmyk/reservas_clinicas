@@ -96,10 +96,12 @@ export async function POST(request: Request) {
             { timezone: clinic?.timezone },
           );
 
+          const reviewTimestamp = new Date().toISOString();
           await supabaseAdmin
             .from("appointments")
-            .update({ review_sent_at: new Date().toISOString() })
+            .update({ review_sent_at: reviewTimestamp })
             .eq("token", appointment.token);
+          (appointment as Record<string, unknown>).review_sent_at = reviewTimestamp;
         } catch (emailError) {
           console.error("[update-status] Failed to send review email", {
             token: appointment.token,
