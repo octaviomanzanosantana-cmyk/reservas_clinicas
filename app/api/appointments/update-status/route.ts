@@ -80,8 +80,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Enviar email de reseña al marcar como "Asistió" (solo si no se envió antes)
-    if (body.status === "completed" && !current.review_sent_at) {
+    // Enviar email de reseña al marcar como "Asistió" (solo primera visita, no revisiones)
+    const isPrimeraVisita = !current.appointment_type || current.appointment_type === "primera_visita";
+    if (body.status === "completed" && !current.review_sent_at && isPrimeraVisita) {
       const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
       console.log("[review email] status:", body.status);
       console.log("[review email] review_url:", clinic?.review_url ?? null);

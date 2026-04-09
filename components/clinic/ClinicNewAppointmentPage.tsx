@@ -48,6 +48,7 @@ function ClinicNewAppointmentContent({
   const [selectedDate, setSelectedDate] = useState(searchParams.get("date") ?? getTodayInputValue());
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [modality, setModality] = useState<"presencial" | "online">("presencial");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
@@ -219,6 +220,7 @@ function ClinicNewAppointmentContent({
         address: clinic.address ?? "",
         duration_label: `${selectedService.duration_minutes} min`,
         status: "confirmed",
+        modality,
       };
 
       const response = await fetch("/api/appointments/create", {
@@ -321,6 +323,34 @@ function ClinicNewAppointmentContent({
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
                 />
               </label>
+            </div>
+
+            <div>
+              <span className="text-sm font-medium text-slate-700">Modalidad</span>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModality("presencial")}
+                  className={`flex-1 rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                    modality === "presencial"
+                      ? "border-slate-950 bg-slate-950 text-white"
+                      : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  Presencial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModality("online")}
+                  className={`flex-1 rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                    modality === "online"
+                      ? "border-slate-950 bg-slate-950 text-white"
+                      : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  Online
+                </button>
+              </div>
             </div>
 
             <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">

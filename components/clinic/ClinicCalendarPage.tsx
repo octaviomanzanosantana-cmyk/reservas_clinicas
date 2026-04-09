@@ -518,11 +518,16 @@ export function ClinicCalendarPage({
                     day: "2-digit",
                     month: "2-digit",
                   });
+                  const isInactive = !item.schedule || !item.schedule.active;
 
                   return (
                     <div
                       key={`${item.dateKey}-${index}`}
-                      className="min-w-0 border-b border-l border-slate-200 bg-white/90 p-3 text-sm font-semibold text-slate-900"
+                      className={`min-w-0 border-b border-l border-slate-200 p-3 text-sm font-semibold ${
+                        isInactive
+                          ? "bg-slate-100 text-slate-400"
+                          : "bg-white/90 text-slate-900"
+                      }`}
                     >
                       {formatter.format(item.date)}
                     </div>
@@ -559,10 +564,12 @@ export function ClinicCalendarPage({
                           }) ?? null;
                         const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
 
+                        const isDayInactive = !item.schedule || !item.schedule.active;
+
                         return (
                           <div
                             key={`${item.dateKey}-${timeLabel}`}
-                            className="min-w-0 border-b border-l border-slate-200 bg-white p-2"
+                            className={`min-w-0 border-b border-l border-slate-200 p-2 ${isDayInactive ? "bg-slate-50" : "bg-white"}`}
                           >
                             {!slotExists ? null : appointment ? (
                               <Link

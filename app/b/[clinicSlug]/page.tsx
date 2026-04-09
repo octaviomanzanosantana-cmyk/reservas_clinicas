@@ -10,7 +10,7 @@ import { buildDateTimeLabelFromInputs, getTodayInputValue } from "@/lib/dateForm
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ServiceOption = {
   id: string;
@@ -240,6 +240,7 @@ export default function PublicBookingPage() {
   const [patientPhone, setPatientPhone] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
+  const [activeDays, setActiveDays] = useState<Set<number>>(new Set());
   const [loadingServices, setLoadingServices] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -339,6 +340,61 @@ export default function PublicBookingPage() {
       active = false;
     };
   }, [clinicDetails, clinicSlug]);
+
+  useEffect(() => {
+    let active = true;
+    const loadActiveDays = async () => {
+      try {
+        const response = await fetch(`/api/clinic-hours/active-days?clinicSlug=${encodeURIComponent(clinicSlug)}`);
+        const data = (await response.json()) as { activeDays?: number[] };
+        if (active && data.activeDays) {
+          setActiveDays(new Set(data.activeDays));
+        }
+      } catch { /* ignore */ }
+    };
+    void loadActiveDays();
+    return () => { active = false; };
+  }, [clinicSlug]);
+
+  // Calendar helpers
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    // Monday=0 offset
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const cells: { day: number; dateStr: string; isPast: boolean; isActive: boolean; isCurrentMonth: boolean }[] = [];
+
+    // Empty cells for offset
+    for (let i = 0; i < startOffset; i++) {
+      cells.push({ day: 0, dateStr: "", isPast: true, isActive: false, isCurrentMonth: false });
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const isPast = date < today;
+      const isActive = !isPast && activeDays.has(dayOfWeek);
+      cells.push({ day: d, dateStr, isPast, isActive, isCurrentMonth: true });
+    }
+
+    return cells;
+  }, [calendarMonth, activeDays]);
+
+  const handleCalendarDayClick = useCallback((dateStr: string) => {
+    setSelectedDate(dateStr);
+    setSelectedSlot(null);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -601,7 +657,7 @@ export default function PublicBookingPage() {
               <div className="px-6 py-6 md:px-8 md:py-8">
                 <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
                   <div className="grid gap-4 md:grid-cols-2">
-                    <label className="block rounded-[14px] border border-border bg-white p-4">
+                    <label className="block rounded-[14px] border border-border bg-white p-4 md:col-span-2">
                       <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                         1. Servicio
                       </span>
@@ -624,21 +680,74 @@ export default function PublicBookingPage() {
                       </select>
                     </label>
 
-                    <label className="block rounded-[14px] border border-border bg-white p-4">
+                    <div className="rounded-[14px] border border-border bg-white p-4 md:col-span-2">
                       <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                         2. Fecha
                       </span>
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        min={getTodayInputValue()}
-                        onChange={(event) => {
-                          setSelectedDate(event.target.value);
-                          setSelectedSlot(null);
-                        }}
-                        className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition-colors focus:border-[var(--clinic-color)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--clinic-color)_12%,transparent)]"
-                      />
-                    </label>
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                            className="rounded-lg border border-border px-2.5 py-1.5 text-sm text-muted hover:text-foreground transition-colors"
+                          >
+                            ←
+                          </button>
+                          <span className="text-sm font-semibold text-foreground capitalize">
+                            {calendarMonth.toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                            className="rounded-lg border border-border px-2.5 py-1.5 text-sm text-muted hover:text-foreground transition-colors"
+                          >
+                            →
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted mb-1">
+                          {["L", "M", "X", "J", "V", "S", "D"].map((d) => <div key={d}>{d}</div>)}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {calendarDays.map((cell, i) =>
+                            !cell.isCurrentMonth ? (
+                              <div key={`empty-${i}`} />
+                            ) : cell.isPast || !cell.isActive ? (
+                              <div
+                                key={cell.dateStr}
+                                className="flex h-9 items-center justify-center rounded-lg text-sm cursor-not-allowed"
+                                style={{ backgroundColor: "#F3F4F6", color: "#9CA3AF" }}
+                              >
+                                {cell.day}
+                              </div>
+                            ) : (
+                              <button
+                                key={cell.dateStr}
+                                type="button"
+                                onClick={() => handleCalendarDayClick(cell.dateStr)}
+                                className={`flex h-9 items-center justify-center rounded-lg text-sm font-medium transition-all duration-150 relative ${
+                                  selectedDate === cell.dateStr
+                                    ? "text-white"
+                                    : "bg-white text-foreground hover:bg-slate-50 border border-border"
+                                }`}
+                                style={
+                                  selectedDate === cell.dateStr
+                                    ? { backgroundColor: "var(--clinic-color)" }
+                                    : undefined
+                                }
+                              >
+                                {cell.day}
+                                {selectedDate !== cell.dateStr ? (
+                                  <span
+                                    className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full"
+                                    style={{ backgroundColor: "var(--clinic-color)" }}
+                                  />
+                                ) : null}
+                              </button>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
