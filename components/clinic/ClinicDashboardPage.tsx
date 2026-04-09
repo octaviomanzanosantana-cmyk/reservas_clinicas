@@ -546,12 +546,13 @@ export function ClinicDashboardPage({
                   className="text-foreground transition-colors hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/a/${appointment.token}`}
-                      className="font-medium text-primary hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(appointment)}
+                      className="font-medium text-foreground cursor-pointer transition-colors hover:text-primary hover:underline"
                     >
                       {appointment.patient_name}
-                    </Link>
+                    </button>
                   </td>
                   <td className="px-4 py-3">{appointment.service}</td>
                   <td className="px-4 py-3">
@@ -613,13 +614,6 @@ export function ClinicDashboardPage({
                         >
                           Cancelar
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(appointment)}
-                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground"
-                        >
-                          Editar datos
-                        </button>
                       </div>
                     ) : null}
                     {appointment.status === "confirmed" ? (
@@ -643,13 +637,6 @@ export function ClinicDashboardPage({
                           className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(appointment)}
-                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground"
-                        >
-                          Editar datos
                         </button>
                       </div>
                     ) : null}
