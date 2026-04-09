@@ -91,6 +91,7 @@ export async function POST(request: Request) {
     try {
       await sendAppointmentRescheduledEmail(updated, {
         notificationEmail: clinic?.notification_email,
+        timezone: clinic?.timezone,
       });
     } catch (error) {
       console.error("[appointments.reschedule] Failed to send appointment rescheduled email", {

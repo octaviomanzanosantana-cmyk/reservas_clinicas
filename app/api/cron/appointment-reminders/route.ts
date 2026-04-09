@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
       ),
     ];
 
-    const clinicConfigMap = new Map<string, { reminder_hours: number; notification_email: string | null; review_url: string | null }>();
+    const clinicConfigMap = new Map<string, { reminder_hours: number; notification_email: string | null; review_url: string | null; timezone: string | null }>();
 
     if (clinicIds.length > 0) {
       const { data: clinics } = await supabaseAdmin
         .from("clinics")
-        .select("id, reminder_hours, notification_email, review_url")
+        .select("id, reminder_hours, notification_email, review_url, timezone")
         .in("id", clinicIds);
 
       for (const c of clinics ?? []) {
@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
           reminder_hours: c.reminder_hours ?? 48,
           notification_email: c.notification_email,
           review_url: c.review_url,
+          timezone: c.timezone ?? null,
         });
       }
     }
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
         await sendAppointmentReminderEmail(appointment, {
           notificationEmail: config?.notification_email,
           reviewUrl: config?.review_url,
+          timezone: config?.timezone,
         });
 
         await supabaseAdmin

@@ -57,6 +57,7 @@ export async function POST(request: Request) {
         await sendAppointmentCreatedEmail(confirmed as AppointmentRow, {
           notificationEmail: clinic?.notification_email,
           reviewUrl: clinic?.review_url,
+          timezone: clinic?.timezone,
         });
       } catch (emailError) {
         console.error("[confirm] Failed to send confirmation email", {

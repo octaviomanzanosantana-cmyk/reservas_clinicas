@@ -11,6 +11,7 @@ type AppointmentEmailCopy = {
 
 type ClinicNotificationOptions = {
   notificationEmail?: string | null;
+  timezone?: string | null;
 };
 
 const LOGO_URL = "https://app.appoclick.com/logo_appoclick_transparent.png";
@@ -57,6 +58,33 @@ async function sendEmail(params: {
   }
 }
 
+function formatFullDateTime(appointment: AppointmentRow, timezone?: string | null): string {
+  if (!appointment.scheduled_at) return appointment.datetime_label;
+
+  const date = new Date(appointment.scheduled_at);
+  if (Number.isNaN(date.getTime())) return appointment.datetime_label;
+
+  const tz = timezone?.trim() || "Atlantic/Canary";
+
+  const fecha = date.toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: tz,
+  });
+
+  const hora = date.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: tz,
+  });
+
+  // Capitalizar primera letra
+  const fechaCapitalizada = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+  return `${fechaCapitalizada} · ${hora}`;
+}
+
 function getModalityLabel(appointment: AppointmentRow): string {
   return appointment.modality === "online" ? "Online" : "Presencial";
 }
@@ -65,12 +93,12 @@ function getTypeLabel(appointment: AppointmentRow): string {
   return appointment.appointment_type === "revision" ? "Revisión" : "Primera visita";
 }
 
-function buildDetailRows(appointment: AppointmentRow): string {
+function buildDetailRows(appointment: AppointmentRow, timezone?: string | null): string {
   const rows = [
     { label: "Servicio", value: appointment.service },
     { label: "Tipo", value: getTypeLabel(appointment) },
     { label: "Modalidad", value: getModalityLabel(appointment) },
-    { label: "Fecha y hora", value: appointment.datetime_label },
+    { label: "Fecha y hora", value: formatFullDateTime(appointment, timezone) },
   ];
 
   if (appointment.modality !== "online" && appointment.address) {
@@ -97,8 +125,9 @@ function buildHtmlEmail(params: {
   ctaLabel: string;
   reviewUrl?: string | null;
   extraHtml?: string;
+  timezone?: string | null;
 }): string {
-  const { appointment, intro, ctaUrl, ctaLabel, reviewUrl, extraHtml } = params;
+  const { appointment, intro, ctaUrl, ctaLabel, reviewUrl, extraHtml, timezone } = params;
 
   const reviewBlock = reviewUrl
     ? `<p style="margin:20px 0 0;text-align:center"><a href="${reviewUrl}" style="color:${BRAND_COLOR};font-size:13px">¿Te ha gustado? Déjanos una reseña</a></p>`
@@ -132,7 +161,7 @@ function buildHtmlEmail(params: {
         <tr>
           <td colspan="2" style="padding:12px 12px 4px;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em">${appointment.clinic_name}</td>
         </tr>
-        ${buildDetailRows(appointment)}
+        ${buildDetailRows(appointment, timezone)}
       </table>
     </td></tr>
   </table>
@@ -164,8 +193,9 @@ function buildPlainText(params: {
   intro: string;
   ctaUrl: string;
   reviewUrl?: string | null;
+  timezone?: string | null;
 }): string {
-  const { appointment, intro, ctaUrl, reviewUrl } = params;
+  const { appointment, intro, ctaUrl, reviewUrl, timezone } = params;
   const lines = [
     `Hola ${appointment.patient_name},`,
     "",
@@ -175,7 +205,7 @@ function buildPlainText(params: {
     `Servicio: ${appointment.service}`,
     `Tipo: ${getTypeLabel(appointment)}`,
     `Modalidad: ${getModalityLabel(appointment)}`,
-    `Fecha y hora: ${appointment.datetime_label}`,
+    `Fecha y hora: ${formatFullDateTime(appointment, timezone)}`,
   ];
 
   if (appointment.modality !== "online" && appointment.address) {
@@ -213,11 +243,14 @@ async function sendAppointmentEmail(
 
   const appointmentLink = `${appUrl}/a/${appointment.token}`;
 
+  const tz = options?.timezone;
+
   const text = buildPlainText({
     appointment,
     intro: copy.intro,
     ctaUrl: appointmentLink,
     reviewUrl: copy.reviewUrl,
+    timezone: tz,
   });
 
   const html = buildHtmlEmail({
@@ -226,6 +259,7 @@ async function sendAppointmentEmail(
     ctaUrl: appointmentLink,
     ctaLabel: "Gestionar mi cita",
     reviewUrl: copy.reviewUrl,
+    timezone: tz,
   });
 
   await sendEmail({ apiKey, from, to: [patientEmail], subject: copy.subject, text, html });
@@ -306,11 +340,13 @@ export async function sendAppointmentCancelledEmail(
   if (!patientEmail || !apiKey || !from || !appUrl) return;
 
   const bookingUrl = options?.bookingUrl ?? appUrl;
+  const tz = options?.timezone;
 
   const text = buildPlainText({
     appointment,
     intro: "Tu cita ha sido cancelada. Aquí tienes el resumen.",
     ctaUrl: bookingUrl,
+    timezone: tz,
   });
 
   const html = buildHtmlEmail({
@@ -318,6 +354,7 @@ export async function sendAppointmentCancelledEmail(
     intro: "Tu cita ha sido cancelada correctamente. Si necesitas una nueva cita, puedes reservar desde el enlace.",
     ctaUrl: bookingUrl,
     ctaLabel: "Reservar nueva cita",
+    timezone: tz,
   });
 
   await sendEmail({ apiKey, from, to: [patientEmail], subject: `Tu cita en ${appointment.clinic_name} ha sido cancelada`, text, html });
@@ -345,6 +382,7 @@ export async function sendAppointmentCancelledEmail(
 export async function sendAppointmentReviewEmail(
   appointment: AppointmentRow,
   reviewUrl: string | null | undefined,
+  options?: { timezone?: string | null },
 ): Promise<void> {
   const patientEmail = appointment.patient_email?.trim();
   const { apiKey, from, appUrl } = getEmailConfig();
@@ -380,6 +418,8 @@ export async function sendAppointmentReviewEmail(
     ? `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Tu opinión ayuda a ${appointment.clinic_name} a seguir mejorando y a otros pacientes a tomar mejores decisiones. Solo tarda 30 segundos.`
     : `Nos alegra que hayas podido venir a tu cita en ${appointment.clinic_name}. Esperamos que la experiencia haya sido buena y agradecemos tu confianza.`;
 
+  const tz = options?.timezone;
+
   const html = safeReviewUrl
     ? buildHtmlEmail({
         appointment,
@@ -387,6 +427,7 @@ export async function sendAppointmentReviewEmail(
         ctaUrl: safeReviewUrl,
         ctaLabel: "Dejar mi opinión →",
         extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
+        timezone: tz,
       })
     : buildHtmlEmail({
         appointment,
@@ -394,6 +435,7 @@ export async function sendAppointmentReviewEmail(
         ctaUrl: `${appUrl}/a/${appointment.token}`,
         ctaLabel: "Ver mi cita",
         extraHtml: `<p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF">Gracias por confiar en ${appointment.clinic_name}</p>`,
+        timezone: tz,
       });
 
   await sendEmail({

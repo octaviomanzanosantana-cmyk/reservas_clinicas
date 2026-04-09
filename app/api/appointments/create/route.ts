@@ -189,6 +189,7 @@ export async function POST(request: Request) {
       await sendAppointmentCreatedEmail(nextAppointment, {
         notificationEmail: clinicRow?.notification_email,
         reviewUrl: clinicRow?.review_url,
+        timezone: clinicRow?.timezone,
       });
     } catch (error) {
       console.error("[appointments.create] Failed to send appointment created email", {

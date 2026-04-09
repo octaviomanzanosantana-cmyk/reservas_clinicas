@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       await sendAppointmentCancelledEmail(cancelled as AppointmentRow, {
         notificationEmail: clinic?.notification_email,
         bookingUrl,
+        timezone: clinic?.timezone,
       });
     } catch (emailError) {
       console.error("[cancel] Failed to send cancellation email", {
