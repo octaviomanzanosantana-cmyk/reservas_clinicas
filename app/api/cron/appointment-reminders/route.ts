@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
           notificationEmail: config?.notification_email,
           reviewUrl: config?.review_url,
           timezone: config?.timezone,
+          reminderHours,
         });
 
         await supabaseAdmin

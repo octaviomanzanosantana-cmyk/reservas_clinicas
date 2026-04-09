@@ -317,17 +317,65 @@ export async function sendAppointmentRescheduledEmail(
 
 export async function sendAppointmentReminderEmail(
   appointment: AppointmentRow,
-  options?: ClinicNotificationOptions & { reviewUrl?: string | null },
+  options?: ClinicNotificationOptions & { reviewUrl?: string | null; reminderHours?: number },
 ): Promise<void> {
-  await sendAppointmentEmail(
+  const { apiKey, from, appUrl } = getEmailConfig();
+  const patientEmail = appointment.patient_email?.trim();
+
+  if (!patientEmail || !apiKey || !from || !appUrl) return;
+
+  const confirmUrl = `${appUrl}/a/${appointment.token}/confirm`;
+  const appointmentLink = `${appUrl}/a/${appointment.token}`;
+  const tz = options?.timezone;
+  const isReminder24h = options?.reminderHours === 24;
+
+  const cancelWarningHtml = isReminder24h
+    ? `<tr><td style="padding:0 28px 8px"><div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400E;text-align:center">Si necesitas cancelar, recuerda hacerlo con más de 24 horas de antelación usando el enlace de tu email de confirmación.</div></td></tr>`
+    : "";
+
+  const cancelWarningText = isReminder24h
+    ? "\nSi necesitas cancelar, recuerda hacerlo con más de 24 horas de antelación usando el enlace de tu email de confirmación.\n"
+    : "";
+
+  const text = buildPlainText({
     appointment,
-    {
-      subject: `Recordatorio: tu cita en ${appointment.clinic_name}`,
-      intro: "Te recordamos que tienes una cita programada pronto.",
-      reviewUrl: options?.reviewUrl,
-    },
-    options,
-  );
+    intro: "Te recordamos que tienes una cita programada pronto.",
+    ctaUrl: appointmentLink,
+    reviewUrl: options?.reviewUrl,
+    timezone: tz,
+  }) + cancelWarningText + `\nConfirmar mi asistencia: ${confirmUrl}`;
+
+  const html = buildHtmlEmail({
+    appointment,
+    intro: "Te recordamos que tienes una cita programada pronto.",
+    ctaUrl: confirmUrl,
+    ctaLabel: "Confirmar mi asistencia →",
+    reviewUrl: options?.reviewUrl,
+    timezone: tz,
+    extraHtml: cancelWarningHtml,
+  });
+
+  await sendEmail({ apiKey, from, to: [patientEmail], subject: `Recordatorio: tu cita en ${appointment.clinic_name}`, text, html });
+
+  // Copia a la clínica
+  const clinicEmail = options?.notificationEmail?.trim();
+  if (clinicEmail) {
+    try {
+      await sendEmail({
+        apiKey,
+        from,
+        to: [clinicEmail],
+        subject: `[Copia] Recordatorio: tu cita en ${appointment.clinic_name}`,
+        text: `Copia de notificación enviada a ${patientEmail}:\n\n${text}`,
+        html: `<div style="font-family:Arial,sans-serif;color:#6B7280;font-size:13px;padding:12px 16px;background:#F2F2F0;border-radius:10px;margin-bottom:16px">Copia de notificación enviada a ${patientEmail}</div>${html}`,
+      });
+    } catch (error) {
+      console.error("[appointments.email] Failed to send clinic reminder copy", {
+        clinicEmail,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 }
 
 export async function sendAppointmentCancelledEmail(

@@ -39,6 +39,7 @@ type AppointmentRow = {
   scheduled_at: string | null;
   datetime_label: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | string;
+  review_sent_at?: string | null;
   updated_at: string;
 };
 
@@ -596,16 +597,21 @@ export function ClinicDashboardPage({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {appointment.status === "completed" || appointment.status === "cancelled" ? (
-                      <button
-                        type="button"
-                        onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
-                        disabled={updatingAppointmentToken === appointment.token}
-                        className="text-xs text-muted underline transition-colors hover:text-foreground disabled:opacity-60"
-                      >
-                        Revertir
-                      </button>
-                    ) : null}
+                    <div className="flex items-center gap-2">
+                      {appointment.review_sent_at ? (
+                        <span title="Email de reseña enviado">⭐️</span>
+                      ) : null}
+                      {appointment.status === "completed" || appointment.status === "cancelled" ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleAppointmentStatusUpdate(appointment.token, "confirmed")}
+                          disabled={updatingAppointmentToken === appointment.token}
+                          className="text-xs text-muted underline transition-colors hover:text-foreground disabled:opacity-60"
+                        >
+                          Revertir
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

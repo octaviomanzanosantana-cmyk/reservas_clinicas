@@ -169,48 +169,66 @@ export default function AppointmentHomePage() {
           />
         ) : null}
 
-        {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
-          <section className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={async () => {
-                setCancelLoading(true);
-                setCancelMessage(null);
-                setCancelError(null);
+        {appointment.status !== "cancelled" && appointment.status !== "completed" ? (() => {
+          const cancelHoursLimit = clinic?.cancelHoursLimit ?? 24;
+          const scheduledAt = appointment.scheduledAt ? new Date(appointment.scheduledAt) : null;
+          const hoursUntilAppointment = scheduledAt
+            ? (scheduledAt.getTime() - Date.now()) / 3_600_000
+            : null;
+          const canCancel = hoursUntilAppointment === null || hoursUntilAppointment >= cancelHoursLimit;
 
-                try {
-                  const response = await fetch("/api/appointments/cancel", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token }),
-                  });
+          return (
+            <section className="mt-4 text-center">
+              {canCancel ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setCancelLoading(true);
+                    setCancelMessage(null);
+                    setCancelError(null);
 
-                  if (!response.ok) {
-                    throw new Error("cancel_failed");
-                  }
+                    try {
+                      const response = await fetch("/api/appointments/cancel", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ token }),
+                      });
 
-                  setAppointment((current) =>
-                    current ? { ...current, status: "cancelled" } : current,
-                  );
-                  setCancelMessage("Tu cita ha sido cancelada.");
-                } catch {
-                  setCancelError("No se pudo cancelar la cita. Inténtalo de nuevo.");
-                } finally {
-                  setCancelLoading(false);
-                }
-              }}
-              disabled={cancelLoading}
-              className="w-full rounded-[10px] border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition-all duration-150 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {cancelLoading ? "Cancelando..." : "Cancelar cita"}
-            </button>
+                      if (!response.ok) {
+                        throw new Error("cancel_failed");
+                      }
 
-            {cancelMessage ? (
-              <p className="mt-3 text-sm text-primary">{cancelMessage}</p>
-            ) : null}
-            {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
-          </section>
-        ) : null}
+                      setAppointment((current) =>
+                        current ? { ...current, status: "cancelled" } : current,
+                      );
+                      setCancelMessage("Tu cita ha sido cancelada.");
+                    } catch {
+                      setCancelError("No se pudo cancelar la cita. Inténtalo de nuevo.");
+                    } finally {
+                      setCancelLoading(false);
+                    }
+                  }}
+                  disabled={cancelLoading}
+                  className="w-full rounded-[10px] border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition-all duration-150 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {cancelLoading ? "Cancelando..." : "Cancelar cita"}
+                </button>
+              ) : (
+                <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <p className="font-medium">Esta cita es en menos de {cancelHoursLimit} horas</p>
+                  <p className="mt-1 text-amber-700">
+                    Para cancelar, contacta directamente con la clínica{clinic?.supportPhone ? `: ${clinic.supportPhone}` : "."}
+                  </p>
+                </div>
+              )}
+
+              {cancelMessage ? (
+                <p className="mt-3 text-sm text-primary">{cancelMessage}</p>
+              ) : null}
+              {cancelError ? <p className="mt-3 text-sm text-red-600">{cancelError}</p> : null}
+            </section>
+          );
+        })() : null}
 
         <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </div>

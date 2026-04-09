@@ -1,5 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
 import { sendAppointmentCancelledEmail, sendAppointmentReviewEmail } from "@/lib/appointmentEmails";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
 import { getClinicById } from "@/lib/clinics";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
@@ -79,8 +80,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Enviar email de reseña al marcar como "Asistió"
-    if (body.status === "completed") {
+    // Enviar email de reseña al marcar como "Asistió" (solo si no se envió antes)
+    if (body.status === "completed" && !current.review_sent_at) {
       const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
       console.log("[review email] status:", body.status);
       console.log("[review email] review_url:", clinic?.review_url ?? null);
@@ -93,6 +94,11 @@ export async function POST(request: Request) {
             clinic?.review_url ?? null,
             { timezone: clinic?.timezone },
           );
+
+          await supabaseAdmin
+            .from("appointments")
+            .update({ review_sent_at: new Date().toISOString() })
+            .eq("token", appointment.token);
         } catch (emailError) {
           console.error("[update-status] Failed to send review email", {
             token: appointment.token,

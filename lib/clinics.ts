@@ -26,6 +26,7 @@ export type ClinicRow = {
   logo_has_dark_bg: boolean;
   timezone: string;
   is_demo: boolean;
+  cancel_hours_limit: number;
   plan: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
