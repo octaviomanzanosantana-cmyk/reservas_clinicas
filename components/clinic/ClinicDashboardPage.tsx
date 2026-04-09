@@ -549,7 +549,7 @@ export function ClinicDashboardPage({
                     <button
                       type="button"
                       onClick={() => openEditModal(appointment)}
-                      className="font-medium text-foreground cursor-pointer transition-colors hover:text-primary hover:underline"
+                      className="font-medium text-[#0E9E82] cursor-pointer transition-colors hover:underline"
                     >
                       {appointment.patient_name}
                     </button>
