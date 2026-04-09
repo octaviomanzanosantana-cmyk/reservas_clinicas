@@ -331,10 +331,10 @@ function ClinicNewAppointmentContent({
                 <button
                   type="button"
                   onClick={() => setModality("presencial")}
-                  className={`flex-1 rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                  className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
                     modality === "presencial"
-                      ? "border-slate-950 bg-slate-950 text-white"
-                      : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                      ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                      : "border-[#E5E7EB] bg-white text-[#6B7280]"
                   }`}
                 >
                   Presencial
@@ -342,10 +342,10 @@ function ClinicNewAppointmentContent({
                 <button
                   type="button"
                   onClick={() => setModality("online")}
-                  className={`flex-1 rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                  className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
                     modality === "online"
-                      ? "border-slate-950 bg-slate-950 text-white"
-                      : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50"
+                      ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                      : "border-[#E5E7EB] bg-white text-[#6B7280]"
                   }`}
                 >
                   Online
@@ -434,14 +434,14 @@ function ClinicNewAppointmentContent({
               <button
                 type="submit"
                 disabled={submitting || !selectedService || !selectedSlot || !clinic}
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.7)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-[10px] bg-[#0E9E82] px-5 py-3 text-sm font-semibold text-white transition-all duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "Creando..." : "Crear cita"}
               </button>
               <button
                 type="button"
                 onClick={() => router.push(basePath)}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+                className="rounded-[10px] border-[0.5px] border-[#E5E7EB] bg-transparent px-5 py-3 text-sm font-semibold text-[#6B7280] transition-all duration-150 hover:text-foreground"
               >
                 Cancelar
               </button>
