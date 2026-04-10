@@ -7,6 +7,8 @@ type AppointmentEmailCopy = {
   subject: string;
   intro: string;
   reviewUrl?: string | null;
+  extraHtml?: string;
+  extraText?: string;
 };
 
 type ClinicNotificationOptions = {
@@ -245,13 +247,14 @@ async function sendAppointmentEmail(
 
   const tz = options?.timezone;
 
-  const text = buildPlainText({
+  const baseText = buildPlainText({
     appointment,
     intro: copy.intro,
     ctaUrl: appointmentLink,
     reviewUrl: copy.reviewUrl,
     timezone: tz,
   });
+  const text = copy.extraText ? baseText + copy.extraText : baseText;
 
   const html = buildHtmlEmail({
     appointment,
@@ -259,6 +262,7 @@ async function sendAppointmentEmail(
     ctaUrl: appointmentLink,
     ctaLabel: "Gestionar mi cita",
     reviewUrl: copy.reviewUrl,
+    extraHtml: copy.extraHtml,
     timezone: tz,
   });
 
@@ -286,16 +290,36 @@ async function sendAppointmentEmail(
   }
 }
 
+function buildOnlineBlock(appointment: AppointmentRow): { extraHtml: string; extraText: string } | null {
+  if (appointment.modality !== "online") return null;
+
+  if (appointment.video_link) {
+    return {
+      extraHtml: `<div style="background:#F0FDF9;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;text-align:center;margin-top:4px"><p style="margin:0;font-size:13px;color:#065F46">Tu consulta es online</p><a href="${appointment.video_link}" style="display:inline-block;margin-top:10px;padding:10px 24px;background:#0E9E82;color:#fff;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px">Unirse a la consulta →</a></div>`,
+      extraText: `\nTu consulta es online.\nEnlace: ${appointment.video_link}`,
+    };
+  }
+
+  return {
+    extraHtml: `<div style="background:#F3F4F6;border-radius:10px;padding:14px 16px;text-align:center;margin-top:4px"><p style="margin:0;font-size:13px;color:#6B7280">💻 Tu consulta es online. Recibirás el enlace de acceso por email en cuanto esté disponible.</p></div>`,
+    extraText: "\nTu consulta es online. Recibirás el enlace de acceso por email en cuanto esté disponible.",
+  };
+}
+
 export async function sendAppointmentCreatedEmail(
   appointment: AppointmentRow,
   options?: ClinicNotificationOptions & { reviewUrl?: string | null },
 ): Promise<void> {
+  const onlineBlock = buildOnlineBlock(appointment);
+
   await sendAppointmentEmail(
     appointment,
     {
       subject: `Tu cita en ${appointment.clinic_name}`,
       intro: "Tu cita ha sido registrada correctamente. Aqui tienes los detalles.",
       reviewUrl: options?.reviewUrl,
+      extraHtml: onlineBlock?.extraHtml,
+      extraText: onlineBlock?.extraText,
     },
     options,
   );

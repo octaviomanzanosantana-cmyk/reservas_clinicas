@@ -1,6 +1,6 @@
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
 import { getAppointmentByToken, type AppointmentRow } from "@/lib/appointments";
-import { sendVideoLinkEmail } from "@/lib/appointmentEmails";
+import { sendAppointmentRescheduledEmail, sendVideoLinkEmail } from "@/lib/appointmentEmails";
 import { getClinicById } from "@/lib/clinics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
@@ -10,6 +10,7 @@ type UpdatePatientRequest = {
   patient_name?: string;
   patient_email?: string;
   patient_phone?: string;
+  modality?: string;
   video_link?: string;
 };
 
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
     const patientPhone = body.patient_phone?.trim() || null;
     const videoLink = body.video_link?.trim() || null;
 
+    const modality = body.modality?.trim() || null;
+
     const updatePayload: Record<string, unknown> = {
       patient_name: patientName,
       patient_email: patientEmail,
@@ -49,9 +52,18 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
+    if (modality) {
+      updatePayload.modality = modality;
+    }
+
     // Only update video_link if explicitly provided in request
     if (typeof body.video_link === "string") {
       updatePayload.video_link = videoLink;
+    }
+
+    // Clear video_link when switching to presencial
+    if (modality === "presencial" && current.modality === "online") {
+      updatePayload.video_link = null;
     }
 
     const { data, error } = await supabaseAdmin
@@ -78,6 +90,23 @@ export async function POST(request: Request) {
         });
       } catch (emailError) {
         console.error("[update-patient] Failed to send video link email", {
+          token,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
+      }
+    }
+
+    // Send modality change email if modality changed
+    const modalityChanged = modality && modality !== current.modality;
+    if (modalityChanged && !isNewVideoLink && (patientEmail ?? current.patient_email)) {
+      try {
+        const clinic = current.clinic_id ? await getClinicById(current.clinic_id) : null;
+        await sendAppointmentRescheduledEmail(data as AppointmentRow, {
+          notificationEmail: clinic?.notification_email,
+          timezone: clinic?.timezone,
+        });
+      } catch (emailError) {
+        console.error("[update-patient] Failed to send modality change email", {
           token,
           error: emailError instanceof Error ? emailError.message : String(emailError),
         });

@@ -135,6 +135,7 @@ export function ClinicDashboardPage({
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editModality, setEditModality] = useState<"presencial" | "online">("presencial");
   const [editVideoLink, setEditVideoLink] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
@@ -310,6 +311,7 @@ export function ClinicDashboardPage({
     setEditName(appointment.patient_name);
     setEditEmail(appointment.patient_email ?? "");
     setEditPhone(appointment.patient_phone ?? "");
+    setEditModality(((appointment as AppointmentRow & { modality?: string }).modality === "online" ? "online" : "presencial"));
     setEditVideoLink(appointment.video_link ?? "");
     setEditFeedback(null);
   };
@@ -333,7 +335,8 @@ export function ClinicDashboardPage({
           patient_name: editName.trim(),
           patient_email: editEmail.trim() || null,
           patient_phone: editPhone.trim() || null,
-          video_link: editVideoLink.trim() || null,
+          modality: editModality,
+          video_link: editModality === "online" ? (editVideoLink.trim() || null) : null,
         }),
       });
       const data = (await response.json()) as { appointment?: AppointmentRow; error?: string };
@@ -394,7 +397,34 @@ export function ClinicDashboardPage({
                   className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
                 />
               </label>
-              {(editingAppointment as AppointmentRow & { modality?: string }).modality === "online" ? (
+              <div>
+                <span className="text-sm font-medium text-foreground">Modalidad</span>
+                <div className="mt-1.5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEditModality("presencial"); setEditVideoLink(""); }}
+                    className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                      editModality === "presencial"
+                        ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                        : "border-[#E5E7EB] bg-white text-[#6B7280]"
+                    }`}
+                  >
+                    Presencial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditModality("online")}
+                    className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                      editModality === "online"
+                        ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                        : "border-[#E5E7EB] bg-white text-[#6B7280]"
+                    }`}
+                  >
+                    Online
+                  </button>
+                </div>
+              </div>
+              {editModality === "online" ? (
                 <label className="block">
                   <span className="text-sm font-medium text-foreground">Enlace de videollamada</span>
                   <input
