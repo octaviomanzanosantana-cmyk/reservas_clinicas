@@ -645,8 +645,13 @@ export function ClinicDashboardPage({
                           const clinicName = clinic?.name ?? "la clínica";
                           const address = clinic?.address ?? "";
                           const mod = (appointment as AppointmentRow & { modality?: string }).modality;
-                          const locationLine = mod === "online" ? "💻 Online" : address ? `📍 ${address}` : "";
-                          const videoLine = appointment.video_link ? `🎥 Enlace de consulta: ${appointment.video_link}` : "";
+                          const isOnline = mod === "online";
+                          const locationLine = isOnline
+                            ? (appointment.video_link
+                              ? "💻 Consulta online"
+                              : "💻 Consulta online (recibirás el enlace próximamente)")
+                            : address ? `📍 ${address}` : "";
+                          const videoLine = isOnline && appointment.video_link ? `🎥 Enlace de consulta: ${appointment.video_link}` : "";
                           const msg = [
                             `Hola ${appointment.patient_name}, te confirmamos tu cita con ${clinicName}:`,
                             "",
