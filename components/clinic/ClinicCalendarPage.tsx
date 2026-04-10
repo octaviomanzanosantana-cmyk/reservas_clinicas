@@ -108,9 +108,9 @@ function formatDateInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function getScheduleForDate(date: Date, clinicHours: ClinicHourRow[]): ClinicHourRow | null {
+function getSchedulesForDate(date: Date, clinicHours: ClinicHourRow[]): ClinicHourRow[] {
   const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
-  return clinicHours.find((item) => item.day_of_week === dayOfWeek) ?? null;
+  return clinicHours.filter((item) => item.day_of_week === dayOfWeek);
 }
 
 function getWeekDates(baseDate: Date): Date[] {
@@ -211,9 +211,9 @@ export function ClinicCalendarPage({
   }, [clinicSlug]);
 
   const selectedDateObject = useMemo(() => parseDateInput(selectedDate), [selectedDate]);
-  const currentDaySchedule = useMemo(() => {
-    if (!selectedDateObject) return null;
-    return getScheduleForDate(selectedDateObject, clinicHours);
+  const currentDaySchedules = useMemo(() => {
+    if (!selectedDateObject) return [];
+    return getSchedulesForDate(selectedDateObject, clinicHours);
   }, [clinicHours, selectedDateObject]);
 
   const weekDates = useMemo(
@@ -279,17 +279,29 @@ export function ClinicCalendarPage({
   const appointments = appointmentsByDate[selectedDate] ?? [];
 
   const agendaSlots = useMemo(() => {
-    if (!selectedDateObject || !currentDaySchedule || !currentDaySchedule.active) {
+    if (!selectedDateObject || currentDaySchedules.length === 0) {
       return [];
     }
 
-    return buildDaySlotsFromTimeRange(
-      selectedDateObject,
-      currentDaySchedule.start_time,
-      currentDaySchedule.end_time,
-      15,
-    );
-  }, [currentDaySchedule, selectedDateObject]);
+    const activeSchedules = currentDaySchedules.filter((s) => s.active);
+    if (activeSchedules.length === 0) return [];
+
+    const allSlots: Date[] = [];
+    for (const schedule of activeSchedules) {
+      allSlots.push(
+        ...buildDaySlotsFromTimeRange(
+          selectedDateObject,
+          schedule.start_time,
+          schedule.end_time,
+          15,
+        ),
+      );
+    }
+
+    // Dedupe by timestamp and sort
+    return [...new Map(allSlots.map((s) => [s.getTime(), s])).values()]
+      .sort((a, b) => a.getTime() - b.getTime());
+  }, [currentDaySchedules, selectedDateObject]);
 
   const appointmentsBySlot = useMemo(() => {
     const map = new Map<string, AppointmentRow>();
@@ -310,17 +322,20 @@ export function ClinicCalendarPage({
     const schedules = weekDates.map((date) => ({
       date,
       dateKey: formatDateInput(date),
-      schedule: getScheduleForDate(date, clinicHours),
+      daySchedules: getSchedulesForDate(date, clinicHours),
     }));
 
     const allSlots = schedules.flatMap((item) => {
-      if (!item.schedule || !item.schedule.active) return [];
+      const activeSchedules = item.daySchedules.filter((s) => s.active);
+      if (activeSchedules.length === 0) return [];
 
-      return buildDaySlotsFromTimeRange(
-        item.date,
-        item.schedule.start_time,
-        item.schedule.end_time,
-        15,
+      return activeSchedules.flatMap((schedule) =>
+        buildDaySlotsFromTimeRange(
+          item.date,
+          schedule.start_time,
+          schedule.end_time,
+          15,
+        ),
       );
     });
 
@@ -444,7 +459,7 @@ export function ClinicCalendarPage({
           ) : errorMessage ? (
             <p className="text-sm text-red-600">{errorMessage}</p>
           ) : viewMode === "day" ? (
-            !currentDaySchedule || !currentDaySchedule.active ? (
+            currentDaySchedules.length === 0 || !currentDaySchedules.some((s) => s.active) ? (
               <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 px-5 py-10 text-center text-sm text-slate-600">
                 La clínica no atiende ese día.
               </div>
@@ -518,7 +533,7 @@ export function ClinicCalendarPage({
                     day: "2-digit",
                     month: "2-digit",
                   });
-                  const isInactive = !item.schedule || !item.schedule.active;
+                  const isInactive = item.daySchedules.length === 0 || !item.daySchedules.some((s) => s.active);
 
                   return (
                     <div
@@ -541,15 +556,15 @@ export function ClinicCalendarPage({
                         {timeLabel}
                       </div>
                       {weekAgendaData.schedules.map((item) => {
-                        const daySlots =
-                          item.schedule && item.schedule.active
-                            ? buildDaySlotsFromTimeRange(
-                                item.date,
-                                item.schedule.start_time,
-                                item.schedule.end_time,
-                                15,
-                              )
-                            : [];
+                        const activeSchedules = item.daySchedules.filter((s) => s.active);
+                        const daySlots = activeSchedules.flatMap((schedule) =>
+                          buildDaySlotsFromTimeRange(
+                            item.date,
+                            schedule.start_time,
+                            schedule.end_time,
+                            15,
+                          ),
+                        );
                         const slotExists = daySlots.some(
                           (slot) => formatTimeLabel(slot) === timeLabel,
                         );
@@ -564,7 +579,7 @@ export function ClinicCalendarPage({
                           }) ?? null;
                         const statusMeta = appointment ? getStatusMeta(appointment.status) : null;
 
-                        const isDayInactive = !item.schedule || !item.schedule.active;
+                        const isDayInactive = item.daySchedules.length === 0 || !item.daySchedules.some((s) => s.active);
 
                         return (
                           <div

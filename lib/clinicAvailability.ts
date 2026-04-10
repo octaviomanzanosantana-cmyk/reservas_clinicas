@@ -123,23 +123,32 @@ export async function getAvailableSlotsForClinicDate({
 
   const clinicHours = await getClinicHoursByClinicSlug(safeClinicSlug);
   const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
-  const clinicHour = clinicHours.find((item) => item.day_of_week === dayOfWeek);
+  const daySlotRanges = clinicHours.filter((item) => item.day_of_week === dayOfWeek);
 
-  if (!clinicHour) {
+  if (daySlotRanges.length === 0) {
     return [];
   }
 
   const clinicTimezone = clinic.timezone ?? "Atlantic/Canary";
 
-  const daySlots = buildDaySlotsFromTimeRange(
-    date,
-    clinicHour.start_time,
-    clinicHour.end_time,
-    slotMinutes,
-    clinicTimezone,
-  );
+  // Generate slots from ALL time ranges for this day, then dedupe & sort
+  const allSlots: Date[] = [];
+  for (const range of daySlotRanges) {
+    const rangeSlots = buildDaySlotsFromTimeRange(
+      date,
+      range.start_time,
+      range.end_time,
+      slotMinutes,
+      clinicTimezone,
+    );
+    allSlots.push(...rangeSlots);
+  }
 
-  return daySlots
+  // Dedupe by timestamp and sort
+  const uniqueSlots = [...new Map(allSlots.map((s) => [s.getTime(), s])).values()]
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  return uniqueSlots
     .filter((slotStart) => {
       const slotEnd = new Date(slotStart.getTime() + slotDurationMs);
       return !busyRanges.some((occupied) =>
