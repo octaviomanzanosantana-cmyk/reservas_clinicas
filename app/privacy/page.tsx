@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
           <div className="mt-6 rounded-[10px] border border-border bg-background p-4 text-sm text-muted leading-6">
             <p><strong className="text-foreground">Responsable:</strong> ANALÓGICAMENTE DIGITALES, SOCIEDAD LIMITADA</p>
-            <p>NIF: B76357201 · Calle Fresno 32, 35212 Telde, Las Palmas, España</p>
+            <p>NIF: B76357201 · Calle Fresno, 2 · 35200 Telde · Las Palmas</p>
             <p>Email: hola@appoclick.com · Web: app.appoclick.com</p>
           </div>
 
