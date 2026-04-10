@@ -496,6 +496,49 @@ export async function sendAppointmentReviewEmail(
   });
 }
 
+export async function sendVideoLinkEmail(
+  appointment: AppointmentRow,
+  options: { videoLink: string; clinicName: string; clinicPhone?: string | null; timezone?: string | null },
+): Promise<void> {
+  const patientEmail = appointment.patient_email?.trim();
+  const { apiKey, from, appUrl } = getEmailConfig();
+
+  if (!patientEmail || !apiKey || !from || !appUrl) return;
+
+  const tz = options.timezone;
+  const dateFormatted = formatFullDateTime(appointment, tz);
+  const phoneNote = options.clinicPhone
+    ? `Si tienes algún problema para acceder, contacta con ${options.clinicName} en ${options.clinicPhone}.`
+    : `Si tienes algún problema para acceder, contacta con ${options.clinicName}.`;
+
+  const text = [
+    `Hola ${appointment.patient_name},`,
+    "",
+    `Ya tienes el enlace para tu consulta online con ${options.clinicName}:`,
+    "",
+    `Fecha: ${dateFormatted}`,
+    "",
+    `Enlace: ${options.videoLink}`,
+    "",
+    phoneNote,
+    "",
+    "— AppoClick",
+  ].join("\n");
+
+  const html = buildHtmlEmail({
+    appointment,
+    intro: `Ya tienes el enlace para tu consulta online con ${options.clinicName}.`,
+    ctaUrl: options.videoLink,
+    ctaLabel: "Unirse a la consulta →",
+    timezone: tz,
+    extraHtml: `<p style="margin:12px 0 0;text-align:center;font-size:12px;color:#9CA3AF">${phoneNote}</p>`,
+  });
+
+  const subject = `Tu enlace para la consulta online del ${dateFormatted}`;
+
+  await sendEmail({ apiKey, from, to: [patientEmail], subject, text, html });
+}
+
 /**
  * Email de bienvenida.
  * invited=true  → flujo admin: botón "Crear mi contraseña" con passwordResetUrl

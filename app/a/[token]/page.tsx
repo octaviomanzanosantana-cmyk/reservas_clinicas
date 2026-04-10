@@ -122,6 +122,28 @@ export default function AppointmentHomePage() {
           </section>
         ) : null}
 
+        {appointment.modality === "online" && appointment.status !== "cancelled" && appointment.status !== "completed" ? (
+          appointment.videoLink ? (
+            <div className="rounded-[14px] border-[0.5px] border-primary/20 bg-primary-soft p-5 text-center">
+              <p className="font-heading text-sm font-semibold text-foreground">Tu consulta es online</p>
+              <a
+                href={appointment.videoLink}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center justify-center rounded-[10px] bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-white transition-all duration-150 hover:bg-primary-hover"
+              >
+                Unirse a la consulta →
+              </a>
+            </div>
+          ) : (
+            <div className="rounded-[14px] border-[0.5px] border-border bg-card p-5 text-center">
+              <p className="text-sm text-muted">
+                Tu consulta es online. Recibirás el enlace de acceso próximamente por email.
+              </p>
+            </div>
+          )
+        ) : null}
+
         {appointment.scheduledAt && appointment.status !== "cancelled" && appointment.status !== "completed" ? (() => {
           const calendarInput = {
             title: `${appointment.service} — ${clinic?.name ?? appointment.clinicName}`,

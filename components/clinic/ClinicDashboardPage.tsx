@@ -39,6 +39,7 @@ type AppointmentRow = {
   service: string;
   scheduled_at: string | null;
   datetime_label: string;
+  video_link?: string | null;
   status: "pending" | "confirmed" | "cancelled" | "completed" | string;
   review_sent_at?: string | null;
   updated_at: string;
@@ -134,6 +135,7 @@ export function ClinicDashboardPage({
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editVideoLink, setEditVideoLink] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
 
@@ -308,6 +310,7 @@ export function ClinicDashboardPage({
     setEditName(appointment.patient_name);
     setEditEmail(appointment.patient_email ?? "");
     setEditPhone(appointment.patient_phone ?? "");
+    setEditVideoLink(appointment.video_link ?? "");
     setEditFeedback(null);
   };
 
@@ -330,6 +333,7 @@ export function ClinicDashboardPage({
           patient_name: editName.trim(),
           patient_email: editEmail.trim() || null,
           patient_phone: editPhone.trim() || null,
+          video_link: editVideoLink.trim() || null,
         }),
       });
       const data = (await response.json()) as { appointment?: AppointmentRow; error?: string };
@@ -390,6 +394,19 @@ export function ClinicDashboardPage({
                   className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
                 />
               </label>
+              {(editingAppointment as AppointmentRow & { modality?: string }).modality === "online" ? (
+                <label className="block">
+                  <span className="text-sm font-medium text-foreground">Enlace de videollamada</span>
+                  <input
+                    type="url"
+                    value={editVideoLink}
+                    onChange={(e) => setEditVideoLink(e.target.value)}
+                    placeholder="https://meet.google.com/..."
+                    className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
+                  />
+                  <p className="mt-1.5 text-xs text-[#9CA3AF]">Al guardar se enviará el enlace al paciente por email automáticamente</p>
+                </label>
+              ) : null}
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -599,11 +616,13 @@ export function ClinicDashboardPage({
                           const address = clinic?.address ?? "";
                           const mod = (appointment as AppointmentRow & { modality?: string }).modality;
                           const locationLine = mod === "online" ? "💻 Online" : address ? `📍 ${address}` : "";
+                          const videoLine = appointment.video_link ? `🎥 Enlace de consulta: ${appointment.video_link}` : "";
                           const msg = [
                             `Hola ${appointment.patient_name}, te confirmamos tu cita con ${clinicName}:`,
                             "",
                             `📅 ${formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}`,
                             locationLine,
+                            videoLine,
                             "",
                             `Gestiona tu cita aquí:`,
                             link,

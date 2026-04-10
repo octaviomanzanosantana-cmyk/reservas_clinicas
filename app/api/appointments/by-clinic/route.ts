@@ -8,7 +8,7 @@ export async function GET() {
 
     const { data, error } = await supabaseAdmin
       .from("appointments")
-      .select("id, token, patient_name, patient_email, patient_phone, service, scheduled_at, datetime_label, status, modality, appointment_type, review_sent_at, updated_at")
+      .select("id, token, patient_name, patient_email, patient_phone, service, scheduled_at, datetime_label, status, modality, appointment_type, video_link, review_sent_at, updated_at")
       .eq("clinic_id", access.clinicId)
       .order("scheduled_at", { ascending: true })
       .limit(50);

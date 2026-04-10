@@ -21,6 +21,7 @@ export type AppointmentRow = {
   appointment_type: string;
   google_event_id: string | null;
   calendar_id: string | null;
+  video_link: string | null;
   review_sent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,7 @@ export type CreateAppointmentInput = Omit<
   | "patient_phone"
   | "modality"
   | "appointment_type"
+  | "video_link"
   | "review_sent_at"
 > & {
   modality?: string;

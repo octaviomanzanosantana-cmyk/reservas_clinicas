@@ -25,6 +25,7 @@ export type Appointment = {
   durationLabel: string;
   modality?: string;
   appointmentType?: string;
+  videoLink?: string | null;
   status: AppointmentStatus;
   lastUpdateLabel: string;
   idLabel: string;
