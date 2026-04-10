@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log("[cron] appointment-reminders ejecutado:", new Date().toISOString());
     const now = new Date();
 
     // Ventana amplia: busca todas las citas entre 23h y 72h en el futuro.
