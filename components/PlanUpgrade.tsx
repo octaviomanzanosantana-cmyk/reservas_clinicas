@@ -9,18 +9,22 @@ type PlanUpgradeProps = {
 };
 
 const FEATURES_STARTER = [
-  "Recordatorios automáticos",
-  "WhatsApp",
-  "Google Calendar",
-  "Enlace de videollamada",
   "Citas ilimitadas",
+  "Servicios ilimitados",
+  "Recordatorios 24/48/72h",
+  "WhatsApp sin API",
+  "Añadir al calendario (Google + Apple)",
+  "Enlace de videollamada",
+  "RGPD + DPA incluido",
 ];
 
 const FEATURES_PRO = [
-  "Todo de Starter",
-  "Marca blanca",
-  "Dominio personalizado",
+  "Todo lo de Starter",
+  "Sin branding AppoClick",
+  "Subdominio propio",
+  "Email con tu dominio",
   "Sala de vídeo privada",
+  "Soporte prioritario",
 ];
 
 const PLAN_LABELS: Record<Plan, string> = {
@@ -37,8 +41,8 @@ const FREE_INCLUDED = [
 ];
 
 const FREE_NOT_INCLUDED = [
-  "Recordatorios automáticos",
-  "WhatsApp",
+  "Recordatorios 24/48/72h",
+  "WhatsApp sin API",
   "Añadir al calendario",
   "Enlace de videollamada",
   "Citas ilimitadas",
@@ -46,18 +50,21 @@ const FREE_NOT_INCLUDED = [
 
 const STARTER_INCLUDED = [
   "Citas ilimitadas",
-  "Recordatorios automáticos",
-  "WhatsApp",
-  "Añadir al calendario",
+  "Servicios ilimitados",
+  "Recordatorios 24/48/72h",
+  "WhatsApp sin API",
+  "Añadir al calendario (Google + Apple)",
   "Enlace de videollamada",
-  "Email de confirmación",
+  "RGPD + DPA incluido",
 ];
 
 const PRO_INCLUDED = [
-  "Todo de Starter",
-  "Marca blanca",
-  "Dominio personalizado",
+  "Todo lo de Starter",
+  "Sin branding AppoClick",
+  "Subdominio propio",
+  "Email con tu dominio",
   "Sala de vídeo privada",
+  "Soporte prioritario",
 ];
 
 function CurrentPlanCard({ plan }: { plan: Plan }) {
