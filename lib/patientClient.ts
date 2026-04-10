@@ -11,6 +11,7 @@ export type PatientClinicData = {
   logoText: string;
   cancelHoursLimit: number;
   timezone: string;
+  plan: string;
 };
 
 export type PatientAppointmentResponse = {

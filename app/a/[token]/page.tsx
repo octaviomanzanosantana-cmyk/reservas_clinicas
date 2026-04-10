@@ -12,6 +12,8 @@ import {
   downloadIcsFile,
   parseDurationFromLabel,
 } from "@/lib/calendarExport";
+import { canUseFeature } from "@/lib/plan";
+import type { Plan } from "@/lib/plan";
 import type { Appointment } from "@/lib/types";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -144,7 +146,7 @@ export default function AppointmentHomePage() {
           )
         ) : null}
 
-        {appointment.scheduledAt && appointment.status !== "cancelled" && appointment.status !== "completed" ? (() => {
+        {appointment.scheduledAt && appointment.status !== "cancelled" && appointment.status !== "completed" && canUseFeature(clinic?.plan as Plan, "calendar") ? (() => {
           const calendarInput = {
             title: `${appointment.service} — ${clinic?.name ?? appointment.clinicName}`,
             description: `Paciente: ${appointment.patientName}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nClínica: ${clinic?.name ?? appointment.clinicName}`,

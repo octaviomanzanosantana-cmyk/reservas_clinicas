@@ -1,6 +1,8 @@
 "use client";
 
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
+import { canUseFeature } from "@/lib/plan";
+import type { Plan } from "@/lib/plan";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -11,6 +13,7 @@ type ClinicData = {
   phone: string | null;
   logo_url: string | null;
   theme_color: string | null;
+  plan: string;
 };
 
 type ServiceRow = {
@@ -424,7 +427,7 @@ export function ClinicDashboardPage({
                   </button>
                 </div>
               </div>
-              {editModality === "online" ? (
+              {editModality === "online" && canUseFeature(clinic?.plan as Plan, "video_link") ? (
                 <label className="block">
                   <span className="text-sm font-medium text-foreground">Enlace de videollamada</span>
                   <input
@@ -436,6 +439,11 @@ export function ClinicDashboardPage({
                   />
                   <p className="mt-1.5 text-xs text-[#9CA3AF]">Al guardar se enviará el enlace al paciente por email automáticamente</p>
                 </label>
+              ) : editModality === "online" && !canUseFeature(clinic?.plan as Plan, "video_link") ? (
+                <p className="text-xs text-[#9CA3AF]">
+                  Enlace de videollamada disponible en el plan Starter.{" "}
+                  <Link href={`${basePath}/plan`} className="text-[#0E9E82] hover:underline">Actualiza tu plan →</Link>
+                </p>
               ) : null}
             </div>
 
@@ -638,6 +646,7 @@ export function ClinicDashboardPage({
                           </span>
                         ) : null}
                       </button>
+                      {canUseFeature(clinic?.plan as Plan, "whatsapp") ? (
                       <a
                         href={(() => {
                           const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
@@ -676,6 +685,7 @@ export function ClinicDashboardPage({
                           <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.121 1.533 5.847L.057 23.882l6.19-1.453A11.935 11.935 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.876 9.876 0 01-5.031-1.378l-.361-.214-3.741.878.936-3.629-.235-.373A9.859 9.859 0 012.106 12C2.106 6.58 6.58 2.106 12 2.106S21.894 6.58 21.894 12 17.42 21.894 12 21.894z"/>
                         </svg>
                       </a>
+                      ) : null}
                     </div>
                   </td>
                   <td className="px-4 py-3">

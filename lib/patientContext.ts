@@ -18,6 +18,7 @@ export type PatientClinicContext = {
   logoText: string;
   cancelHoursLimit: number;
   timezone: string;
+  plan: string;
 };
 
 export type PatientAppointmentDetails = {
@@ -55,6 +56,7 @@ export async function getPatientClinicContext(
     logoText: buildLogoText(name),
     cancelHoursLimit: clinic?.cancel_hours_limit ?? 24,
     timezone: clinic?.timezone?.trim() || "Atlantic/Canary",
+    plan: clinic?.plan ?? "free",
   };
 }
 

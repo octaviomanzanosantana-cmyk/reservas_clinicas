@@ -15,6 +15,7 @@ import {
   getGoogleCalendarBusyRangesForDate,
 } from "@/lib/googleCalendar";
 import { getClinicBySlug } from "@/lib/clinics";
+import { canUseFeature } from "@/lib/plan";
 import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
@@ -79,6 +80,30 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    // Plan limit: free = max 50 appointments/month
+    if (clinicRow && !canUseFeature(clinicRow.plan as "free" | "starter" | "pro", "unlimited_appointments")) {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+      const { count } = await supabaseAdmin
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicRow.id)
+        .gte("created_at", monthStart)
+        .lt("created_at", monthEnd);
+
+      if ((count ?? 0) >= 50) {
+        return NextResponse.json(
+          {
+            error: "plan_limit",
+            message: "Has alcanzado el límite de 50 citas/mes del plan Gratuito.",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     let appointmentsQuery = supabaseAdmin
       .from("appointments")
       .select("scheduled_at, duration_label, token, status")
