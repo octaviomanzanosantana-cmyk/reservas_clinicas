@@ -209,6 +209,15 @@ export function ClinicDashboardPage({
     () => appointments.filter((appointment) => isTodayLocal(appointment.scheduled_at)).length,
     [appointments],
   );
+  const monthlyAppointmentCount = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return appointments.filter((a) => {
+      const created = new Date(a.updated_at);
+      return created >= monthStart;
+    }).length;
+  }, [appointments]);
+
   const upcomingAppointments = useMemo(
     () =>
       appointments
@@ -529,6 +538,41 @@ export function ClinicDashboardPage({
           </p>
         </article>
       </section>
+
+      {clinic?.plan === "free" && monthlyAppointmentCount >= 40 ? (
+        <section className={`rounded-[14px] border-[0.5px] p-5 ${
+          monthlyAppointmentCount >= 50
+            ? "border-red-200 bg-red-50"
+            : "border-amber-200 bg-amber-50"
+        }`}>
+          <div className="flex items-center justify-between gap-3">
+            <p className={`text-sm font-medium ${monthlyAppointmentCount >= 50 ? "text-red-800" : "text-amber-800"}`}>
+              {monthlyAppointmentCount >= 50
+                ? "Has alcanzado tu límite de 50 citas este mes."
+                : `Este mes: ${monthlyAppointmentCount}/50 citas · Te quedan ${50 - monthlyAppointmentCount}`}
+            </p>
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min((monthlyAppointmentCount / 50) * 100, 100)}%`,
+                backgroundColor: monthlyAppointmentCount >= 50 ? "#EF4444" : "#F59E0B",
+              }}
+            />
+          </div>
+          <p className="mt-3 text-xs">
+            <Link
+              href={`${basePath}/plan`}
+              className="text-[#0E9E82] font-medium hover:underline"
+            >
+              {monthlyAppointmentCount >= 50
+                ? "Actualiza a Starter para seguir recibiendo reservas →"
+                : "Actualiza a Starter para citas ilimitadas →"}
+            </Link>
+          </p>
+        </section>
+      ) : null}
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">

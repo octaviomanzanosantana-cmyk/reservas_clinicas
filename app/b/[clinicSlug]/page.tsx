@@ -245,6 +245,7 @@ export default function PublicBookingPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bookingBlocked, setBookingBlocked] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null);
   const [logoVisible, setLogoVisible] = useState(true);
@@ -503,9 +504,14 @@ export default function PublicBookingPage() {
           datetime_label: string;
         };
         error?: string;
+        message?: string;
       };
 
       if (!response.ok || !result.appointment) {
+        if (result.error === "plan_limit") {
+          setBookingBlocked(true);
+          throw new Error(result.message ?? "Esta clínica no acepta reservas online en este momento.");
+        }
         throw new Error(result.error ?? "No se pudo crear la cita");
       }
 
@@ -625,7 +631,12 @@ export default function PublicBookingPage() {
               </div>
             </section>
 
-            {createdLink && createdAppointment ? (
+            {bookingBlocked ? (
+              <section className="rounded-[24px] border border-border bg-white p-8 text-center">
+                <p className="text-lg font-semibold text-foreground">No se aceptan reservas online en este momento</p>
+                <p className="mt-2 text-sm text-muted">Por favor contacta directamente con la clínica{clinicDetails.phone ? ` al ${clinicDetails.phone}` : ""}.</p>
+              </section>
+            ) : createdLink && createdAppointment ? (
               <BookingConfirmation
                 appointment={createdAppointment}
                 manageLink={createdLink}
