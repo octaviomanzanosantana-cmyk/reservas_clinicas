@@ -17,6 +17,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
     }
 
+    // Token expiry: 48h after scheduled_at (RGPD Art. 32 — minimise exposure)
+    if (appointment.scheduled_at) {
+      const scheduledAt = new Date(appointment.scheduled_at);
+      if (!Number.isNaN(scheduledAt.getTime())) {
+        const expiresAt = scheduledAt.getTime() + 48 * 60 * 60 * 1000;
+        if (Date.now() > expiresAt) {
+          const details = await getPatientAppointmentDetails(appointment);
+          return NextResponse.json(
+            { error: "expired", supportPhone: details.clinic.supportPhone },
+            { status: 410 },
+          );
+        }
+      }
+    }
+
     const details = await getPatientAppointmentDetails(appointment);
     return NextResponse.json(details);
   } catch (error) {

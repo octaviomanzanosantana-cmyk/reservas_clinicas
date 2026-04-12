@@ -5,7 +5,6 @@ import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
 import type { PatientClinicData } from "@/lib/patientClient";
-import { fetchPatientAppointmentDetails } from "@/lib/patientClient";
 import { toViewAppointment } from "@/lib/appointmentView";
 import {
   buildGoogleCalendarUrl,
@@ -44,6 +43,8 @@ export default function AppointmentHomePage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
+  const [expiredPhone, setExpiredPhone] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -51,11 +52,28 @@ export default function AppointmentHomePage() {
     const load = async () => {
       setLoading(true);
       try {
-        const details = await fetchPatientAppointmentDetails(token);
+        const response = await fetch(`/api/appointments/details?token=${encodeURIComponent(token)}`);
+
+        if (response.status === 410) {
+          const data = (await response.json()) as { error?: string; supportPhone?: string | null };
+          if (active) {
+            setExpired(true);
+            setExpiredPhone(data.supportPhone ?? null);
+          }
+          return;
+        }
+
+        const data = (await response.json()) as { appointment?: Parameters<typeof toViewAppointment>[0]; clinic?: PatientClinicData };
         if (!active) return;
 
-        setAppointment(toViewAppointment(details.appointment));
-        setClinic(details.clinic);
+        if (!data.appointment || !data.clinic) {
+          setAppointment(null);
+          setClinic(null);
+          return;
+        }
+
+        setAppointment(toViewAppointment(data.appointment));
+        setClinic(data.clinic);
       } catch {
         if (!active) return;
         setAppointment(null);
@@ -79,6 +97,22 @@ export default function AppointmentHomePage() {
       return (
         <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7 text-center text-sm text-muted md:p-8">
           Cargando cita...
+        </section>
+      );
+    }
+
+    if (expired) {
+      return (
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7 text-center md:p-8">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+            Enlace caducado
+          </h1>
+          <p className="mt-3 text-sm text-muted">
+            Este enlace ha caducado. Si necesitas gestionar tu cita, contacta con la clínica.
+          </p>
+          {expiredPhone ? (
+            <p className="mt-2 text-sm font-medium text-foreground">{expiredPhone}</p>
+          ) : null}
         </section>
       );
     }
