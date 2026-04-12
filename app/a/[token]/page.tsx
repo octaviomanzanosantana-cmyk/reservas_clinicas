@@ -213,6 +213,15 @@ export default function AppointmentHomePage() {
           );
         })() : null}
 
+        {appointment.status !== "cancelled" && appointment.status !== "completed" ? (
+          <div className="rounded-[14px] border-[0.5px] border-primary/20 bg-primary-soft px-5 py-4 flex items-start gap-3">
+            <span className="mt-0.5 text-base">🔒</span>
+            <p className="text-sm text-muted leading-relaxed">
+              Este enlace es personal. Quien tenga esta URL puede ver y gestionar tu cita.
+            </p>
+          </div>
+        ) : null}
+
         {appointment.status === "pending" ||
         appointment.status === "confirmed" ||
         appointment.status === "change_requested" ? (
