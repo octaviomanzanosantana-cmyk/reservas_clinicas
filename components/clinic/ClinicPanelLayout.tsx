@@ -31,6 +31,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     { href: basePath, label: "Dashboard" },
     { href: `${basePath}/calendar`, label: "Calendario" },
     { href: `${basePath}/appointments/new`, label: "Nueva cita" },
+    { href: `${basePath}/patients`, label: "Pacientes" },
     { href: `${basePath}/services`, label: "Servicios" },
     { href: `${basePath}/hours`, label: "Horarios" },
     { href: `${basePath}/settings`, label: "Configuración" },

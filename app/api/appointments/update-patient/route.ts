@@ -73,6 +73,18 @@ export async function POST(request: Request) {
       .select("*")
       .maybeSingle();
 
+    // Propagate email change to all appointments of same patient in this clinic
+    const oldEmail = current.patient_email?.trim().toLowerCase();
+    const newEmail = patientEmail?.trim().toLowerCase();
+    if (oldEmail && newEmail && oldEmail !== newEmail && current.clinic_id) {
+      await supabaseAdmin
+        .from("appointments")
+        .update({ patient_email: patientEmail, updated_at: new Date().toISOString() })
+        .eq("clinic_id", current.clinic_id)
+        .ilike("patient_email", oldEmail)
+        .neq("token", token);
+    }
+
     if (error) {
       throw new Error(error.message);
     }

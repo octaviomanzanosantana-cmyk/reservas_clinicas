@@ -1,10 +1,11 @@
 "use client";
 
+import { EditPatientModal } from "@/components/clinic/EditPatientModal";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { canUseFeature } from "@/lib/plan";
 import type { Plan } from "@/lib/plan";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ClinicData = {
   name: string;
@@ -135,12 +136,6 @@ export function ClinicDashboardPage({
   const [completedFeedback, setCompletedFeedback] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<AppointmentRow | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editModality, setEditModality] = useState<"presencial" | "online">("presencial");
-  const [editVideoLink, setEditVideoLink] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -246,7 +241,7 @@ export function ClinicDashboardPage({
           const rightTime = new Date(right.updated_at).getTime() || 0;
           return rightTime - leftTime;
         })
-        .slice(0, 10),
+        .slice(0, 5),
     [appointments],
   );
 
@@ -318,163 +313,44 @@ export function ClinicDashboardPage({
     }
   };
 
-  const openEditModal = (appointment: AppointmentRow) => {
-    setEditingAppointment(appointment);
-    setEditName(appointment.patient_name);
-    setEditEmail(appointment.patient_email ?? "");
-    setEditPhone(appointment.patient_phone ?? "");
-    setEditModality(((appointment as AppointmentRow & { modality?: string }).modality === "online" ? "online" : "presencial"));
-    setEditVideoLink(appointment.video_link ?? "");
-    setEditFeedback(null);
-  };
+  const handleSavePatient = useCallback(async (data: {
+    token: string;
+    patient_name: string;
+    patient_email: string | null;
+    patient_phone: string | null;
+    modality: string;
+    video_link: string | null;
+  }) => {
+    const response = await fetch("/api/appointments/update-patient", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = (await response.json()) as { appointment?: AppointmentRow; error?: string };
 
-  const handleSavePatient = async () => {
-    if (!editingAppointment) return;
-    if (!editName.trim()) {
-      setErrorMessage("El nombre es obligatorio");
-      return;
+    if (!response.ok || !result.appointment) {
+      throw new Error(result.error ?? "No se pudo actualizar");
     }
 
-    setEditSaving(true);
-    setErrorMessage(null);
-
-    try {
-      const response = await fetch("/api/appointments/update-patient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: editingAppointment.token,
-          patient_name: editName.trim(),
-          patient_email: editEmail.trim() || null,
-          patient_phone: editPhone.trim() || null,
-          modality: editModality,
-          video_link: editModality === "online" ? (editVideoLink.trim() || null) : null,
-        }),
-      });
-      const data = (await response.json()) as { appointment?: AppointmentRow; error?: string };
-
-      if (!response.ok || !data.appointment) {
-        throw new Error(data.error ?? "No se pudo actualizar");
-      }
-
-      setAppointments((current) =>
-        current.map((a) =>
-          a.token === editingAppointment.token ? { ...a, ...data.appointment! } : a,
-        ),
-      );
-      setEditingAppointment(null);
-      setEditFeedback("Datos actualizados correctamente");
-      setTimeout(() => setEditFeedback(null), 4000);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar");
-    } finally {
-      setEditSaving(false);
-    }
-  };
+    setAppointments((current) =>
+      current.map((a) => (a.token === data.token ? { ...a, ...result.appointment! } : a)),
+    );
+    setEditingAppointment(null);
+    setEditFeedback("Datos actualizados correctamente");
+    setTimeout(() => setEditFeedback(null), 4000);
+  }, []);
 
   return (
     <div className="space-y-8">
-      {/* Modal editar datos paciente */}
       {editingAppointment ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="mx-4 w-full max-w-md rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
-            <h2 className="font-heading text-lg font-semibold text-foreground">Editar datos del paciente</h2>
-            <p className="mt-1 text-sm text-muted">{editingAppointment.service} · {formatAppointmentDate(editingAppointment.scheduled_at, editingAppointment.datetime_label)}</p>
-
-            <div className="mt-5 space-y-4">
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">Nombre completo</span>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">Email</span>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">Teléfono</span>
-                <input
-                  type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
-                />
-              </label>
-              <div>
-                <span className="text-sm font-medium text-foreground">Modalidad</span>
-                <div className="mt-1.5 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setEditModality("presencial"); setEditVideoLink(""); }}
-                    className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
-                      editModality === "presencial"
-                        ? "border-[#0E9E82] bg-[#0E9E82] text-white"
-                        : "border-[#E5E7EB] bg-white text-[#6B7280]"
-                    }`}
-                  >
-                    Presencial
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditModality("online")}
-                    className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
-                      editModality === "online"
-                        ? "border-[#0E9E82] bg-[#0E9E82] text-white"
-                        : "border-[#E5E7EB] bg-white text-[#6B7280]"
-                    }`}
-                  >
-                    Online
-                  </button>
-                </div>
-              </div>
-              {editModality === "online" && canUseFeature(clinic?.plan as Plan, "video_link") ? (
-                <label className="block">
-                  <span className="text-sm font-medium text-foreground">Enlace de videollamada</span>
-                  <input
-                    type="url"
-                    value={editVideoLink}
-                    onChange={(e) => setEditVideoLink(e.target.value)}
-                    placeholder="https://meet.google.com/..."
-                    className="mt-1.5 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
-                  />
-                  <p className="mt-1.5 text-xs text-[#9CA3AF]">Al guardar se enviará el enlace al paciente por email automáticamente</p>
-                </label>
-              ) : editModality === "online" && !canUseFeature(clinic?.plan as Plan, "video_link") ? (
-                <p className="text-xs text-[#9CA3AF]">
-                  Enlace de videollamada disponible en el plan Starter.{" "}
-                  <Link href={`${basePath}/plan`} className="text-[#0E9E82] hover:underline">Actualiza tu plan →</Link>
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => void handleSavePatient()}
-                disabled={editSaving || !editName.trim()}
-                className="rounded-[10px] bg-[#0E9E82] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {editSaving ? "Guardando..." : "Guardar cambios"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingAppointment(null)}
-                className="rounded-[10px] border-[0.5px] border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#6B7280] transition-colors hover:text-foreground"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditPatientModal
+          appointment={editingAppointment}
+          clinicPlan={clinic?.plan ?? "free"}
+          basePath={basePath}
+          formatDate={formatAppointmentDate}
+          onSave={handleSavePatient}
+          onClose={() => setEditingAppointment(null)}
+        />
       ) : null}
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-7">
@@ -647,7 +523,7 @@ export function ClinicDashboardPage({
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => openEditModal(appointment)}
+                      onClick={() => setEditingAppointment(appointment)}
                       className="font-medium text-[#0E9E82] cursor-pointer transition-colors hover:underline"
                     >
                       {appointment.patient_name}
@@ -889,6 +765,15 @@ export function ClinicDashboardPage({
               No hay citas recientes en el historial.
             </p>
           ) : null}
+        </div>
+
+        <div className="mt-4 text-center">
+          <Link
+            href={`${basePath}/patients`}
+            className="text-sm font-medium text-[#0E9E82] hover:underline"
+          >
+            Ver historial completo →
+          </Link>
         </div>
       </section>
     </div>
