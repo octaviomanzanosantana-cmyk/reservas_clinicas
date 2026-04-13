@@ -1,13 +1,8 @@
 "use client";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useState } from "react";
 
-const RECOVERY_REDIRECT_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
-
 export function ForgotPasswordForm() {
-  const [supabase] = useState(() => createSupabaseBrowserClient());
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -20,12 +15,14 @@ export function ForgotPasswordForm() {
     setSuccessMessage(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${RECOVERY_REDIRECT_URL.replace(/\/+$/, "")}/reset-password`,
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error("No se pudo enviar el email de recuperación");
       }
 
       setSuccessMessage(
@@ -43,13 +40,13 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <label className="block">
-        <span className="text-sm font-medium text-slate-700">Email</span>
+        <span className="text-sm font-medium text-foreground">Email</span>
         <input
           type="email"
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
+          className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
           placeholder="tu@clinica.com"
           required
         />
@@ -61,7 +58,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_18px_34px_-22px_rgba(15,23,42,0.65)] transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Enviando..." : "Enviar enlace de recuperación"}
       </button>
