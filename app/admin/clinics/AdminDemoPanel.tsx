@@ -7,8 +7,11 @@ type ClinicItem = {
   id: string;
   slug: string;
   name: string;
+  plan: string;
   is_demo: boolean;
   created_at: string;
+  owner_email: string | null;
+  appointment_count: number;
 };
 
 type Filter = "all" | "demo" | "real";
@@ -19,6 +22,12 @@ function normalizeSlug(value: string): string {
 
 const INPUT_CLASS = "mt-1 w-full rounded-[10px] border-[1.5px] border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-primary";
 
+const PLAN_BADGE: Record<string, string> = {
+  free: "bg-slate-100 text-slate-600",
+  starter: "bg-emerald-100 text-emerald-700",
+  pro: "bg-violet-100 text-violet-700",
+};
+
 export default function AdminDemoPanel() {
   const [allClinics, setAllClinics] = useState<ClinicItem[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -27,14 +36,21 @@ export default function AdminDemoPanel() {
   const [email, setEmail] = useState("");
   const [isDemo, setIsDemo] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<ClinicItem | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  // Plan change
+  const [changingPlan, setChangingPlan] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/demo-clinics?all=1");
+      const res = await fetch("/api/admin/clinic-stats");
       const data = (await res.json()) as { clinics?: ClinicItem[] };
       setAllClinics(data.clinics ?? []);
     } catch {
@@ -84,9 +100,9 @@ export default function AdminDemoPanel() {
     }
   };
 
-  const handleDelete = async (clinicId: string) => {
-    if (!confirm("¿Eliminar esta clínica y todos sus datos?")) return;
-    setDeleting(clinicId);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     setMessage(null);
     setError(null);
 
@@ -94,31 +110,99 @@ export default function AdminDemoPanel() {
       const res = await fetch("/api/admin/demo-clinics", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clinic_id: clinicId }),
+        body: JSON.stringify({ clinic_id: deleteTarget.id }),
       });
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Error al eliminar");
       }
-      setMessage("Clínica eliminada");
+      setMessage(`Clínica "${deleteTarget.name}" eliminada`);
+      setDeleteTarget(null);
+      setDeleteConfirmText("");
       void loadClinics();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al eliminar");
     } finally {
-      setDeleting(null);
+      setDeleting(false);
+    }
+  };
+
+  const handleChangePlan = async (clinicId: string, plan: string) => {
+    setChangingPlan(clinicId);
+    try {
+      const res = await fetch("/api/admin/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clinic_id: clinicId, plan }),
+      });
+      if (!res.ok) throw new Error("Error al cambiar plan");
+
+      setAllClinics((current) =>
+        current.map((c) => (c.id === clinicId ? { ...c, plan } : c)),
+      );
+      setMessage(`Plan cambiado a ${plan}`);
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setChangingPlan(null);
     }
   };
 
   return (
     <div className="min-h-screen bg-background px-4 py-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6">
+
+        {/* Delete modal */}
+        {deleteTarget ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="mx-4 w-full max-w-md rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
+              <h2 className="font-heading text-lg font-semibold text-red-600">Eliminar clínica</h2>
+              <p className="mt-3 text-sm text-muted">
+                Vas a eliminar permanentemente <strong className="text-foreground">{deleteTarget.name}</strong> y todos sus datos (citas, servicios, horarios, usuario).
+              </p>
+              <p className="mt-2 text-sm text-red-600">Esta acción no se puede deshacer.</p>
+
+              <div className="mt-5">
+                <p className="text-sm text-muted">Para confirmar, escribe <strong>ELIMINAR</strong>:</p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="mt-2 w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm outline-none focus:border-red-400"
+                  placeholder="Escribe ELIMINAR"
+                />
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleDelete()}
+                  disabled={deleteConfirmText !== "ELIMINAR" || deleting}
+                  className="rounded-[10px] bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {deleting ? "Eliminando..." : "Confirmar eliminación"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}
+                  className="rounded-[10px] border-[0.5px] border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#6B7280] hover:text-foreground"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Header */}
         <div className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">Administración</p>
           <h1 className="mt-2 font-heading text-2xl font-bold text-foreground">Gestión de clínicas</h1>
-          <p className="mt-1 text-sm text-muted">Crea clínicas y gestiona el onboarding. El email recibe invitación automática con branding Appoclick.</p>
+          <p className="mt-1 text-sm text-muted">Crea clínicas, gestiona planes y accede a sus paneles.</p>
         </div>
 
-        {/* Formulario */}
+        {/* Create form */}
         <div className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
           <h2 className="font-heading text-lg font-semibold text-foreground">Nueva clínica</h2>
           <form onSubmit={handleCreate} className="mt-4 space-y-4">
@@ -146,7 +230,7 @@ export default function AdminDemoPanel() {
           {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         </div>
 
-        {/* Listado */}
+        {/* Clinic list */}
         <div className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <h2 className="font-heading text-lg font-semibold text-foreground">Clínicas ({filteredClinics.length})</h2>
@@ -175,18 +259,35 @@ export default function AdminDemoPanel() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted">
-                    <th className="px-4 py-2.5 font-medium">Nombre</th>
-                    <th className="px-4 py-2.5 font-medium">Slug</th>
+                    <th className="px-4 py-2.5 font-medium">Clínica</th>
+                    <th className="px-4 py-2.5 font-medium">Email</th>
+                    <th className="px-4 py-2.5 font-medium">Plan</th>
+                    <th className="px-4 py-2.5 font-medium">Citas</th>
                     <th className="px-4 py-2.5 font-medium">Tipo</th>
-                    <th className="px-4 py-2.5 font-medium">Fecha</th>
                     <th className="px-4 py-2.5 font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredClinics.map((c) => (
                     <tr key={c.id} className="border-b border-border/50 last:border-0">
-                      <td className="px-4 py-2.5 font-medium text-foreground">{c.name}</td>
-                      <td className="px-4 py-2.5 text-muted">{c.slug}</td>
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-foreground">{c.name}</p>
+                        <p className="text-xs text-muted">{c.slug}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{c.owner_email ?? "—"}</td>
+                      <td className="px-4 py-2.5">
+                        <select
+                          value={c.plan ?? "free"}
+                          onChange={(e) => void handleChangePlan(c.id, e.target.value)}
+                          disabled={changingPlan === c.id}
+                          className={`rounded-full border-0 px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE[c.plan] ?? PLAN_BADGE.free} cursor-pointer disabled:opacity-60`}
+                        >
+                          <option value="free">Free</option>
+                          <option value="starter">Starter</option>
+                          <option value="pro">Pro</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{c.appointment_count}</td>
                       <td className="px-4 py-2.5">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           c.is_demo
@@ -196,26 +297,23 @@ export default function AdminDemoPanel() {
                           {c.is_demo ? "Demo" : "Real"}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-muted">{new Date(c.created_at).toLocaleDateString("es-ES")}</td>
                       <td className="px-4 py-2.5">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          <Link
+                            href={`/clinic/${c.slug}`}
+                            className="rounded-[8px] bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover"
+                          >
+                            Entrar al panel
+                          </Link>
                           <Link href={`/b/${c.slug}`} target="_blank" className="rounded-[8px] border border-border px-2.5 py-1.5 text-xs text-muted hover:text-foreground">
                             Reservas
                           </Link>
                           <button
                             type="button"
-                            onClick={() => { void navigator.clipboard.writeText(`https://app.appoclick.com/b/${c.slug}`); }}
-                            className="rounded-[8px] border border-border px-2.5 py-1.5 text-xs text-muted hover:text-foreground"
+                            onClick={() => setDeleteTarget(c)}
+                            className="rounded-[8px] border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50"
                           >
-                            Copiar URL
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(c.id)}
-                            disabled={deleting === c.id}
-                            className="rounded-[8px] border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-60"
-                          >
-                            {deleting === c.id ? "..." : "Eliminar"}
+                            Eliminar
                           </button>
                         </div>
                       </td>
