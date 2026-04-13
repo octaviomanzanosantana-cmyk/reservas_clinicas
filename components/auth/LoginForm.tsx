@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+type LoginResponse = {
+  ok?: boolean;
+  user_id?: string;
+  access_token?: string;
+  refresh_token?: string;
+  error?: string;
+  message?: string;
+  minutes_left?: number;
+};
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,6 +23,8 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [blockedMinutes, setBlockedMinutes] = useState(0);
 
   const nextPath = searchParams.get("next")?.trim() || null;
 
@@ -22,49 +34,56 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      // Server-side login with rate limiting
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      if (error || !data.user) {
-        throw new Error(error?.message ?? "No se pudo iniciar sesión");
+      const data = (await response.json()) as LoginResponse;
+
+      if (response.status === 429) {
+        setBlocked(true);
+        setBlockedMinutes(data.minutes_left ?? 15);
+        setErrorMessage(data.message ?? "Demasiados intentos.");
+        return;
+      }
+
+      if (!response.ok || !data.ok) {
+        setBlocked(false);
+        throw new Error(data.message ?? "No se pudo iniciar sesión");
+      }
+
+      // Set session on the browser client using tokens from server
+      if (data.access_token && data.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
       }
 
       // Send 2FA code
       const twoFaResponse = await fetch("/api/auth/send-2fa-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: data.user.id, email: email.trim() }),
+        body: JSON.stringify({ user_id: data.user_id, email: email.trim() }),
       });
 
       if (!twoFaResponse.ok) {
-        // If 2FA email fails, still allow login (graceful degradation)
         router.replace(nextPath || "/clinic");
         router.refresh();
         return;
       }
 
-      // Redirect to 2FA verification
       const params = new URLSearchParams({
-        uid: data.user.id,
+        uid: data.user_id!,
         email: email.trim(),
         next: nextPath || "/clinic",
       });
       router.replace(`/verify-2fa?${params.toString()}`);
     } catch (error) {
-      const raw = error instanceof Error ? error.message : "";
-      const lower = raw.toLowerCase();
-      const isInvalidCredentials =
-        lower.includes("invalid login credentials") ||
-        lower.includes("invalid email or password");
-      const isEmailNotConfirmed = lower.includes("email not confirmed");
-      const msg = isInvalidCredentials
-        ? "Email o contraseña incorrectos"
-        : isEmailNotConfirmed
-          ? "Debes confirmar tu email antes de acceder. Revisa tu bandeja de entrada."
-          : raw || "No se pudo iniciar sesión";
-      setErrorMessage(msg);
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo iniciar sesión");
     } finally {
       setSubmitting(false);
     }
@@ -72,13 +91,22 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {blocked ? (
+        <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-center">
+          <p className="text-sm font-medium text-red-800">Cuenta bloqueada temporalmente</p>
+          <p className="mt-1 text-sm text-red-700">
+            Demasiados intentos fallidos. Prueba de nuevo en {blockedMinutes} minuto{blockedMinutes > 1 ? "s" : ""}.
+          </p>
+        </div>
+      ) : null}
+
       <label className="block">
         <span className="text-sm font-medium text-foreground">Email</span>
         <input
           type="email"
           autoComplete="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => { setEmail(event.target.value); setBlocked(false); }}
           className="mt-2 w-full rounded-[10px] border-[1.5px] border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:shadow-[0_0_0_3px_rgba(14,158,130,0.12)]"
           placeholder="tu@clinica.com"
           required
@@ -98,7 +126,7 @@ export function LoginForm() {
         />
       </label>
 
-      {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+      {errorMessage && !blocked ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
       <div className="text-right">
         <Link href="/forgot-password" className="text-sm font-medium text-primary underline">
@@ -108,7 +136,7 @@ export function LoginForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || blocked}
         className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Entrando..." : "Entrar"}
