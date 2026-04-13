@@ -31,8 +31,27 @@ export function LoginForm() {
         throw new Error(error?.message ?? "No se pudo iniciar sesión");
       }
 
-      router.replace(nextPath || "/clinic");
-      router.refresh();
+      // Send 2FA code
+      const twoFaResponse = await fetch("/api/auth/send-2fa-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: data.user.id, email: email.trim() }),
+      });
+
+      if (!twoFaResponse.ok) {
+        // If 2FA email fails, still allow login (graceful degradation)
+        router.replace(nextPath || "/clinic");
+        router.refresh();
+        return;
+      }
+
+      // Redirect to 2FA verification
+      const params = new URLSearchParams({
+        uid: data.user.id,
+        email: email.trim(),
+        next: nextPath || "/clinic",
+      });
+      router.replace(`/verify-2fa?${params.toString()}`);
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
       const lower = raw.toLowerCase();
