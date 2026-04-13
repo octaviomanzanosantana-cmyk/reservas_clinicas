@@ -277,8 +277,9 @@ export function ClinicPatientsPage({
           placeholder="Buscar por nombre o email..."
           className="w-full rounded-[10px] border-[1.5px] border-[#E5E7EB] px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-[#0E9E82]"
         />
+        <p className="mt-1.5 text-xs text-muted">Para eliminar los datos de un paciente, busca por su email exacto.</p>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -311,23 +312,27 @@ export function ClinicPatientsPage({
             <option value="presencial">Presencial</option>
             <option value="online">Online</option>
           </select>
+        </div>
 
-          <div className="flex gap-2">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs text-muted">Fecha desde</span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="flex-1 rounded-[10px] border border-border bg-white px-2 py-2 text-sm"
-              title="Fecha desde"
+              className="mt-1 w-full min-w-[140px] rounded-[10px] border border-border bg-white px-3 py-2 text-sm text-foreground"
             />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted">Fecha hasta</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="flex-1 rounded-[10px] border border-border bg-white px-2 py-2 text-sm"
-              title="Fecha hasta"
+              className="mt-1 w-full min-w-[140px] rounded-[10px] border border-border bg-white px-3 py-2 text-sm text-foreground"
             />
-          </div>
+          </label>
         </div>
 
         <p className="mt-3 text-xs text-muted">
