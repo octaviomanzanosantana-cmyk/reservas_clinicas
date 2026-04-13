@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Get latest unused code for this user
-    const { data: record } = await supabaseAdmin
+    const { data: record, error: queryError } = await supabaseAdmin
       .from("two_factor_codes")
       .select("*")
       .eq("user_id", userId)
@@ -28,7 +28,18 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle();
 
+    console.log("[2fa-verify] user_id:", userId, "record_found:", !!record, "query_error:", queryError?.message ?? "none");
+
     if (!record) {
+      // Debug: check ALL codes for this user regardless of used status
+      const { data: allCodes } = await supabaseAdmin
+        .from("two_factor_codes")
+        .select("id, user_id, used, attempts, expires_at, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      console.log("[2fa-verify] all_codes_for_user:", JSON.stringify(allCodes));
+
       return NextResponse.json(
         { error: "no_code", message: "No hay código activo. Solicita uno nuevo." },
         { status: 400 },

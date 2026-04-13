@@ -10,3 +10,6 @@ CREATE TABLE IF NOT EXISTS two_factor_codes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_two_factor_codes_user_id ON two_factor_codes (user_id);
+
+-- Disable RLS — only accessed via service role from server-side API routes
+ALTER TABLE two_factor_codes DISABLE ROW LEVEL SECURITY;

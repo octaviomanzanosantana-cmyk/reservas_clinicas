@@ -140,6 +140,8 @@ function VerifyContent() {
                 />
               </label>
 
+              <p className="text-xs text-muted text-center">Este código es válido durante 10 minutos.</p>
+
               {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
               <button
@@ -157,7 +159,7 @@ function VerifyContent() {
                   disabled={cooldown > 0 || resending}
                   className="text-sm font-medium text-primary underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
                 >
-                  {cooldown > 0 ? `Reenviar código (${cooldown}s)` : resending ? "Reenviando..." : "Reenviar código"}
+                  {cooldown > 0 ? `Puedes reenviar en (${cooldown}s)` : resending ? "Reenviando..." : "Reenviar código"}
                 </button>
               </div>
             </form>
