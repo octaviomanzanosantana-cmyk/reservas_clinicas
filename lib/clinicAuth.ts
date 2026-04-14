@@ -75,9 +75,51 @@ export async function requireCurrentClinicForRequest(): Promise<CurrentClinicAcc
   return access;
 }
 
+export async function verifyAdminImpersonationToken(
+  token: string,
+  clinicSlug: string,
+): Promise<boolean> {
+  const safeToken = token.trim();
+  if (!safeToken) return false;
+
+  const { data } = await supabaseAdmin
+    .from("impersonation_tokens")
+    .select("*")
+    .eq("token", safeToken)
+    .eq("clinic_slug", clinicSlug)
+    .eq("used", false)
+    .maybeSingle();
+
+  if (!data) return false;
+
+  // Check expiry
+  if (new Date(data.expires_at).getTime() < Date.now()) {
+    await supabaseAdmin.from("impersonation_tokens").update({ used: true }).eq("id", data.id);
+    return false;
+  }
+
+  // Mark as used (single use)
+  await supabaseAdmin.from("impersonation_tokens").update({ used: true }).eq("id", data.id);
+  return true;
+}
+
 export async function requireClinicAccessForSlug(
   clinicSlug: string,
+  adminToken?: string | null,
 ): Promise<CurrentClinicAccess> {
+  // Check admin impersonation token first
+  if (adminToken) {
+    const valid = await verifyAdminImpersonationToken(adminToken, clinicSlug);
+    if (valid) {
+      return {
+        userId: "admin-impersonation",
+        clinicId: clinicSlug,
+        clinicSlug,
+        role: "admin",
+      };
+    }
+  }
+
   const access = await requireCurrentClinicForRequest();
   const safeSlug = clinicSlug.trim();
 

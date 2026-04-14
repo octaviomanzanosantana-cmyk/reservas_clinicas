@@ -1,5 +1,6 @@
 import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
 import { requireClinicAccessForSlug } from "@/lib/clinicAuth";
+import { cookies } from "next/headers";
 
 export default async function DynamicClinicLayout({
   children,
@@ -9,7 +10,12 @@ export default async function DynamicClinicLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  await requireClinicAccessForSlug(slug);
+
+  // Read admin_token from cookie (set by the redirect page)
+  const cookieStore = await cookies();
+  const adminToken = cookieStore.get("admin_token")?.value ?? null;
+
+  await requireClinicAccessForSlug(slug, adminToken);
 
   return (
     <ClinicPanelLayout clinicSlug={slug} basePath={`/clinic/${slug}`}>

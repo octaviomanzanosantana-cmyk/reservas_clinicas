@@ -47,6 +47,7 @@ export default function AdminDemoPanel() {
 
   // Plan change
   const [changingPlan, setChangingPlan] = useState<string | null>(null);
+  const [enteringClinic, setEnteringClinic] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
@@ -315,14 +316,30 @@ export default function AdminDemoPanel() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex flex-wrap gap-1.5">
-                          <a
-                            href={`/clinic/${c.slug}`}
-                            target="_blank"
-                            rel="noopener"
-                            className="rounded-[8px] bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover"
+                          <button
+                            type="button"
+                            disabled={enteringClinic === c.slug}
+                            onClick={async () => {
+                              setEnteringClinic(c.slug);
+                              try {
+                                const res = await fetch("/api/admin/impersonate-clinic", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ slug: c.slug }),
+                                });
+                                const data = (await res.json()) as { token?: string; error?: string };
+                                if (!res.ok || !data.token) throw new Error(data.error ?? "Error");
+                                window.open(`/admin/enter/${c.slug}?token=${data.token}`, "_blank");
+                              } catch {
+                                setError("No se pudo acceder al panel");
+                              } finally {
+                                setEnteringClinic(null);
+                              }
+                            }}
+                            className="rounded-[8px] bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
                           >
-                            Entrar al panel
-                          </a>
+                            {enteringClinic === c.slug ? "..." : "Entrar al panel"}
+                          </button>
                           <Link href={`/b/${c.slug}`} target="_blank" className="rounded-[8px] border border-border px-2.5 py-1.5 text-xs text-muted hover:text-foreground">
                             Reservas
                           </Link>
