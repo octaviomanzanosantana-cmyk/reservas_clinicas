@@ -10,6 +10,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [dpaAccepted, setDpaAccepted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -26,6 +27,7 @@ export function RegisterForm() {
           email: email.trim(),
           password,
           clinicName: clinicName.trim(),
+          dpa_accepted: true,
         }),
       });
 
@@ -121,13 +123,35 @@ export function RegisterForm() {
         />
       </label>
 
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          checked={dpaAccepted}
+          onChange={(e) => setDpaAccepted(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary"
+          required
+        />
+        <span className="text-sm text-muted">
+          He leído y acepto el{" "}
+          <a
+            href="/dpa"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-foreground underline"
+          >
+            Contrato de Encargo de Tratamiento (DPA)
+          </a>
+          {" "}de AppoClick, que regula el tratamiento de los datos de mis pacientes.
+        </span>
+      </label>
+
       {errorMessage ? (
         <p className="text-sm text-red-600">{errorMessage}</p>
       ) : null}
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !dpaAccepted}
         className="w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Creando cuenta..." : "Crear cuenta"}

@@ -15,6 +15,7 @@ type ClinicData = {
   logo_url: string | null;
   theme_color: string | null;
   plan: string;
+  dpa_accepted_at: string | null;
 };
 
 type ServiceRow = {
@@ -414,6 +415,20 @@ export function ClinicDashboardPage({
           </p>
         </article>
       </section>
+
+      {clinic && !clinic.dpa_accepted_at ? (
+        <section className="rounded-[14px] border-[0.5px] border-amber-200 bg-amber-50 p-5">
+          <p className="text-sm font-medium text-amber-800">
+            📋 Tienes un contrato pendiente de firmar. Para cumplir con el RGPD, acepta el DPA antes de continuar usando AppoClick con pacientes reales.
+          </p>
+          <Link
+            href="/dpa"
+            className="mt-3 inline-block text-sm font-semibold text-[#0E9E82] hover:underline"
+          >
+            Ver y aceptar el DPA →
+          </Link>
+        </section>
+      ) : null}
 
       {clinic?.plan === "free" && monthlyAppointmentCount >= 40 ? (
         <section className={`rounded-[14px] border-[0.5px] p-5 ${

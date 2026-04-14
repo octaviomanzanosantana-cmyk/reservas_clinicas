@@ -55,6 +55,7 @@ type RegisterBody = {
   email?: unknown;
   password?: unknown;
   clinicName?: unknown;
+  dpa_accepted?: unknown;
 };
 
 export async function POST(request: NextRequest) {
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest) {
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const clinicName = typeof body.clinicName === "string" ? body.clinicName.trim() : "";
+  const dpaAccepted = body.dpa_accepted === true;
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
   if (!email || !password || !clinicName) {
     return NextResponse.json(
@@ -135,6 +138,18 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       role: "owner",
     });
+
+    // Save DPA acceptance
+    if (dpaAccepted) {
+      await supabaseAdmin
+        .from("clinics")
+        .update({
+          dpa_accepted_at: new Date().toISOString(),
+          dpa_version: "v1.4",
+          dpa_ip: clientIp,
+        })
+        .eq("id", clinic.id);
+    }
 
     await Promise.all([
       ...DEFAULT_SERVICES.map((s) =>

@@ -27,6 +27,9 @@ export type ClinicRow = {
   timezone: string;
   is_demo: boolean;
   cancel_hours_limit: number;
+  dpa_accepted_at: string | null;
+  dpa_version: string | null;
+  dpa_ip: string | null;
   plan: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;

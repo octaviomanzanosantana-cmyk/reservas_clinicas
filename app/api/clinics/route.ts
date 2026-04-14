@@ -35,6 +35,7 @@ export async function GET(request: Request) {
         logo_has_dark_bg: clinic.logo_has_dark_bg,
         timezone: clinic.timezone,
         plan: clinic.plan ?? "free",
+        dpa_accepted_at: clinic.dpa_accepted_at ?? null,
       },
     });
   } catch (error) {
