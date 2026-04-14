@@ -241,13 +241,13 @@ export function PlanUpgrade({ currentPlan, clinicSlug }: PlanUpgradeProps) {
         </div>
 
         {/* Pro */}
-        <div className="flex flex-col rounded-[14px] border-[0.5px] border-border bg-white p-6 ring-2 ring-primary/20">
+        <div className="flex flex-col rounded-[14px] border-[0.5px] border-border bg-white p-6 opacity-50 pointer-events-none cursor-not-allowed">
           <div className="flex items-center gap-2">
             <h3 className="font-heading text-lg font-bold text-foreground">
               Pro
             </h3>
-            <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
-              Popular
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+              Próximamente
             </span>
           </div>
           <p className="mt-1 text-sm text-muted">
