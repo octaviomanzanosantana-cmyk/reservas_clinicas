@@ -109,6 +109,9 @@ export default function DpaPage() {
                 <li>Atender los derechos ARCO de los pacientes (acceso, rectificación, supresión, portabilidad)</li>
                 <li>No introducir datos especialmente protegidos (origen étnico, salud detallada, orientación sexual) en los campos de texto libre de AppoClick</li>
               </ul>
+              <p className="mt-4 text-muted">
+                <strong className="text-foreground">Gestión de solicitudes de supresión (derecho al olvido):</strong> el sistema identifica a los pacientes por dirección de email. Si un mismo paciente ha realizado reservas utilizando emails distintos, la clínica deberá eliminar sus datos de forma separada para cada email utilizado, desde el panel Pacientes. La identificación de todos los emails asociados a un paciente es responsabilidad de la clínica como Responsable del Tratamiento.
+              </p>
             </section>
 
             <section>
