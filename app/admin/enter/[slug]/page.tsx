@@ -16,8 +16,8 @@ export default function AdminEnterClinicPage() {
       return;
     }
 
-    // Set cookie and redirect
-    document.cookie = `admin_token=${token}; path=/clinic/${slug}; max-age=300; SameSite=Lax`;
+    // Set cookie with path=/ so API routes can read it too
+    document.cookie = `admin_token=${token}; path=/; max-age=300; SameSite=Lax`;
     window.location.href = `/clinic/${slug}`;
   }, [slug, token]);
 

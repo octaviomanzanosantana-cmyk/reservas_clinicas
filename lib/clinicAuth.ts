@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 type ClinicUserRow = {
@@ -94,12 +95,9 @@ export async function verifyAdminImpersonationToken(
 
   // Check expiry
   if (new Date(data.expires_at).getTime() < Date.now()) {
-    await supabaseAdmin.from("impersonation_tokens").update({ used: true }).eq("id", data.id);
     return false;
   }
 
-  // Mark as used (single use)
-  await supabaseAdmin.from("impersonation_tokens").update({ used: true }).eq("id", data.id);
   return true;
 }
 
@@ -130,14 +128,51 @@ export async function requireClinicAccessForSlug(
   return access;
 }
 
+async function tryAdminImpersonation(): Promise<CurrentClinicAccess | null> {
+  try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get("admin_token")?.value;
+    if (!adminToken) return null;
+
+    // Find the token to get the clinic_slug
+    const { data } = await supabaseAdmin
+      .from("impersonation_tokens")
+      .select("*")
+      .eq("token", adminToken.trim())
+      .maybeSingle();
+
+    if (!data || new Date(data.expires_at).getTime() < Date.now()) return null;
+
+    // Get clinic ID from slug
+    const { data: clinic } = await supabaseAdmin
+      .from("clinics")
+      .select("id")
+      .eq("slug", data.clinic_slug)
+      .maybeSingle();
+
+    if (!clinic) return null;
+
+    return {
+      userId: "admin-impersonation",
+      clinicId: clinic.id,
+      clinicSlug: data.clinic_slug,
+      role: "admin",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireCurrentClinicForApi(): Promise<CurrentClinicAccess> {
   const access = await getCurrentClinicForRequest();
 
-  if (!access) {
-    throw new ClinicAccessError("No autenticado", 401);
-  }
+  if (access) return access;
 
-  return access;
+  // Fallback: check admin impersonation cookie
+  const impersonation = await tryAdminImpersonation();
+  if (impersonation) return impersonation;
+
+  throw new ClinicAccessError("No autenticado", 401);
 }
 
 export async function assertCurrentClinicAccessForApi(input: {
