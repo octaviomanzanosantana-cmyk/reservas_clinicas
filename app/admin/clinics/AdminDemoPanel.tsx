@@ -29,6 +29,13 @@ const PLAN_BADGE: Record<string, string> = {
   pro: "bg-violet-100 text-violet-700",
 };
 
+const ADMIN_HEADERS: Record<string, string> = {
+  "Content-Type": "application/json",
+  ...(typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ADMIN_API_SECRET
+    ? { "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_API_SECRET }
+    : {}),
+};
+
 export default function AdminDemoPanel() {
   const [allClinics, setAllClinics] = useState<ClinicItem[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -51,12 +58,19 @@ export default function AdminDemoPanel() {
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/admin/clinic-stats");
-      const data = (await res.json()) as { clinics?: ClinicItem[] };
+      const res = await fetch("/api/admin/clinic-stats", { headers: ADMIN_HEADERS });
+      const data = (await res.json()) as { clinics?: ClinicItem[]; error?: string };
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `Error ${res.status}`);
+      }
+
       setAllClinics(data.clinics ?? []);
-    } catch {
+    } catch (err) {
       setAllClinics([]);
+      setError(err instanceof Error ? err.message : "No se pudieron cargar las clínicas");
     } finally {
       setLoading(false);
     }
@@ -111,7 +125,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/demo-clinics", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: ADMIN_HEADERS,
         body: JSON.stringify({ clinic_id: deleteTarget.id }),
       });
       if (!res.ok) {
@@ -134,7 +148,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/change-plan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: ADMIN_HEADERS,
         body: JSON.stringify({ clinic_id: clinicId, plan }),
       });
       if (!res.ok) throw new Error("Error al cambiar plan");
@@ -324,7 +338,7 @@ export default function AdminDemoPanel() {
                               try {
                                 const res = await fetch("/api/admin/impersonate-clinic", {
                                   method: "POST",
-                                  headers: { "Content-Type": "application/json" },
+                                  headers: ADMIN_HEADERS,
                                   body: JSON.stringify({ slug: c.slug }),
                                 });
                                 const data = (await res.json()) as { token?: string; error?: string };

@@ -186,7 +186,11 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const admin = await getAdminUser();
   if (!admin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const secret = request.headers.get("x-admin-secret");
+    const adminSecret = process.env.ADMIN_API_SECRET?.trim();
+    if (!secret || !adminSecret || secret !== adminSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {

@@ -3,9 +3,15 @@ import { getAdminUser } from "@/lib/adminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
+function verifyAdmin(request: Request, admin: { id: string; email: string } | null): boolean {
+  if (admin) return true;
+  const secret = request.headers.get("x-admin-secret");
+  return Boolean(secret && secret === process.env.ADMIN_API_SECRET?.trim());
+}
+
 export async function POST(request: Request) {
   const admin = await getAdminUser();
-  if (!admin) {
+  if (!verifyAdmin(request, admin)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

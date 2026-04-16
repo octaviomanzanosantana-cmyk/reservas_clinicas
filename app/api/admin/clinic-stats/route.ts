@@ -2,10 +2,16 @@ import { getAdminUser } from "@/lib/adminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   const admin = await getAdminUser();
+
+  // Fallback: check ADMIN_API_SECRET header if session auth fails
   if (!admin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = request.headers.get("x-admin-secret");
+    const adminSecret = process.env.ADMIN_API_SECRET?.trim();
+    if (!authHeader || !adminSecret || authHeader !== adminSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {
