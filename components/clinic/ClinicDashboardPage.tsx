@@ -543,6 +543,14 @@ export function ClinicDashboardPage({
                     >
                       {appointment.patient_name}
                     </button>
+                    {!appointment.patient_email ? (
+                      <span
+                        className="ml-1.5 inline-flex rounded-full bg-background px-2 py-0.5 text-[10px] font-medium text-muted"
+                        title="Sin email — recuerda enviar el recordatorio por WhatsApp"
+                      >
+                        Sin email
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">{appointment.service}</td>
                   <td className="px-4 py-3">

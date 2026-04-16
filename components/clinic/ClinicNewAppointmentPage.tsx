@@ -428,6 +428,9 @@ function ClinicNewAppointmentContent({
                 placeholder="Ej: marta@email.com"
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300"
               />
+              {!patientEmail.trim() ? (
+                <p className="mt-1.5 text-xs text-amber-600">Sin email, el paciente no recibirá confirmación ni recordatorios.</p>
+              ) : null}
             </label>
 
             <div className="flex flex-wrap gap-3 pt-2">
