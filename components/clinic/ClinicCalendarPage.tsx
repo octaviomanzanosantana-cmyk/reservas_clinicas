@@ -26,6 +26,7 @@ type AppointmentRow = {
   patient_phone: string | null;
   service: string;
   modality?: string | null;
+  appointment_type?: string | null;
   scheduled_at: string | null;
   datetime_label: string;
   status: string;
@@ -492,7 +493,11 @@ export function ClinicCalendarPage({
                               {appointment.patient_name}
                             </p>
                             <p className="mt-1 text-sm text-slate-600">{appointment.service}</p>
-                            <p className="mt-1 text-xs font-medium text-slate-500">{appointment.modality === "online" ? "Online" : "Presencial"}</p>
+                            <p className="mt-1 text-xs font-medium text-slate-500">
+                              {appointment.modality === "online" ? "Online" : "Presencial"}
+                              {" · "}
+                              {appointment.appointment_type === "revision" ? "Revisión" : "1ª Cita"}
+                            </p>
                             {statusMeta ? (
                               <span
                                 className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.className}`}
@@ -603,7 +608,7 @@ export function ClinicCalendarPage({
                                     {appointment.service}
                                   </p>
                                   <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
-                                    {appointment.modality === "online" ? "Online" : "Presencial"}
+                                    {appointment.modality === "online" ? "Online" : "Presencial"} · {appointment.appointment_type === "revision" ? "Rev." : "1ª"}
                                   </p>
                                   {statusMeta ? (
                                     <span

@@ -49,6 +49,7 @@ function ClinicNewAppointmentContent({
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [modality, setModality] = useState<"presencial" | "online">("presencial");
+  const [appointmentType, setAppointmentType] = useState<"primera_visita" | "revision">("primera_visita");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
@@ -221,6 +222,7 @@ function ClinicNewAppointmentContent({
         duration_label: `${selectedService.duration_minutes} min`,
         status: "confirmed",
         modality,
+        appointment_type: appointmentType,
       };
 
       const response = await fetch("/api/appointments/create", {
@@ -323,6 +325,34 @@ function ClinicNewAppointmentContent({
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-slate-300"
                 />
               </label>
+            </div>
+
+            <div>
+              <span className="text-sm font-medium text-slate-700">Tipo de cita</span>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAppointmentType("primera_visita")}
+                  className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                    appointmentType === "primera_visita"
+                      ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                      : "border-[#E5E7EB] bg-white text-[#6B7280]"
+                  }`}
+                >
+                  Primera cita
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppointmentType("revision")}
+                  className={`flex-1 rounded-[10px] border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                    appointmentType === "revision"
+                      ? "border-[#0E9E82] bg-[#0E9E82] text-white"
+                      : "border-[#E5E7EB] bg-white text-[#6B7280]"
+                  }`}
+                >
+                  Revisión
+                </button>
+              </div>
             </div>
 
             <div>
