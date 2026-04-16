@@ -546,7 +546,7 @@ export function ClinicDashboardPage({
                     {!appointment.patient_email ? (
                       <span
                         className="ml-1.5 inline-flex rounded-full bg-background px-2 py-0.5 text-[10px] font-medium text-muted"
-                        title="Sin email — recuerda enviar el recordatorio por WhatsApp"
+                        title={canUseFeature(clinic?.plan as Plan, "whatsapp") ? "Sin email — recuerda enviar el recordatorio por WhatsApp" : "Sin email — el paciente no recibirá comunicaciones automáticas"}
                       >
                         Sin email
                       </span>
