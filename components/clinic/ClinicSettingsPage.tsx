@@ -1,5 +1,6 @@
 "use client";
 
+import { LogoUpload } from "@/components/clinic/LogoUpload";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import {
   isGoogleCalendarConnected,
@@ -216,15 +217,10 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                   <p className="mt-1.5 text-xs text-muted">Se muestra a los pacientes en la pagina de reservas.</p>
                 </label>
 
-                <label className="block">
-                  <span className="text-sm font-medium text-foreground">Logo URL</span>
-                  <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} className={INPUT_CLASS} />
-                  {logoUrl ? (
-                    <div className="mt-3 rounded-[10px] border border-border bg-background p-3">
-                      <img src={logoUrl} alt="Preview logo" className="h-16 object-contain" />
-                    </div>
-                  ) : null}
-                </label>
+                <LogoUpload
+                  currentUrl={logoUrl}
+                  onUploaded={(url) => setLogoUrl(url)}
+                />
 
                 <label className="flex items-center gap-3 rounded-[10px] border border-border bg-white px-4 py-3">
                   <input
