@@ -52,6 +52,7 @@ export async function GET(request: Request) {
       .gte("scheduled_at", startOfDay.toISOString())
       .lt("scheduled_at", endOfNextDay.toISOString())
       .eq("clinic_id", access.clinicId)
+      .neq("status", "cancelled")
       .order("scheduled_at", { ascending: true });
 
     if (error) {
