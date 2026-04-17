@@ -1,24 +1,8 @@
 import { getAdminUser } from "@/lib/adminAuth";
 import { sendClinicWelcomeEmail } from "@/lib/appointmentEmails";
-import { upsertClinicHour } from "@/lib/clinicHours";
 import { createClinic, deleteClinicById, listClinics, listDemoClinics } from "@/lib/clinics";
-import { createService } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
-
-const DEMO_SERVICES = [
-  { name: "Consulta inicial", duration_minutes: 60 },
-  { name: "Consulta de seguimiento", duration_minutes: 30 },
-  { name: "Sesión de tratamiento", duration_minutes: 45 },
-];
-
-const DEMO_HOURS = [
-  { day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 2, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 3, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 4, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
-];
 
 function normalizeSlug(value: string): string {
   return value
@@ -92,32 +76,7 @@ export async function POST(request: Request) {
       .update({ is_demo: true })
       .eq("id", clinic.id);
 
-    // 2. Servicios base
-    await Promise.all(
-      DEMO_SERVICES.map((s) =>
-        createService({
-          clinic_slug: clinic.slug,
-          name: s.name,
-          duration_minutes: s.duration_minutes,
-          active: true,
-        }),
-      ),
-    );
-
-    // 3. Horarios base L-V
-    await Promise.all(
-      DEMO_HOURS.map((h) =>
-        upsertClinicHour({
-          clinic_slug: clinic.slug,
-          day_of_week: h.day_of_week,
-          start_time: h.start_time,
-          end_time: h.end_time,
-          active: h.active,
-        }),
-      ),
-    );
-
-    // 4. Crear usuario + membership + email de bienvenida
+    // Crear usuario + membership + email de bienvenida
     let accessResult: { success: boolean; error?: string } = { success: false };
     try {
       // Crear usuario con contraseña temporal

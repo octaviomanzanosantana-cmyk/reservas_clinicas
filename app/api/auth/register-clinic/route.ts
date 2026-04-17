@@ -1,7 +1,5 @@
 import { sendClinicWelcomeEmail } from "@/lib/appointmentEmails";
-import { upsertClinicHour } from "@/lib/clinicHours";
 import { createClinic, getClinicBySlug } from "@/lib/clinics";
-import { createService } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
@@ -12,20 +10,6 @@ type RegisterClinicRequest = {
   is_demo?: boolean;
   invited?: boolean;
 };
-
-const BASE_SERVICES = [
-  { name: "Primera consulta", duration_minutes: 60 },
-  { name: "Consulta de seguimiento", duration_minutes: 30 },
-  { name: "Sesión de tratamiento", duration_minutes: 45 },
-];
-
-const BASE_HOURS = [
-  { day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 2, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 3, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 4, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
-];
 
 function normalizeSlug(value: string): string {
   return value
@@ -139,21 +123,7 @@ export async function POST(request: Request) {
       role: "owner",
     });
 
-    // 4. Servicios base
-    await Promise.all(
-      BASE_SERVICES.map((s) =>
-        createService({ clinic_slug: clinic.slug, name: s.name, duration_minutes: s.duration_minutes, active: true }),
-      ),
-    );
-
-    // 5. Horario base L-V
-    await Promise.all(
-      BASE_HOURS.map((h) =>
-        upsertClinicHour({ clinic_slug: clinic.slug, ...h }),
-      ),
-    );
-
-    // 6. Email de bienvenida
+    // 4. Email de bienvenida
     try {
       if (isInvited) {
         await sendClinicWelcomeEmail(email, name!, {

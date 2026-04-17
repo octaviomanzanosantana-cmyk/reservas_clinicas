@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { upsertClinicHour } from "@/lib/clinicHours";
 import { provisionClinicUserAccess } from "@/lib/clinicUserProvisioning";
 import { createClinic } from "@/lib/clinics";
-import { createService } from "@/lib/services";
 
 type CreateClinicRequest = {
   name?: string;
@@ -12,24 +10,8 @@ type CreateClinicRequest = {
   address?: string;
   theme_color?: string;
   description?: string | null;
-  seed_default_services?: boolean;
-  seed_default_hours?: boolean;
   access_email?: string | null;
 };
-
-const DEFAULT_SERVICES = [
-  { name: "Primera consulta", duration_minutes: 30 },
-  { name: "Revisión", duration_minutes: 20 },
-  { name: "Seguimiento", duration_minutes: 30 },
-];
-
-const DEFAULT_HOURS = [
-  { day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 2, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 3, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 4, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
-];
 
 const ADMIN_API_SECRET = process.env.ADMIN_API_SECRET?.trim();
 
@@ -100,33 +82,6 @@ export async function POST(request: NextRequest) {
       google_token_expires_at: null,
       logo_url: null,
     });
-
-    if (body.seed_default_services) {
-      await Promise.all(
-        DEFAULT_SERVICES.map((service) =>
-          createService({
-            clinic_slug: clinic.slug,
-            name: service.name,
-            duration_minutes: service.duration_minutes,
-            active: true,
-          }),
-        ),
-      );
-    }
-
-    if (body.seed_default_hours) {
-      await Promise.all(
-        DEFAULT_HOURS.map((hour) =>
-          upsertClinicHour({
-            clinic_slug: clinic.slug,
-            day_of_week: hour.day_of_week,
-            start_time: hour.start_time,
-            end_time: hour.end_time,
-            active: hour.active,
-          }),
-        ),
-      );
-    }
 
     let access:
       | { attempted: false }

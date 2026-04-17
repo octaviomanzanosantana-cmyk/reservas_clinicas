@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { upsertClinicHour } from "@/lib/clinicHours";
 import { createClinic } from "@/lib/clinics";
-import { createService } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-const DEFAULT_SERVICES = [
-  { name: "Primera consulta", duration_minutes: 30 },
-  { name: "Revisión", duration_minutes: 20 },
-  { name: "Seguimiento", duration_minutes: 30 },
-];
-
-const DEFAULT_HOURS = [
-  { day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 2, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 3, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 4, start_time: "09:00", end_time: "18:00", active: true },
-  { day_of_week: 5, start_time: "09:00", end_time: "18:00", active: true },
-];
 
 function toSlug(value: string): string {
   return value
@@ -150,26 +134,6 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", clinic.id);
     }
-
-    await Promise.all([
-      ...DEFAULT_SERVICES.map((s) =>
-        createService({
-          clinic_slug: clinic.slug,
-          name: s.name,
-          duration_minutes: s.duration_minutes,
-          active: true,
-        }),
-      ),
-      ...DEFAULT_HOURS.map((h) =>
-        upsertClinicHour({
-          clinic_slug: clinic.slug,
-          day_of_week: h.day_of_week,
-          start_time: h.start_time,
-          end_time: h.end_time,
-          active: h.active,
-        }),
-      ),
-    ]);
 
     return NextResponse.json({ ok: true, clinicSlug: clinic.slug }, { status: 201 });
   } catch (error) {

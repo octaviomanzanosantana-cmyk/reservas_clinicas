@@ -35,6 +35,7 @@ export function ClinicHoursPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicHoursP
   const [hours, setHours] = useState<ClinicHourRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -81,6 +82,18 @@ export function ClinicHoursPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicHoursP
     setMessage(null);
     setErrorMessage(null);
 
+    // Validación: end_time debe ser posterior a start_time
+    if (hour.active && hour.start_time >= hour.end_time) {
+      setRowErrors((prev) => ({ ...prev, [key]: "La hora de fin debe ser posterior a la de inicio." }));
+      setSavingId(null);
+      return;
+    }
+    setRowErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
     try {
       const response = await fetch("/api/clinic-hours/update", {
         method: "POST",
@@ -99,7 +112,15 @@ export function ClinicHoursPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicHoursP
       setMessage("Guardado correctamente");
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar");
+      const raw = error instanceof Error ? error.message : "No se pudo guardar";
+      const friendly = raw.includes("clinic_hours_time_range_check")
+        ? "La hora de fin debe ser posterior a la de inicio."
+        : raw;
+      if (friendly.includes("posterior a la de inicio")) {
+        setRowErrors((prev) => ({ ...prev, [key]: friendly }));
+      } else {
+        setErrorMessage(friendly);
+      }
     } finally {
       setSavingId(null);
     }
@@ -270,6 +291,9 @@ export function ClinicHoursPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicHoursP
                           >
                             ✕
                           </button>
+                        ) : null}
+                        {slot.id && rowErrors[slot.id] ? (
+                          <p className="col-span-full text-xs text-red-600">{rowErrors[slot.id]}</p>
                         ) : null}
                       </div>
                     ))}

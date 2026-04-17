@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicSetupBanner } from "@/components/clinic/ClinicSetupBanner";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { buildDaySlotsFromTimeRange, formatTimeLabel } from "@/lib/availability";
 import { getTodayInputValue } from "@/lib/dateFormat";
@@ -352,6 +353,7 @@ export function ClinicCalendarPage({
 
   return (
     <div className="space-y-8">
+      <ClinicSetupBanner clinicSlug={clinicSlug} basePath={basePath} />
       <section className="overflow-hidden rounded-[30px] border border-white/70 bg-white/90 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)]">
         <div className="bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,0.98))] p-7 md:p-8">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">

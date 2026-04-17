@@ -4,6 +4,7 @@ import { EditPatientModal } from "@/components/clinic/EditPatientModal";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { canUseFeature } from "@/lib/plan";
 import type { Plan } from "@/lib/plan";
+import { useClinicSetupStatus } from "@/lib/useClinicSetupStatus";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -138,6 +139,8 @@ export function ClinicDashboardPage({
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<AppointmentRow | null>(null);
   const [editFeedback, setEditFeedback] = useState<string | null>(null);
+
+  const setupStatus = useClinicSetupStatus(clinicSlug);
 
   useEffect(() => {
     let active = true;
@@ -465,44 +468,80 @@ export function ClinicDashboardPage({
         </section>
       ) : null}
 
-      <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
-              Accesos rápidos
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Atajos para las tareas más frecuentes del día.
-            </p>
+      {!setupStatus.loading && !setupStatus.ready ? (
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                Configuración inicial
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Imprescindible para empezar a recibir citas
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {setupStatus.hasServices ? (
+                <span
+                  className="inline-flex items-center gap-2 rounded-[10px] px-5 py-3 font-heading text-sm font-semibold"
+                  style={{ backgroundColor: "#E6F7F3", color: "#0B7D68" }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Servicios listos
+                </span>
+              ) : (
+                <Link
+                  href={`${basePath}/services`}
+                  className="rounded-[10px] px-5 py-3 font-heading text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90"
+                  style={{ backgroundColor: "#0E9E82", fontWeight: 600 }}
+                >
+                  Configurar servicios
+                </Link>
+              )}
+              {setupStatus.hasHours ? (
+                <span
+                  className="inline-flex items-center gap-2 rounded-[10px] px-5 py-3 font-heading text-sm font-semibold"
+                  style={{ backgroundColor: "#E6F7F3", color: "#0B7D68" }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Horarios listos
+                </span>
+              ) : (
+                <Link
+                  href={`${basePath}/hours`}
+                  className="rounded-[10px] px-5 py-3 font-heading text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90"
+                  style={{ backgroundColor: "#0E9E82", fontWeight: 600 }}
+                >
+                  Configurar horarios
+                </Link>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`${basePath}/appointments/new`}
-              className="rounded-[10px] bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover"
-            >
-              Nueva cita
-            </Link>
-            <Link
-              href={`${basePath}/settings`}
-              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
-            >
-              Configuración
-            </Link>
-            <Link
-              href={`${basePath}/services`}
-              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
-            >
-              Servicios
-            </Link>
-            <Link
-              href={`${basePath}/hours`}
-              className="rounded-[10px] border-[0.5px] border-border px-4 py-2.5 font-heading text-sm font-semibold text-muted transition-all duration-150 hover:border-primary/30 hover:text-foreground"
-            >
-              Horarios
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
