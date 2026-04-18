@@ -197,7 +197,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
               <div className="mt-4 space-y-4">
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Nombre clinica</span>
+                  <span className="text-sm font-medium text-foreground">Nombre clínica</span>
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT_CLASS} />
                 </label>
 
