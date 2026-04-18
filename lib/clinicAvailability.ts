@@ -8,6 +8,11 @@ import {
   type AvailableSlot,
 } from "@/lib/availability";
 import { getAppointmentByToken } from "@/lib/appointments";
+import {
+  isClinicDateBlocked,
+  isDateCoveredByBlocks,
+  listClinicBlocksInRange,
+} from "@/lib/clinicBlocks";
 import { getClinicById, getClinicBySlug } from "@/lib/clinics";
 import { getClinicHoursByClinicSlug } from "@/lib/clinicHours";
 import { toDateInputValue } from "@/lib/dateFormat";
@@ -91,6 +96,12 @@ export async function getAvailableSlotsForClinicDate({
     throw new Error("Clínica no encontrada");
   }
 
+  // Chequeo temprano: si la fecha está dentro de un bloqueo, no hay slots.
+  const dateKey = toDateInputValue(date);
+  if (await isClinicDateBlocked(clinic.id, dateKey)) {
+    return [];
+  }
+
   const startOfDay = startOfLocalDay(date);
   const endOfNextDay = endOfNextLocalDay(date);
 
@@ -172,9 +183,26 @@ export async function getAvailableDatesForClinic({
   const results: AvailableDateOption[] = [];
   const safeStartDate = startOfLocalDay(startDate);
 
+  // Precarga de bloques del rango: evita 1 query por día dentro del loop.
+  const rangeEnd = new Date(safeStartDate);
+  rangeEnd.setDate(rangeEnd.getDate() + Math.max(0, searchDays - 1));
+  const clinic = await getClinicBySlug(clinicSlug.trim());
+  const blocks = clinic?.id
+    ? await listClinicBlocksInRange(
+        clinic.id,
+        toDateInputValue(safeStartDate),
+        toDateInputValue(rangeEnd),
+      )
+    : [];
+
   for (let offset = 0; offset < searchDays && results.length < limit; offset += 1) {
     const currentDate = new Date(safeStartDate);
     currentDate.setDate(safeStartDate.getDate() + offset);
+
+    // Filtrado en memoria: saltamos fechas bloqueadas sin tocar DB.
+    if (isDateCoveredByBlocks(blocks, toDateInputValue(currentDate))) {
+      continue;
+    }
 
     const slots = await getAvailableSlotsForClinicDate({
       clinicSlug,

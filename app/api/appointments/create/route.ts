@@ -10,6 +10,7 @@ import {
   parseDurationMinutes,
   rangesOverlap,
 } from "@/lib/availability";
+import { isClinicDateBlocked } from "@/lib/clinicBlocks";
 import {
   createCalendarEvent,
   getGoogleCalendarBusyRangesForDate,
@@ -78,6 +79,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Esta clínica no acepta reservas online en este momento" },
         { status: 400 },
+      );
+    }
+
+    // Defensa server-side: rechazar reservas en fechas bloqueadas.
+    if (clinicRow?.id && (await isClinicDateBlocked(clinicRow.id, dateParam))) {
+      return NextResponse.json(
+        { error: "La clínica no acepta reservas en esa fecha" },
+        { status: 409 },
       );
     }
 
