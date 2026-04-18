@@ -18,6 +18,11 @@ type NavItem = {
   external?: boolean;
 };
 
+type ClinicSummary = {
+  name: string | null;
+  logo_url: string | null;
+};
+
 const svgBase = {
   width: 16,
   height: 16,
@@ -105,19 +110,52 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const CLINIC_NAME_PREFIXES = new Set([
+  "dr",
+  "dra",
+  "doctor",
+  "doctora",
+  "clinica",
+  "centro",
+]);
+
+function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\./g, "");
+}
+
+function deriveInitial(name: string | null, fallback: string): string {
+  const source = (name ?? fallback).trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  for (const part of parts) {
+    if (!CLINIC_NAME_PREFIXES.has(normalize(part))) {
+      return (part[0] ?? "").toUpperCase();
+    }
+  }
+  return (source[0] ?? "?").toUpperCase();
+}
+
 export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPanelLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [supabase] = useState(() => createSupabaseBrowserClient());
-  const [clinicName, setClinicName] = useState<string | null>(null);
+  const [clinic, setClinic] = useState<ClinicSummary>({ name: null, logo_url: null });
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch(`/api/clinics?slug=${encodeURIComponent(clinicSlug)}`)
       .then((r) => r.json())
-      .then((data: { clinic?: { name?: string } }) => {
-        if (active && data.clinic?.name) setClinicName(data.clinic.name);
+      .then((data: { clinic?: { name?: string | null; logo_url?: string | null } }) => {
+        if (!active || !data.clinic) return;
+        setClinic({
+          name: data.clinic.name ?? null,
+          logo_url: data.clinic.logo_url ?? null,
+        });
       })
       .catch(() => {});
     return () => {
@@ -128,7 +166,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
   const managementItems: NavItem[] = [
     { href: basePath, label: "Inicio", icon: <GridIcon /> },
     { href: `${basePath}/calendar`, label: "Calendario", icon: <CalendarIcon /> },
-    { href: `${basePath}/appointments/new`, label: "Citas", icon: <ClockIcon /> },
+    { href: `${basePath}/appointments/new`, label: "Nueva cita", icon: <ClockIcon /> },
     { href: `${basePath}/patients`, label: "Pacientes", icon: <UsersIcon /> },
     {
       href: `/b/${clinicSlug}`,
@@ -157,18 +195,16 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     }
   };
 
-  const renderItem = (item: NavItem, variant: "default" | "config") => {
+  const itemBase =
+    "relative flex items-center gap-2.5 rounded-lg px-3 py-2 font-heading text-[13px] transition-[background-color,color] duration-150";
+  const inactiveCls =
+    "text-[var(--sidebar-text-inactive)] hover:bg-[var(--sidebar-hover-bg)] hover:text-white/90 font-medium";
+  const activeCls =
+    "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-text-active)] font-semibold before:content-[''] before:absolute before:left-[-16px] before:top-[6px] before:bottom-[6px] before:w-[3px] before:bg-[var(--sidebar-active-bar)] before:rounded-[0_3px_3px_0]";
+
+  const renderItem = (item: NavItem) => {
     const isActive = pathname === item.href;
-    const base =
-      "flex items-center gap-2.5 rounded-lg px-3 py-2 font-heading text-[13px] font-medium transition-colors";
-    const cls =
-      variant === "config"
-        ? isActive
-          ? "bg-[rgba(14,158,130,0.15)] text-[#0E9E82]"
-          : "text-[rgba(14,158,130,0.7)] hover:bg-[rgba(14,158,130,0.1)] hover:text-[#0E9E82]"
-        : isActive
-          ? "bg-white/10 text-white"
-          : "text-white/60 hover:bg-white/5 hover:text-white";
+    const cls = `${itemBase} ${isActive ? activeCls : inactiveCls}`;
 
     if (item.external) {
       return (
@@ -177,7 +213,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${base} ${cls}`}
+          className={cls}
         >
           {item.icon}
           <span>{item.label}</span>
@@ -186,58 +222,86 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     }
 
     return (
-      <Link key={item.href} href={item.href} className={`${base} ${cls}`}>
+      <Link key={item.href} href={item.href} className={cls}>
         {item.icon}
         <span>{item.label}</span>
       </Link>
     );
   };
 
+  const groupLabelCls =
+    "px-3 pb-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-text-label)]";
+  const dividerCls =
+    "h-px border-0 bg-[var(--sidebar-divider)] mt-[10px] mx-[4px] mb-[2px]";
+
+  const displayName = clinic.name ?? clinicSlug;
+  const initial = deriveInitial(clinic.name, clinicSlug);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 lg:flex-row lg:px-6 lg:py-8">
-        <aside className="flex w-full flex-col rounded-[14px] bg-[#1A1A1A] p-4 text-white lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72 lg:self-start">
-          <div className="rounded-[10px] bg-white/3 px-3 py-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/30">
-              Panel de clínica
-            </p>
-            <p className="mt-1.5 font-heading text-base font-semibold tracking-tight text-white">
-              {clinicName ?? clinicSlug}
-            </p>
+        <aside className="flex w-full flex-col rounded-[14px] bg-[var(--sidebar-bg)] p-4 text-white lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72 lg:self-start">
+          <div
+            className="flex items-center gap-3 border-b"
+            style={{
+              padding: "10px 10px 14px",
+              borderBottomColor: "var(--sidebar-divider)",
+              borderBottomWidth: "1px",
+            }}
+          >
+            {clinic.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={clinic.logo_url}
+                alt={displayName}
+                width={34}
+                height={34}
+                className="h-[34px] w-[34px] shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#0E9E82] font-heading text-sm font-bold text-white"
+              >
+                {initial}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--sidebar-text-label)]">
+                Panel de clínica
+              </p>
+              <p
+                className="mt-0.5 truncate font-heading text-[13px] font-bold tracking-tight text-white"
+                title={displayName}
+              >
+                {displayName}
+              </p>
+            </div>
           </div>
 
-          <nav className="mt-5 flex flex-1 flex-col">
+          <nav className="mt-4 flex flex-1 flex-col">
             <div>
-              <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/30">
-                Gestión
-              </p>
-              <div className="space-y-0.5">
-                {managementItems.map((i) => renderItem(i, "default"))}
-              </div>
+              <p className={groupLabelCls}>Gestión</p>
+              <div className="space-y-0.5">{managementItems.map(renderItem)}</div>
             </div>
 
-            <hr className="my-4 border-0 border-t-[0.5px] border-white/8" />
+            <hr className={dividerCls} />
 
             <div>
-              <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#0E9E82]">
-                Configuración
-              </p>
-              <div className="space-y-0.5">
-                {configItems.map((i) => renderItem(i, "config"))}
-              </div>
+              <p className={groupLabelCls}>Configuración</p>
+              <div className="space-y-0.5">{configItems.map(renderItem)}</div>
             </div>
 
-            <div className="mt-auto border-t-[0.5px] border-white/8 pt-4">
-              <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/30">
-                Cuenta
-              </p>
+            <div className="mt-auto">
+              <hr className={dividerCls} />
+              <p className={groupLabelCls}>Cuenta</p>
               <div className="space-y-0.5">
-                {accountItems.map((i) => renderItem(i, "default"))}
+                {accountItems.map(renderItem)}
                 <button
                   type="button"
                   onClick={() => void handleLogout()}
                   disabled={loggingOut}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 font-heading text-[13px] font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className={`${itemBase} ${inactiveCls} w-full disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <LogoutIcon />
                   <span>{loggingOut ? "Cerrando sesión..." : "Cerrar sesión"}</span>

@@ -20,6 +20,16 @@
   --radius-btn: 10px;
   --radius-input: 10px;
   --radius-card: 14px;
+
+  /* --- Sidebar tokens (V4 · gray-800 tinte cálido) --- */
+  --sidebar-bg: #1F2937;
+  --sidebar-text-active: #FFFFFF;
+  --sidebar-text-inactive: rgba(229, 231, 235, 0.72);
+  --sidebar-text-label: rgba(229, 231, 235, 0.45);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: rgba(14, 158, 130, 0.14);
+  --sidebar-active-bar: #0E9E82;
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
