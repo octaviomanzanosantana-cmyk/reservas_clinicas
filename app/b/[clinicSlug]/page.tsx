@@ -241,6 +241,7 @@ export default function PublicBookingPage() {
   const [patientEmail, setPatientEmail] = useState("");
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
   const [activeDays, setActiveDays] = useState<Set<number>>(new Set());
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [loadingServices, setLoadingServices] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -347,10 +348,10 @@ export default function PublicBookingPage() {
     const loadActiveDays = async () => {
       try {
         const response = await fetch(`/api/clinic-hours/active-days?clinicSlug=${encodeURIComponent(clinicSlug)}`);
-        const data = (await response.json()) as { activeDays?: number[] };
-        if (active && data.activeDays) {
-          setActiveDays(new Set(data.activeDays));
-        }
+        const data = (await response.json()) as { activeDays?: number[]; blockedDates?: string[] };
+        if (!active) return;
+        if (data.activeDays) setActiveDays(new Set(data.activeDays));
+        if (Array.isArray(data.blockedDates)) setBlockedDates(new Set(data.blockedDates));
       } catch { /* ignore */ }
     };
     void loadActiveDays();
@@ -385,12 +386,12 @@ export default function PublicBookingPage() {
       const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const isPast = date < today;
-      const isActive = !isPast && activeDays.has(dayOfWeek);
+      const isActive = !isPast && activeDays.has(dayOfWeek) && !blockedDates.has(dateStr);
       cells.push({ day: d, dateStr, isPast, isActive, isCurrentMonth: true });
     }
 
     return cells;
-  }, [calendarMonth, activeDays]);
+  }, [calendarMonth, activeDays, blockedDates]);
 
   const handleCalendarDayClick = useCallback((dateStr: string) => {
     setSelectedDate(dateStr);
