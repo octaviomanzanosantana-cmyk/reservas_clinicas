@@ -196,7 +196,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
   const inactiveCls =
     "text-[var(--sidebar-text-inactive)] hover:bg-[var(--sidebar-hover-bg)] hover:text-white/90 font-medium";
   const activeCls =
-    "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-text-active)] font-semibold before:content-[''] before:absolute before:left-[-16px] before:top-[6px] before:bottom-[6px] before:w-[3px] before:bg-[var(--sidebar-active-bar)] before:rounded-[0_3px_3px_0]";
+    "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-text-active)] font-semibold before:content-[''] before:absolute before:left-[-10px] before:top-[6px] before:bottom-[6px] before:w-[3px] before:bg-[var(--sidebar-active-bar)] before:rounded-[0_3px_3px_0]";
 
   const renderItem = (item: NavItem) => {
     const isActive = pathname === item.href;
