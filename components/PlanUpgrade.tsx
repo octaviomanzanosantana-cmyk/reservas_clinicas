@@ -27,113 +27,6 @@ const FEATURES_PRO = [
   "Soporte prioritario",
 ];
 
-const PLAN_LABELS: Record<Plan, string> = {
-  free: "Free",
-  starter: "Starter",
-  pro: "Pro",
-};
-
-const FREE_INCLUDED = [
-  "Hasta 50 citas/mes",
-  "1 servicio",
-  "Reserva pública online",
-  "Email de confirmación",
-];
-
-const FREE_NOT_INCLUDED = [
-  "Recordatorios 24/48/72h",
-  "WhatsApp sin API",
-  "Añadir al calendario",
-  "Enlace de videollamada",
-  "Citas ilimitadas",
-];
-
-const STARTER_INCLUDED = [
-  "Citas ilimitadas",
-  "Servicios ilimitados",
-  "Recordatorios 24/48/72h",
-  "WhatsApp sin API",
-  "Añadir al calendario (Google + Apple)",
-  "Enlace de videollamada",
-  "RGPD + DPA incluido",
-];
-
-const PRO_INCLUDED = [
-  "Todo lo de Starter",
-  "Sin branding AppoClick",
-  "Subdominio propio",
-  "Email con tu dominio",
-  "Sala de vídeo privada",
-  "Soporte prioritario",
-];
-
-function CurrentPlanCard({ plan }: { plan: Plan }) {
-  const included =
-    plan === "free" ? FREE_INCLUDED : plan === "starter" ? STARTER_INCLUDED : PRO_INCLUDED;
-  const notIncluded = plan === "free" ? FREE_NOT_INCLUDED : [];
-
-  return (
-    <div
-      className="rounded-[14px] border-[0.5px] p-5"
-      style={{ background: "#FAFAFA", borderColor: "#E5E7EB" }}
-    >
-      <div className="flex items-center gap-3">
-        <h3 className="font-heading text-base font-bold text-foreground">
-          Tu plan actual
-        </h3>
-        <span
-          className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-          style={{ background: "#F3F4F6", color: "#6B7280" }}
-        >
-          {PLAN_LABELS[plan]}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Incluido
-          </p>
-          <ul className="mt-2 space-y-1.5">
-            {included.map((f) => (
-              <li
-                key={f}
-                className="flex items-start gap-2 text-sm text-foreground"
-              >
-                <span className="mt-0.5 text-primary">&#10003;</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {notIncluded.length > 0 ? (
-          <div>
-            <p
-              className="text-xs font-semibold uppercase tracking-wide"
-              style={{ color: "#6B7280", opacity: 0.5 }}
-            >
-              No incluidas
-            </p>
-            <ul className="mt-2 space-y-1.5">
-              {notIncluded.map((f) => (
-                <li
-                  key={f}
-                  className="flex items-start gap-2 text-sm"
-                  style={{ color: "#6B7280", opacity: 0.5 }}
-                >
-                  <span className="mt-0.5">&#8211;</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 const PRICES = {
   starter: { monthly: 19, yearly: 190 },
   pro: { monthly: 39, yearly: 390 },
@@ -166,9 +59,6 @@ export function PlanUpgrade({ currentPlan, clinicSlug }: PlanUpgradeProps) {
 
   return (
     <div className="space-y-5">
-      {/* Current plan card */}
-      <CurrentPlanCard plan={currentPlan} />
-
       {/* Interval toggle */}
       <div className="flex items-center justify-center gap-2 rounded-[14px] border-[0.5px] border-border bg-background p-2">
         <button
