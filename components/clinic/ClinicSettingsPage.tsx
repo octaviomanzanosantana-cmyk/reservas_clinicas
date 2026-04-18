@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicBlocksSection } from "@/components/clinic/ClinicBlocksSection";
 import { LogoUpload } from "@/components/clinic/LogoUpload";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import {
@@ -339,6 +340,8 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         {message ? <p className="mt-4 text-sm text-primary">{message}</p> : null}
         {errorMessage ? <p className="mt-4 text-sm text-red-600">{errorMessage}</p> : null}
       </section>
+
+      <ClinicBlocksSection clinicSlug={clinicSlug} />
 
       <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
