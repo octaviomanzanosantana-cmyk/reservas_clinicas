@@ -185,7 +185,7 @@ export function ClinicServicesPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSer
               <button
                 type="submit"
                 disabled={creating}
-                className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {creating ? "Añadiendo..." : "Añadir servicio"}
               </button>
@@ -270,7 +270,7 @@ export function ClinicServicesPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSer
                       type="button"
                       onClick={() => void handleSave(service)}
                       disabled={savingId === service.id}
-                      className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingId === service.id ? "Guardando..." : "Guardar"}
                     </button>
