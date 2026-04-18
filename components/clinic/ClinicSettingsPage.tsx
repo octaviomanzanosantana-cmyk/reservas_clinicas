@@ -193,7 +193,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="rounded-[14px] border-[0.5px] border-border bg-background p-5">
-              <p className="font-heading text-sm font-semibold text-foreground">Datos basicos</p>
+              <p className="font-heading text-sm font-semibold text-foreground">Datos básicos</p>
 
               <div className="mt-4 space-y-4">
                 <label className="block">
@@ -202,7 +202,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Descripcion</span>
+                  <span className="text-sm font-medium text-foreground">Descripción</span>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={INPUT_CLASS} />
                 </label>
 
@@ -255,7 +255,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
               <div className="mt-4 space-y-4">
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Email de notificacion</span>
+                  <span className="text-sm font-medium text-foreground">Email de notificación</span>
                   <input
                     type="email"
                     value={notificationEmail}
@@ -264,7 +264,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                     className={INPUT_CLASS}
                   />
                   <p className="mt-1.5 text-xs text-muted">
-                    Opcional. Recibe una copia de cada confirmacion de cita en este email.
+                    Opcional. Recibe una copia de cada confirmación de cita en este email.
                   </p>
                 </label>
 
@@ -278,7 +278,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                     className={INPUT_CLASS}
                   />
                   <p className="mt-1.5 text-xs text-muted">
-                    Opcional. Se muestra al paciente tras reservar y en el email de confirmacion.
+                    Opcional. Se muestra al paciente tras reservar y en el email de confirmación.
                   </p>
                 </label>
 
