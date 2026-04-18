@@ -76,7 +76,7 @@ export function EditPatientModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="mx-4 w-full max-w-md rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
-        <h2 className="font-heading text-lg font-semibold text-foreground">Editar datos del paciente</h2>
+        <h2 className="font-heading text-lg font-semibold text-foreground">Editar cita</h2>
         <p className="mt-1 text-sm text-muted">
           {appointment.service} · {formatDate(appointment.scheduled_at, appointment.datetime_label)}
         </p>
