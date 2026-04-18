@@ -20,7 +20,6 @@ type NavItem = {
 
 type ClinicSummary = {
   name: string | null;
-  logo_url: string | null;
 };
 
 const svgBase = {
@@ -143,19 +142,16 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
   const pathname = usePathname();
   const router = useRouter();
   const [supabase] = useState(() => createSupabaseBrowserClient());
-  const [clinic, setClinic] = useState<ClinicSummary>({ name: null, logo_url: null });
+  const [clinic, setClinic] = useState<ClinicSummary>({ name: null });
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch(`/api/clinics?slug=${encodeURIComponent(clinicSlug)}`)
       .then((r) => r.json())
-      .then((data: { clinic?: { name?: string | null; logo_url?: string | null } }) => {
+      .then((data: { clinic?: { name?: string | null } }) => {
         if (!active || !data.clinic) return;
-        setClinic({
-          name: data.clinic.name ?? null,
-          logo_url: data.clinic.logo_url ?? null,
-        });
+        setClinic({ name: data.clinic.name ?? null });
       })
       .catch(() => {});
     return () => {
@@ -249,23 +245,12 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
               borderBottomWidth: "1px",
             }}
           >
-            {clinic.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={clinic.logo_url}
-                alt={displayName}
-                width={34}
-                height={34}
-                className="h-[34px] w-[34px] shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <div
-                aria-hidden="true"
-                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#0E9E82] font-heading text-sm font-bold text-white"
-              >
-                {initial}
-              </div>
-            )}
+            <div
+              aria-hidden="true"
+              className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full bg-[#0E9E82] font-heading text-sm font-bold text-white"
+            >
+              {initial}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--sidebar-text-label)]">
                 Panel de clínica
