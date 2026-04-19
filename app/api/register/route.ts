@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClinic } from "@/lib/clinics";
+import { checkAndRegisterRateLimit } from "@/lib/rateLimit";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function toSlug(value: string): string {
@@ -68,6 +69,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "La contraseña debe tener al menos 8 caracteres" },
       { status: 400 },
+    );
+  }
+
+  // Rate limit por IP (3 registros / 60 min) y por email (1 intento / 10 min).
+  // Usar rate_limit_events en Supabase (ver migración 20260419_rate_limit_events).
+  if (clientIp) {
+    const ipCheck = await checkAndRegisterRateLimit({
+      kind: "signup_ip",
+      key: clientIp,
+      windowMinutes: 60,
+      maxAttempts: 3,
+      ipAddress: clientIp,
+    });
+    if (!ipCheck.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Has alcanzado el límite de registros desde esta conexión. Inténtalo más tarde.",
+        },
+        { status: 429, headers: { "Retry-After": String(ipCheck.retryAfterSeconds) } },
+      );
+    }
+  }
+
+  const emailCheck = await checkAndRegisterRateLimit({
+    kind: "signup_email",
+    key: email,
+    windowMinutes: 10,
+    maxAttempts: 1,
+    ipAddress: clientIp,
+  });
+  if (!emailCheck.allowed) {
+    return NextResponse.json(
+      { error: "Ya hay un intento de registro reciente con este email. Espera unos minutos." },
+      { status: 429, headers: { "Retry-After": String(emailCheck.retryAfterSeconds) } },
     );
   }
 
