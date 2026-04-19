@@ -31,6 +31,7 @@ type AvailabilityAppointmentRow = {
 
 type CreateAppointmentRequest = CreateAppointmentInput & {
   clinicSlug?: string | null;
+  website?: string | null; // honeypot
 };
 
 export async function POST(request: Request) {
@@ -55,6 +56,22 @@ export async function POST(request: Request) {
     }
 
     const payload = (await request.json()) as CreateAppointmentRequest;
+
+    // Honeypot: campo oculto que bots rellenan y humanos no. Si llega con
+    // valor, respondemos 200 OK con token falso pero NO creamos la cita.
+    // El bot cree que tuvo éxito y no reintenta con variaciones.
+    if (typeof payload.website === "string" && payload.website.trim().length > 0) {
+      console.warn("[appointments.create] honeypot triggered", {
+        ip: clientIp,
+        websiteValue: payload.website.slice(0, 50),
+        email: payload.patient_email?.slice(0, 50),
+      });
+      return NextResponse.json({
+        appointment: { token: "decoy", status: "confirmed" },
+        calendarWarning: null,
+      });
+    }
+
     const normalizedPayload: CreateAppointmentRequest = {
       ...payload,
       patient_email:

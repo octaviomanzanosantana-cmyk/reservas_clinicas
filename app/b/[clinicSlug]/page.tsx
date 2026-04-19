@@ -239,6 +239,7 @@ export default function PublicBookingPage() {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot: no lo tocan humanos
   const [privacidadAceptada, setPrivacidadAceptada] = useState(false);
   const [activeDays, setActiveDays] = useState<Set<number>>(new Set());
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
@@ -494,6 +495,7 @@ export default function PublicBookingPage() {
         body: JSON.stringify({
           ...payload,
           clinicSlug,
+          website,
         }),
       });
 
@@ -874,6 +876,21 @@ export default function PublicBookingPage() {
                         </p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Honeypot — bots rellenan, humanos no lo ven (display:none + offscreen) */}
+                  <div aria-hidden="true" style={{ display: "none", position: "absolute", left: "-9999px" }}>
+                    <label>
+                      Website
+                      <input
+                        type="text"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={website}
+                        onChange={(event) => setWebsite(event.target.value)}
+                      />
+                    </label>
                   </div>
 
                   <label className="block rounded-[14px] border border-border bg-white p-4">
