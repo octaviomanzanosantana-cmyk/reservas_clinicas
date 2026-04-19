@@ -34,8 +34,11 @@ export async function GET(request: NextRequest) {
   };
 
   // 1) Email matinal — corre siempre, filtra internamente por TZ = 9:00
+  //    ?force=true bypass del gate de hora local (para test manual)
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get("force") === "true";
   try {
-    report.daily = await sendDailyWhatsAppReminders();
+    report.daily = await sendDailyWhatsAppReminders({ force });
   } catch (err) {
     report.daily = { error: err instanceof Error ? err.message : "Error desconocido" };
   }

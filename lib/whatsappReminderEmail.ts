@@ -250,7 +250,9 @@ export type DailySendResult = {
   errors: Array<{ clinic_id: string; error: string }>;
 };
 
-export async function sendDailyWhatsAppReminders(): Promise<DailySendResult> {
+export async function sendDailyWhatsAppReminders(
+  opts: { force?: boolean } = {},
+): Promise<DailySendResult> {
   const result: DailySendResult = {
     clinicsProcessed: 0,
     emailsSent: 0,
@@ -274,7 +276,7 @@ export async function sendDailyWhatsAppReminders(): Promise<DailySendResult> {
   for (const clinic of clinics) {
     result.clinicsProcessed += 1;
 
-    if (!isSendHourInTimezone(clinic.timezone)) {
+    if (!opts.force && !isSendHourInTimezone(clinic.timezone)) {
       result.skipped += 1;
       continue;
     }
