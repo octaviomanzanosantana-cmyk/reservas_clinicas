@@ -58,18 +58,24 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as CreateAppointmentRequest;
 
     // Honeypot: campo oculto que bots rellenan y humanos no. Si llega con
-    // valor, respondemos 200 OK con token falso pero NO creamos la cita.
-    // El bot cree que tuvo éxito y no reintenta con variaciones.
+    // valor, devolvemos error suave (200 + ok:false) en vez de éxito falso
+    // para proteger al usuario legítimo cuyo gestor de contraseñas haya
+    // rellenado el campo. El frontend muestra el mensaje, resetea el
+    // honeypot y permite reintentar. Los bots reciben un "fallo" y se van.
     if (typeof payload.website === "string" && payload.website.trim().length > 0) {
       console.warn("[appointments.create] honeypot triggered", {
         ip: clientIp,
         websiteValue: payload.website.slice(0, 50),
         email: payload.patient_email?.slice(0, 50),
       });
-      return NextResponse.json({
-        appointment: { token: "decoy", status: "confirmed" },
-        calendarWarning: null,
-      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "booking_verification_failed",
+          message: "Hubo un problema procesando tu reserva. Por favor, inténtalo de nuevo.",
+        },
+        { status: 200 },
+      );
     }
 
     const normalizedPayload: CreateAppointmentRequest = {

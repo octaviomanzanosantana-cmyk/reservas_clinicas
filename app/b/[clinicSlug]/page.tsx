@@ -500,6 +500,7 @@ export default function PublicBookingPage() {
       });
 
       const result = (await response.json()) as {
+        ok?: boolean;
         appointment?: {
           token: string;
           clinic_name: string;
@@ -509,6 +510,12 @@ export default function PublicBookingPage() {
         error?: string;
         message?: string;
       };
+
+      // Honeypot disparado: resetea campo oculto y pide reintentar.
+      if (result.error === "booking_verification_failed") {
+        setWebsite("");
+        throw new Error(result.message ?? "Hubo un problema procesando tu reserva. Por favor, inténtalo de nuevo.");
+      }
 
       if (!response.ok || !result.appointment) {
         if (result.error === "plan_limit") {
