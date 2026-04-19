@@ -80,6 +80,39 @@ export async function POST(request: Request) {
         typeof payload.patient_phone === "string" ? payload.patient_phone.trim() || null : null,
     };
 
+    // Validaciones defensivas contra inputs de bot
+    const nameRaw = typeof normalizedPayload.patient_name === "string" ? normalizedPayload.patient_name.trim() : "";
+    if (nameRaw.length < 2) {
+      return NextResponse.json({ error: "Nombre inválido" }, { status: 400 });
+    }
+    if (/<[a-z][\s\S]*>/i.test(nameRaw) || /https?:\/\//i.test(nameRaw)) {
+      return NextResponse.json({ error: "Nombre inválido" }, { status: 400 });
+    }
+    // Bot pattern: string largo solo con mayúsculas/dígitos random (ej: "XJKLPQRT")
+    const letters = nameRaw.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g, "");
+    if (letters.length >= 8 && letters === letters.toUpperCase() && !/\s/.test(nameRaw)) {
+      return NextResponse.json({ error: "Nombre inválido" }, { status: 400 });
+    }
+
+    if (normalizedPayload.patient_email) {
+      // Regex email estándar (RFC simplificado, suficiente para filtrar basura)
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedPayload.patient_email)) {
+        return NextResponse.json({ error: "Email inválido" }, { status: 400 });
+      }
+    }
+
+    if (normalizedPayload.patient_phone) {
+      // Solo dígitos, +, espacios. Longitud 9-15 tras quitar separadores.
+      const phoneRaw = normalizedPayload.patient_phone;
+      if (!/^[\d+\s]+$/.test(phoneRaw)) {
+        return NextResponse.json({ error: "Teléfono inválido" }, { status: 400 });
+      }
+      const digitsOnly = phoneRaw.replace(/[^\d]/g, "");
+      if (digitsOnly.length < 9 || digitsOnly.length > 15) {
+        return NextResponse.json({ error: "Teléfono inválido" }, { status: 400 });
+      }
+    }
+
     // Rate limit por email (1 reserva / 15 min) — evita spam desde misma dirección
     if (normalizedPayload.patient_email) {
       const emailCheck = await checkAndRegisterRateLimit({
