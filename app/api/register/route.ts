@@ -71,12 +71,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Crear usuario en Supabase Auth con email confirmado (sin requerir confirmación por email)
+  // Crear usuario en Supabase Auth sin confirmar — Supabase envía email de
+  // verificación cuando "Confirm email" está activado en Dashboard. Hasta
+  // que el usuario valide, el middleware lo redirige a /verify-email.
   const { data: userData, error: userError } =
     await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
     });
 
   if (userError || !userData.user) {

@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PROTECTED_PREFIXES = ["/clinic", "/admin", "/reminders"];
+
+function requiresEmailConfirmation(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request,
@@ -32,7 +40,22 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Bloqueo suave: si hay sesión con email no confirmado y el usuario
+  // intenta acceder a rutas protegidas, redirige a /verify-email.
+  if (
+    user &&
+    !user.email_confirmed_at &&
+    requiresEmailConfirmation(request.nextUrl.pathname)
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/verify-email";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return response;
 }

@@ -76,11 +76,12 @@ export async function POST(request: Request) {
         activationUrl = linkData.properties?.action_link ?? null;
       }
     } else {
-      // Flujo autoservicio: contraseña real
+      // Flujo autoservicio: contraseña real, email sin confirmar (Supabase
+      // envía verificación si "Confirm email" está activado en Dashboard)
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: password!,
-        email_confirm: true,
+        email_confirm: false,
       });
       if (error || !data.user) {
         if (error?.message?.includes("already been registered")) {
