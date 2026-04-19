@@ -16,5 +16,11 @@ CREATE TABLE rate_limit_events (
 CREATE INDEX idx_rate_limit_events_lookup
   ON rate_limit_events (kind, key, created_at DESC);
 
--- RLS desactivado: solo service role escribe/lee (igual que login_attempts).
-ALTER TABLE rate_limit_events DISABLE ROW LEVEL SECURITY;
+-- RLS activado SIN políticas explícitas: deny-by-default para anon y
+-- authenticated keys. Los endpoints del servidor usan el service_role
+-- client (lib/supabaseAdmin.ts), que bypasa RLS — por eso el rate limit
+-- sigue funcionando aunque RLS esté ON.
+--
+-- Sin RLS, cualquiera con la anon key podría leer IPs (datos personales,
+-- violación RGPD) o insertar eventos falsos para saturar/bypass del limit.
+ALTER TABLE rate_limit_events ENABLE ROW LEVEL SECURITY;
