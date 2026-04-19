@@ -11,6 +11,7 @@ import {
   rangesOverlap,
 } from "@/lib/availability";
 import { isClinicDateBlocked } from "@/lib/clinicBlocks";
+import { checkAndRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
 import {
   createCalendarEvent,
   getGoogleCalendarBusyRangesForDate,
@@ -34,14 +35,50 @@ type CreateAppointmentRequest = CreateAppointmentInput & {
 
 export async function POST(request: Request) {
   try {
+    // Rate limit público (bots de reserva): 3 reservas / IP / 30 min,
+    // 1 reserva / email / 15 min.
+    const clientIp = getClientIp(request);
+    if (clientIp) {
+      const ipCheck = await checkAndRegisterRateLimit({
+        kind: "booking_ip",
+        key: clientIp,
+        windowMinutes: 30,
+        maxAttempts: 3,
+        ipAddress: clientIp,
+      });
+      if (!ipCheck.allowed) {
+        return NextResponse.json(
+          { error: "Has alcanzado el límite de reservas. Inténtalo más tarde." },
+          { status: 429, headers: { "Retry-After": String(ipCheck.retryAfterSeconds) } },
+        );
+      }
+    }
+
     const payload = (await request.json()) as CreateAppointmentRequest;
     const normalizedPayload: CreateAppointmentRequest = {
       ...payload,
       patient_email:
-        typeof payload.patient_email === "string" ? payload.patient_email.trim() || null : null,
+        typeof payload.patient_email === "string" ? payload.patient_email.trim().toLowerCase() || null : null,
       patient_phone:
         typeof payload.patient_phone === "string" ? payload.patient_phone.trim() || null : null,
     };
+
+    // Rate limit por email (1 reserva / 15 min) — evita spam desde misma dirección
+    if (normalizedPayload.patient_email) {
+      const emailCheck = await checkAndRegisterRateLimit({
+        kind: "booking_email",
+        key: normalizedPayload.patient_email,
+        windowMinutes: 15,
+        maxAttempts: 1,
+        ipAddress: clientIp,
+      });
+      if (!emailCheck.allowed) {
+        return NextResponse.json(
+          { error: "Has alcanzado el límite de reservas. Inténtalo más tarde." },
+          { status: 429, headers: { "Retry-After": String(emailCheck.retryAfterSeconds) } },
+        );
+      }
+    }
     const scheduledAtValue =
       typeof normalizedPayload.scheduled_at === "string" ? normalizedPayload.scheduled_at.trim() : "";
 
