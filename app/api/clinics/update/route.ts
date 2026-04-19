@@ -25,6 +25,7 @@ type UpdateClinicRequest = {
   offers_online?: boolean;
   logo_has_dark_bg?: boolean;
   timezone?: string;
+  whatsapp_daily_reminders_enabled?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
       offers_online: body.offers_online,
       logo_has_dark_bg: body.logo_has_dark_bg,
       timezone: body.timezone,
+      whatsapp_daily_reminders_enabled: body.whatsapp_daily_reminders_enabled,
     });
 
     if (!clinic) {

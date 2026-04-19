@@ -36,6 +36,7 @@ export async function GET(request: Request) {
         timezone: clinic.timezone,
         plan: clinic.plan ?? "free",
         dpa_accepted_at: clinic.dpa_accepted_at ?? null,
+        whatsapp_daily_reminders_enabled: clinic.whatsapp_daily_reminders_enabled ?? false,
       },
     });
   } catch (error) {

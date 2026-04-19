@@ -34,6 +34,7 @@ export type ClinicRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   plan_expires_at: string | null;
+  whatsapp_daily_reminders_enabled: boolean;
 };
 
 export async function getClinicBySlug(slug: string): Promise<ClinicRow | null> {
@@ -193,6 +194,7 @@ export async function updateClinicBySlug(
       | "offers_online"
       | "logo_has_dark_bg"
       | "timezone"
+      | "whatsapp_daily_reminders_enabled"
     >
   >,
 ): Promise<ClinicRow | null> {
@@ -286,6 +288,9 @@ export async function updateClinicBySlug(
       : {}),
     ...(typeof input.timezone === "string"
       ? { timezone: input.timezone.trim() || "Atlantic/Canary" }
+      : {}),
+    ...(typeof input.whatsapp_daily_reminders_enabled === "boolean"
+      ? { whatsapp_daily_reminders_enabled: input.whatsapp_daily_reminders_enabled }
       : {}),
   };
 

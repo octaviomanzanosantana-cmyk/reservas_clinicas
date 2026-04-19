@@ -1,0 +1,316 @@
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+export type TomorrowAppointment = {
+  id: number;
+  token: string;
+  patient_name: string;
+  patient_phone: string | null;
+  service_name: string;
+  modality: "presencial" | "online";
+  appointment_type: string | null;
+  scheduled_at: string;
+  video_link: string | null;
+  whatsapp_reminder_sent_at: string | null;
+};
+
+export type ClinicWithTomorrowAppointments = {
+  clinic_id: string;
+  clinic_name: string;
+  clinic_slug: string;
+  notification_email: string;
+  timezone: string;
+  whatsapp_daily_reminders_enabled: boolean;
+  appointments: TomorrowAppointment[];
+};
+
+type AppointmentDbRow = {
+  id: number;
+  token: string;
+  clinic_id: string | null;
+  patient_name: string;
+  patient_phone: string | null;
+  service: string;
+  modality: string | null;
+  appointment_type: string | null;
+  scheduled_at: string | null;
+  video_link: string | null;
+  whatsapp_reminder_sent_at: string | null;
+  status: string;
+};
+
+type ClinicDbRow = {
+  id: string;
+  slug: string;
+  name: string;
+  notification_email: string | null;
+  timezone: string | null;
+  whatsapp_daily_reminders_enabled: boolean;
+};
+
+function normalizeModality(raw: string | null): "presencial" | "online" {
+  return raw === "online" ? "online" : "presencial";
+}
+
+function mapRowToTomorrowAppointment(row: AppointmentDbRow): TomorrowAppointment {
+  return {
+    id: row.id,
+    token: row.token,
+    patient_name: row.patient_name,
+    patient_phone: row.patient_phone,
+    service_name: row.service,
+    modality: normalizeModality(row.modality),
+    appointment_type: row.appointment_type ?? null,
+    scheduled_at: row.scheduled_at ?? "",
+    video_link: row.video_link,
+    whatsapp_reminder_sent_at: row.whatsapp_reminder_sent_at,
+  };
+}
+
+/**
+ * Calcula el rango UTC que cubre "mañana" en una timezone dada.
+ * Usado por el cron y por `getTomorrowRemindersData`.
+ */
+function tomorrowRangeInTimezone(timezone: string): { startUtc: string; endUtc: string } {
+  const now = new Date();
+  // Formatear en la TZ local para obtener "hoy" en esa TZ
+  const tzFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const todayLocal = tzFormatter.format(now); // YYYY-MM-DD
+  const [y, m, d] = todayLocal.split("-").map((s) => Number.parseInt(s, 10));
+
+  // "Mañana" local = hoy local + 1 día
+  const tomorrowLocalDate = new Date(Date.UTC(y, (m ?? 1) - 1, (d ?? 1) + 1));
+  const yy = tomorrowLocalDate.getUTCFullYear();
+  const mm = String(tomorrowLocalDate.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tomorrowLocalDate.getUTCDate()).padStart(2, "0");
+
+  // Convertimos "00:00 hora local de la TZ" a UTC
+  const startLocalIso = `${yy}-${mm}-${dd}T00:00:00`;
+  const endLocalIso = `${yy}-${mm}-${dd}T23:59:59.999`;
+
+  return {
+    startUtc: localIsoToUtc(startLocalIso, timezone),
+    endUtc: localIsoToUtc(endLocalIso, timezone),
+  };
+}
+
+function localIsoToUtc(localIso: string, timezone: string): string {
+  // Trick: construir un Date como si fuera UTC y comparar con el formateado en TZ
+  const asUtc = new Date(`${localIso}Z`);
+  const inTz = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(asUtc);
+  const get = (type: string) => Number(inTz.find((p) => p.type === type)?.value ?? 0);
+  const tzDate = new Date(
+    Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second")),
+  );
+  const diff = tzDate.getTime() - asUtc.getTime();
+  return new Date(asUtc.getTime() - diff).toISOString();
+}
+
+/**
+ * Devuelve los datos necesarios del email matinal para TODAS las clínicas
+ * con el toggle activado. El caller (cron) filtra después por "hora local = 9:00".
+ */
+export async function getTomorrowRemindersData(): Promise<ClinicWithTomorrowAppointments[]> {
+  const { data: clinics, error: clinicsError } = await supabaseAdmin
+    .from("clinics")
+    .select("id, slug, name, notification_email, timezone, whatsapp_daily_reminders_enabled")
+    .eq("whatsapp_daily_reminders_enabled", true);
+
+  if (clinicsError) throw new Error(clinicsError.message);
+
+  const result: ClinicWithTomorrowAppointments[] = [];
+
+  for (const clinic of (clinics ?? []) as ClinicDbRow[]) {
+    const timezone = clinic.timezone?.trim() || "Atlantic/Canary";
+    const notificationEmail = clinic.notification_email?.trim();
+    if (!notificationEmail) continue;
+
+    const { startUtc, endUtc } = tomorrowRangeInTimezone(timezone);
+
+    const { data: appts, error: apptsError } = await supabaseAdmin
+      .from("appointments")
+      .select(
+        "id, token, clinic_id, patient_name, patient_phone, service, modality, appointment_type, scheduled_at, video_link, whatsapp_reminder_sent_at, status",
+      )
+      .eq("clinic_id", clinic.id)
+      .neq("status", "cancelled")
+      .not("patient_phone", "is", null)
+      .gte("scheduled_at", startUtc)
+      .lte("scheduled_at", endUtc)
+      .order("scheduled_at", { ascending: true });
+
+    if (apptsError) throw new Error(apptsError.message);
+
+    const appointments = ((appts ?? []) as AppointmentDbRow[]).map(mapRowToTomorrowAppointment);
+    if (appointments.length === 0) continue;
+
+    result.push({
+      clinic_id: clinic.id,
+      clinic_name: clinic.name,
+      clinic_slug: clinic.slug,
+      notification_email: notificationEmail,
+      timezone,
+      whatsapp_daily_reminders_enabled: clinic.whatsapp_daily_reminders_enabled,
+      appointments,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Citas próximas (hoy/mañana/pasado) con teléfono, para el panel de recordatorios.
+ * Ventana: desde ahora hasta +72h.
+ */
+export async function getUpcomingReminders(clinicId: string): Promise<TomorrowAppointment[]> {
+  const safeId = clinicId.trim();
+  if (!safeId) return [];
+
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 72 * 3_600_000);
+
+  const { data, error } = await supabaseAdmin
+    .from("appointments")
+    .select(
+      "id, token, clinic_id, patient_name, patient_phone, service, modality, appointment_type, scheduled_at, video_link, whatsapp_reminder_sent_at, status",
+    )
+    .eq("clinic_id", safeId)
+    .neq("status", "cancelled")
+    .not("patient_phone", "is", null)
+    .gte("scheduled_at", now.toISOString())
+    .lte("scheduled_at", horizon.toISOString())
+    .order("scheduled_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as AppointmentDbRow[]).map(mapRowToTomorrowAppointment);
+}
+
+export async function markReminderSent(appointmentId: number, clinicId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("appointments")
+    .update({ whatsapp_reminder_sent_at: new Date().toISOString() })
+    .eq("id", appointmentId)
+    .eq("clinic_id", clinicId.trim());
+  if (error) throw new Error(error.message);
+}
+
+export async function unmarkReminderSent(appointmentId: number, clinicId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("appointments")
+    .update({ whatsapp_reminder_sent_at: null })
+    .eq("id", appointmentId)
+    .eq("clinic_id", clinicId.trim());
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Reset nocturno: borra marcas de citas pasadas para que el panel del
+ * día siguiente empiece limpio.
+ */
+export async function resetPastReminders(): Promise<number> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("appointments")
+    .update({ whatsapp_reminder_sent_at: null })
+    .lt("scheduled_at", now)
+    .not("whatsapp_reminder_sent_at", "is", null)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length;
+}
+
+/**
+ * Construye link wa.me válido.
+ * - Normaliza el teléfono (quita espacios, guiones, paréntesis, puntos)
+ * - Si no empieza por "+", asume España (+34)
+ * - wa.me usa el número sin "+", sólo dígitos
+ */
+export function buildWhatsAppLink(phone: string, message: string): string {
+  let raw = (phone ?? "").replace(/[\s\-().]/g, "");
+  if (!raw.startsWith("+")) {
+    raw = `+34${raw}`;
+  }
+  const digits = raw.replace(/[^\d]/g, "");
+  const encoded = encodeURIComponent(message);
+  return `https://wa.me/${digits}?text=${encoded}`;
+}
+
+const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+/**
+ * Plantilla del mensaje de recordatorio.
+ * Tono: cercano, "tú", profesional. Alineado con brand guide.
+ */
+export function buildReminderMessage(params: {
+  patientName: string;
+  clinicName: string;
+  serviceName: string;
+  startTime: Date;
+  modality: "presencial" | "online";
+  videoLink: string | null;
+  timezone: string;
+}): string {
+  const { patientName, clinicName, serviceName, startTime, modality, videoLink, timezone } = params;
+
+  // Fecha y hora en la timezone de la clínica
+  const parts = new Intl.DateTimeFormat("es-ES", {
+    timeZone: timezone,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(startTime);
+
+  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
+  const day = parts.find((p) => p.type === "day")?.value ?? "";
+  const month = parts.find((p) => p.type === "month")?.value ?? "";
+  const hour = parts.find((p) => p.type === "hour")?.value ?? "";
+  const minute = parts.find((p) => p.type === "minute")?.value ?? "";
+
+  // Fallback si Intl no puso weekday/month esperados
+  const wd = weekday || WEEKDAYS[startTime.getDay()];
+  const mn = month || MONTHS[startTime.getMonth()];
+  const hhmm = `${hour}:${minute}`;
+
+  const firstName = patientName.trim().split(/\s+/)[0] ?? patientName;
+
+  if (modality === "online") {
+    const linkPart = videoLink
+      ? ` Enlace de videollamada: ${videoLink}.`
+      : "";
+    return `Hola ${firstName}, te recordamos tu cita online de ${serviceName} mañana ${wd} ${day} de ${mn} a las ${hhmm}.${linkPart} Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
+  }
+
+  return `Hola ${firstName}, te recordamos tu cita de ${serviceName} mañana ${wd} ${day} de ${mn} a las ${hhmm} en ${clinicName}. Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
+}

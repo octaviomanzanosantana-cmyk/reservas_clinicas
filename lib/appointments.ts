@@ -23,6 +23,7 @@ export type AppointmentRow = {
   calendar_id: string | null;
   video_link: string | null;
   review_sent_at: string | null;
+  whatsapp_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -40,6 +41,7 @@ export type CreateAppointmentInput = Omit<
   | "appointment_type"
   | "video_link"
   | "review_sent_at"
+  | "whatsapp_reminder_sent_at"
 > & {
   modality?: string;
   appointment_type?: string;
