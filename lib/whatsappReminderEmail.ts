@@ -276,10 +276,9 @@ export async function sendDailyWhatsAppReminders(
   for (const clinic of clinics) {
     result.clinicsProcessed += 1;
 
-    if (!opts.force && !isSendHourInTimezone(clinic.timezone)) {
-      result.skipped += 1;
-      continue;
-    }
+    // Cron diario (0 7 * * *) en Vercel Hobby: no filtramos por hora local,
+    // enviamos a toda clínica con toggle ON y citas mañana. opts.force
+    // mantenido por compatibilidad si se reactiva el filtro horario.
     if (clinic.appointments.length === 0) {
       result.skipped += 1;
       continue;
