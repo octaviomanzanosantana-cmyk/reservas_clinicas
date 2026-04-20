@@ -1,40 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClinic } from "@/lib/clinics";
+import { wrapEmailHtml } from "@/lib/emailLayout";
 import { checkAndRegisterRateLimit } from "@/lib/rateLimit";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-function toSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-}
-
-async function findUniqueSlug(base: string): Promise<string> {
-  const { data } = await supabaseAdmin
-    .from("clinics")
-    .select("slug")
-    .eq("slug", base)
-    .maybeSingle();
-
-  if (!data) return base;
-
-  const suffix = Math.random().toString(36).slice(2, 6);
-  const candidate = `${base.slice(0, 35)}-${suffix}`;
-
-  const { data: existing } = await supabaseAdmin
-    .from("clinics")
-    .select("slug")
-    .eq("slug", candidate)
-    .maybeSingle();
-
-  return existing ? `${base.slice(0, 31)}-${Date.now().toString(36)}` : candidate;
-}
 
 type RegisterBody = {
   email?: unknown;
@@ -42,6 +10,67 @@ type RegisterBody = {
   clinicName?: unknown;
   dpa_accepted?: unknown;
 };
+
+function getAppUrl(): string {
+  const appUrl =
+    process.env.APP_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    "https://app.appoclick.com";
+  return appUrl.replace(/\/+$/, "");
+}
+
+async function sendSignupConfirmationEmail(params: {
+  to: string;
+  confirmUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.EMAIL_API_KEY?.trim() || "";
+  const from = process.env.EMAIL_FROM?.trim() || "";
+  if (!apiKey || !from) {
+    throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
+  }
+
+  const body = `
+    <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#1A1A1A;">Confirma tu email</h1>
+    <p style="margin:0 0 18px;font-size:15px;color:#1A1A1A;">
+      Gracias por crear tu cuenta en AppoClick. Haz clic en el botón para confirmar tu email y activar tu panel.
+    </p>
+    <p style="margin:0 0 24px;">
+      <a href="${params.confirmUrl}"
+         style="display:inline-block;background-color:#0E9E82;color:#ffffff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+        Confirmar mi email
+      </a>
+    </p>
+    <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">
+      Si el botón no funciona, copia y pega este enlace en tu navegador:
+    </p>
+    <p style="margin:0 0 20px;font-size:13px;color:#0E9E82;word-break:break-all;">
+      <a href="${params.confirmUrl}" style="color:#0E9E82;">${params.confirmUrl}</a>
+    </p>
+    <p style="margin:0;font-size:12px;color:#9CA3AF;">
+      Si no creaste esta cuenta, ignora este email — no se activará nada sin tu confirmación.
+    </p>
+  `;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [params.to],
+      subject: "Confirma tu email — AppoClick",
+      html: wrapEmailHtml(body),
+      text: `Confirma tu email en AppoClick: ${params.confirmUrl}\n\nSi no creaste esta cuenta, ignora este email.`,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(`Email send failed (${response.status}): ${text}`);
+  }
+}
 
 export async function POST(request: NextRequest) {
   let body: RegisterBody;
@@ -72,8 +101,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Rate limit por IP (3 registros / 60 min) y por email (1 intento / 10 min).
-  // Usar rate_limit_events en Supabase (ver migración 20260419_rate_limit_events).
+  // Rate limit por IP (3 registros / 60 min) y por email (1 intento / 10 min)
   if (clientIp) {
     const ipCheck = await checkAndRegisterRateLimit({
       kind: "signup_ip",
@@ -107,78 +135,62 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Crear usuario en Supabase Auth sin confirmar — Supabase envía email de
-  // verificación cuando "Confirm email" está activado en Dashboard. Hasta
-  // que el usuario valide, el middleware lo redirige a /verify-email.
-  const { data: userData, error: userError } =
-    await supabaseAdmin.auth.admin.createUser({
+  // Genera signup link + user vía Supabase Admin API. Esto:
+  //  - crea auth.users con email_confirmed_at = NULL
+  //  - almacena la metadata de la futura clínica en user_metadata
+  //  - devuelve hashed_token que usamos en nuestro /auth/confirm
+  //
+  // NO se crea la fila en `clinics` aquí. La clínica se crea SOLO cuando
+  // el usuario confirma el email (endpoint /auth/confirm).
+  const { data: linkData, error: linkError } =
+    await supabaseAdmin.auth.admin.generateLink({
+      type: "signup",
       email,
       password,
-      email_confirm: false,
+      options: {
+        data: {
+          clinic_name: clinicName,
+          dpa_accepted: dpaAccepted,
+          dpa_version: dpaAccepted ? "v1.4" : null,
+          dpa_ip: dpaAccepted ? clientIp : null,
+        },
+      },
     });
 
-  if (userError || !userData.user) {
-    const msg = userError?.message ?? "No se pudo crear el usuario";
+  if (linkError || !linkData?.properties?.hashed_token) {
+    const msg = linkError?.message ?? "No se pudo crear el registro";
+    const lower = msg.toLowerCase();
     const isAlreadyExists =
-      msg.toLowerCase().includes("already been registered") ||
-      msg.toLowerCase().includes("already registered") ||
-      msg.toLowerCase().includes("user already exists") ||
-      msg.toLowerCase().includes("already exists");
+      lower.includes("already been registered") ||
+      lower.includes("already registered") ||
+      lower.includes("user already exists") ||
+      lower.includes("already exists");
     return NextResponse.json(
       { error: isAlreadyExists ? "Ya existe una cuenta con ese email" : msg },
       { status: isAlreadyExists ? 409 : 400 },
     );
   }
 
-  const userId = userData.user.id;
+  // Construimos nuestro propio link a /auth/confirm con el hashed_token.
+  // /auth/confirm llama a verifyOtp, setea la sesión, y crea la clínica.
+  const confirmUrl = `${getAppUrl()}/auth/confirm?token_hash=${encodeURIComponent(
+    linkData.properties.hashed_token,
+  )}&type=signup`;
 
   try {
-    const baseSlug =
-      toSlug(clinicName) || toSlug(email.split("@")[0]) || "clinica";
-    const slug = await findUniqueSlug(baseSlug);
-
-    const clinic = await createClinic({
-      slug,
-      name: clinicName,
-      description: null,
-      address: null,
-      phone: null,
-      theme_color: "#0e9e82",
-      booking_enabled: true,
-      google_connected: false,
-      google_email: null,
-      google_refresh_token: null,
-      google_calendar_id: null,
-      google_token_scope: null,
-      google_token_type: null,
-      google_token_expires_at: null,
-      logo_url: null,
-    });
-
-    await supabaseAdmin.from("clinic_users").insert({
-      clinic_id: clinic.id,
-      user_id: userId,
-      role: "owner",
-    });
-
-    // Save DPA acceptance
-    if (dpaAccepted) {
-      await supabaseAdmin
-        .from("clinics")
-        .update({
-          dpa_accepted_at: new Date().toISOString(),
-          dpa_version: "v1.4",
-          dpa_ip: clientIp,
-        })
-        .eq("id", clinic.id);
-    }
-
-    return NextResponse.json({ ok: true, clinicSlug: clinic.slug }, { status: 201 });
-  } catch (error) {
-    // Rollback: eliminar el usuario de auth que acabamos de crear
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    const msg =
-      error instanceof Error ? error.message : "No se pudo crear la clínica";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    await sendSignupConfirmationEmail({ to: email, confirmUrl });
+  } catch (err) {
+    // Si el email falla, el user ya existe sin confirmar y puede reenviar
+    // desde /verify-email. Registramos pero no rompemos el signup.
+    console.error("[register] email send failed", err);
   }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      message:
+        "Te hemos enviado un email para confirmar tu cuenta. Revisa tu bandeja de entrada.",
+    },
+    { status: 201 },
+  );
 }

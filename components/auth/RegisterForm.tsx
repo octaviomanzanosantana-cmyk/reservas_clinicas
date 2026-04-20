@@ -31,14 +31,13 @@ export function RegisterForm() {
         }),
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; message?: string };
 
       if (!res.ok) {
         throw new Error(data.error ?? "No se pudo crear la cuenta");
       }
 
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 2500);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo crear la cuenta",
@@ -66,9 +65,14 @@ export function RegisterForm() {
             />
           </svg>
         </div>
-        <p className="text-sm font-semibold text-foreground">Cuenta creada</p>
+        <p className="text-sm font-semibold text-foreground">Revisa tu email</p>
         <p className="text-sm text-muted">
-          Tu panel está listo. Redirigiendo al login...
+          Te hemos enviado un enlace de confirmación a <strong>{email}</strong>. Haz clic en el
+          botón del email para activar tu cuenta.
+        </p>
+        <p className="text-xs text-muted">
+          Si no lo encuentras, revisa la carpeta de spam o promociones. El email puede tardar un
+          par de minutos.
         </p>
         <Link
           href="/login"
