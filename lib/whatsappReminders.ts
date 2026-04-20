@@ -1,5 +1,6 @@
 import "server-only";
 
+import { buildAppointmentShareMessage } from "@/lib/appointmentShareMessage";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type TomorrowAppointment = {
@@ -19,6 +20,7 @@ export type ClinicWithTomorrowAppointments = {
   clinic_id: string;
   clinic_name: string;
   clinic_slug: string;
+  clinic_address: string | null;
   notification_email: string;
   timezone: string;
   whatsapp_daily_reminders_enabled: boolean;
@@ -44,6 +46,7 @@ type ClinicDbRow = {
   id: string;
   slug: string;
   name: string;
+  address: string | null;
   notification_email: string | null;
   timezone: string | null;
   whatsapp_daily_reminders_enabled: boolean;
@@ -128,7 +131,7 @@ function localIsoToUtc(localIso: string, timezone: string): string {
 export async function getTomorrowRemindersData(): Promise<ClinicWithTomorrowAppointments[]> {
   const { data: clinics, error: clinicsError } = await supabaseAdmin
     .from("clinics")
-    .select("id, slug, name, notification_email, timezone, whatsapp_daily_reminders_enabled")
+    .select("id, slug, name, address, notification_email, timezone, whatsapp_daily_reminders_enabled")
     .eq("whatsapp_daily_reminders_enabled", true);
 
   if (clinicsError) throw new Error(clinicsError.message);
@@ -163,6 +166,7 @@ export async function getTomorrowRemindersData(): Promise<ClinicWithTomorrowAppo
       clinic_id: clinic.id,
       clinic_name: clinic.name,
       clinic_slug: clinic.slug,
+      clinic_address: clinic.address,
       notification_email: notificationEmail,
       timezone,
       whatsapp_daily_reminders_enabled: clinic.whatsapp_daily_reminders_enabled,
@@ -266,22 +270,7 @@ const MONTHS = [
   "diciembre",
 ];
 
-/**
- * Plantilla del mensaje de recordatorio.
- * Tono: cercano, "tú", profesional. Alineado con brand guide.
- */
-export function buildReminderMessage(params: {
-  patientName: string;
-  clinicName: string;
-  serviceName: string;
-  startTime: Date;
-  modality: "presencial" | "online";
-  videoLink: string | null;
-  timezone: string;
-}): string {
-  const { patientName, clinicName, serviceName, startTime, modality, videoLink, timezone } = params;
-
-  // Fecha y hora en la timezone de la clínica
+function formatDateLabelInTimezone(startTime: Date, timezone: string): string {
   const parts = new Intl.DateTimeFormat("es-ES", {
     timeZone: timezone,
     weekday: "long",
@@ -298,19 +287,43 @@ export function buildReminderMessage(params: {
   const hour = parts.find((p) => p.type === "hour")?.value ?? "";
   const minute = parts.find((p) => p.type === "minute")?.value ?? "";
 
-  // Fallback si Intl no puso weekday/month esperados
-  const wd = weekday || WEEKDAYS[startTime.getDay()];
+  const wd = (weekday || WEEKDAYS[startTime.getDay()]).replace(/^./, (c) => c.toUpperCase());
   const mn = month || MONTHS[startTime.getMonth()];
   const hhmm = `${hour}:${minute}`;
 
-  const firstName = patientName.trim().split(/\s+/)[0] ?? patientName;
+  return `${wd} ${day} de ${mn} a las ${hhmm}`;
+}
 
-  if (modality === "online") {
-    const linkPart = videoLink
-      ? ` Enlace de videollamada: ${videoLink}.`
-      : "";
-    return `Hola ${firstName}, te recordamos tu cita online de ${serviceName} mañana ${wd} ${day} de ${mn} a las ${hhmm}.${linkPart} Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
-  }
+/**
+ * Plantilla del mensaje de recordatorio (WhatsApp).
+ * Delega en `buildAppointmentShareMessage` con kind="reminder" para compartir
+ * estructura con el botón "Compartir" del dashboard (kind="confirmation"):
+ * saludo + servicio + fecha + ubicación/enlace video + link autogestión /a/<token>.
+ */
+export function buildReminderMessage(params: {
+  patientName: string;
+  clinicName: string;
+  clinicAddress: string | null;
+  serviceName: string;
+  startTime: Date;
+  modality: "presencial" | "online";
+  videoLink: string | null;
+  appointmentToken: string;
+  appUrl: string;
+  timezone: string;
+}): string {
+  const dateLabel = formatDateLabelInTimezone(params.startTime, params.timezone);
 
-  return `Hola ${firstName}, te recordamos tu cita de ${serviceName} mañana ${wd} ${day} de ${mn} a las ${hhmm} en ${clinicName}. Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
+  return buildAppointmentShareMessage({
+    kind: "reminder",
+    patientName: params.patientName,
+    clinicName: params.clinicName,
+    serviceName: params.serviceName,
+    dateLabel,
+    address: params.clinicAddress,
+    modality: params.modality,
+    videoLink: params.videoLink,
+    appointmentToken: params.appointmentToken,
+    appUrl: params.appUrl,
+  });
 }

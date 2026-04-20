@@ -93,14 +93,18 @@ function formatTime(iso: string, timezone: string): string {
 function renderAppointmentCard(
   appointment: TomorrowAppointment,
   clinic: ClinicWithTomorrowAppointments,
+  appUrl: string,
 ): string {
   const message = buildReminderMessage({
     patientName: appointment.patient_name,
     clinicName: clinic.clinic_name,
+    clinicAddress: clinic.clinic_address,
     serviceName: appointment.service_name,
     startTime: new Date(appointment.scheduled_at),
     modality: appointment.modality,
     videoLink: appointment.video_link,
+    appointmentToken: appointment.token,
+    appUrl,
     timezone: clinic.timezone,
   });
   const waLink = buildWhatsAppLink(appointment.patient_phone ?? "", message);
@@ -165,12 +169,18 @@ function renderAppointmentCard(
   </table>`;
 }
 
-function renderEmailHtml(clinic: ClinicWithTomorrowAppointments, panelUrl: string): string {
+function renderEmailHtml(
+  clinic: ClinicWithTomorrowAppointments,
+  panelUrl: string,
+  appUrl: string,
+): string {
   const header = formatTomorrowHeader(clinic.timezone);
   const count = clinic.appointments.length;
   const countLabel = count === 1 ? "1 cita" : `${count} citas`;
 
-  const cards = clinic.appointments.map((a) => renderAppointmentCard(a, clinic)).join("\n");
+  const cards = clinic.appointments
+    .map((a) => renderAppointmentCard(a, clinic, appUrl))
+    .join("\n");
 
   const body = `
     <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1A1A1A;">Recordatorios para mañana</h1>
@@ -196,7 +206,7 @@ function renderEmailHtml(clinic: ClinicWithTomorrowAppointments, panelUrl: strin
   return wrapEmailHtml(body);
 }
 
-function renderEmailText(clinic: ClinicWithTomorrowAppointments): string {
+function renderEmailText(clinic: ClinicWithTomorrowAppointments, appUrl: string): string {
   const header = formatTomorrowHeader(clinic.timezone);
   const lines: string[] = [
     "Recordatorios para mañana",
@@ -209,10 +219,13 @@ function renderEmailText(clinic: ClinicWithTomorrowAppointments): string {
     const message = buildReminderMessage({
       patientName: a.patient_name,
       clinicName: clinic.clinic_name,
+      clinicAddress: clinic.clinic_address,
       serviceName: a.service_name,
       startTime: new Date(a.scheduled_at),
       modality: a.modality,
       videoLink: a.video_link,
+      appointmentToken: a.token,
+      appUrl,
       timezone: clinic.timezone,
     });
     const waLink = buildWhatsAppLink(a.patient_phone ?? "", message);
@@ -286,8 +299,8 @@ export async function sendDailyWhatsAppReminders(
 
     try {
       const panelUrl = `${appUrl}/clinic/${clinic.clinic_slug}/reminders`;
-      const html = renderEmailHtml(clinic, panelUrl);
-      const text = renderEmailText(clinic);
+      const html = renderEmailHtml(clinic, panelUrl, appUrl);
+      const text = renderEmailText(clinic, appUrl);
       const subject = `Recordatorios para mañana · ${clinic.appointments.length} cita${
         clinic.appointments.length === 1 ? "" : "s"
       }`;

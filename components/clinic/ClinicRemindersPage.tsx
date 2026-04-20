@@ -1,5 +1,6 @@
 "use client";
 
+import { buildAppointmentShareMessage } from "@/lib/appointmentShareMessage";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -22,6 +23,7 @@ type ClinicRemindersPageProps = {
 
 type ClinicSummary = {
   name: string;
+  address: string | null;
   timezone: string;
 };
 
@@ -58,27 +60,37 @@ function formatDayLabel(key: string): string {
   return `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}`;
 }
 
+function formatDateLabel(scheduledAt: string): string {
+  const date = new Date(scheduledAt);
+  const wd = date.toLocaleDateString("es-ES", { weekday: "long" });
+  const monthName = date.toLocaleDateString("es-ES", { month: "long" });
+  const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
+  return `${cap(wd)} ${date.getDate()} de ${monthName} a las ${formatTime(scheduledAt)}`;
+}
+
 function buildDefaultMessage(params: {
   patientName: string;
   clinicName: string;
+  clinicAddress: string | null;
   serviceName: string;
   scheduledAt: string;
   modality: "presencial" | "online";
   videoLink: string | null;
+  appointmentToken: string;
+  appUrl: string;
 }): string {
-  const { patientName, clinicName, serviceName, scheduledAt, modality, videoLink } = params;
-  const date = new Date(scheduledAt);
-  const wd = date.toLocaleDateString("es-ES", { weekday: "long" });
-  const dayNum = date.getDate();
-  const monthName = date.toLocaleDateString("es-ES", { month: "long" });
-  const time = formatTime(scheduledAt);
-  const firstName = patientName.trim().split(/\s+/)[0] ?? patientName;
-
-  if (modality === "online") {
-    const linkPart = videoLink ? ` Enlace de videollamada: ${videoLink}.` : "";
-    return `Hola ${firstName}, te recordamos tu cita online de ${serviceName} mañana ${wd} ${dayNum} de ${monthName} a las ${time}.${linkPart} Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
-  }
-  return `Hola ${firstName}, te recordamos tu cita de ${serviceName} mañana ${wd} ${dayNum} de ${monthName} a las ${time} en ${clinicName}. Si necesitas cambiar algo, avísanos con antelación. ¡Hasta pronto!`;
+  return buildAppointmentShareMessage({
+    kind: "reminder",
+    patientName: params.patientName,
+    clinicName: params.clinicName,
+    serviceName: params.serviceName,
+    dateLabel: formatDateLabel(params.scheduledAt),
+    address: params.clinicAddress,
+    modality: params.modality,
+    videoLink: params.videoLink,
+    appointmentToken: params.appointmentToken,
+    appUrl: params.appUrl,
+  });
 }
 
 function buildWaLink(phone: string, message: string): string {
@@ -89,7 +101,11 @@ function buildWaLink(phone: string, message: string): string {
 }
 
 export function ClinicRemindersPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicRemindersPageProps) {
-  const [clinic, setClinic] = useState<ClinicSummary>({ name: "", timezone: "Atlantic/Canary" });
+  const [clinic, setClinic] = useState<ClinicSummary>({
+    name: "",
+    address: null,
+    timezone: "Atlantic/Canary",
+  });
   const [reminders, setReminders] = useState<TomorrowAppointment[]>([]);
   const [messages, setMessages] = useState<Record<number, string>>({});
   const [activeTab, setActiveTab] = useState<TabKey>("tomorrow");
@@ -105,7 +121,7 @@ export function ClinicRemindersPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicRe
         fetch(`/api/clinic-reminders?clinicSlug=${encodeURIComponent(clinicSlug)}`),
       ]);
       const clinicData = (await clinicRes.json()) as {
-        clinic?: { name?: string; timezone?: string };
+        clinic?: { name?: string; address?: string | null; timezone?: string };
         error?: string;
       };
       const remindersData = (await remindersRes.json()) as {
@@ -116,6 +132,7 @@ export function ClinicRemindersPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicRe
       if (!remindersRes.ok) throw new Error(remindersData.error ?? "No se pudieron cargar los recordatorios");
       setClinic({
         name: clinicData.clinic?.name ?? "",
+        address: clinicData.clinic?.address ?? null,
         timezone: clinicData.clinic?.timezone ?? "Atlantic/Canary",
       });
       setReminders(remindersData.reminders ?? []);
@@ -143,13 +160,19 @@ export function ClinicRemindersPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicRe
       const next = { ...prev };
       for (const r of reminders) {
         if (!(r.id in next)) {
+          const baseUrl =
+            process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+            (typeof window !== "undefined" ? window.location.origin : "https://app.appoclick.com");
           next[r.id] = buildDefaultMessage({
             patientName: r.patient_name,
             clinicName: clinic.name,
+            clinicAddress: clinic.address,
             serviceName: r.service_name,
             scheduledAt: r.scheduled_at,
             modality: r.modality,
             videoLink: r.video_link,
+            appointmentToken: r.token,
+            appUrl: baseUrl,
           });
         }
       }

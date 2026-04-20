@@ -1,6 +1,7 @@
 "use client";
 
 import { EditPatientModal } from "@/components/clinic/EditPatientModal";
+import { buildAppointmentShareMessage } from "@/lib/appointmentShareMessage";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { canUseFeature } from "@/lib/plan";
 import type { Plan } from "@/lib/plan";
@@ -632,29 +633,19 @@ export function ClinicDashboardPage({
                       <a
                         href={(() => {
                           const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.appoclick.com";
-                          const link = `${baseUrl.replace(/\/+$/, "")}/a/${appointment.token}`;
-                          const clinicName = clinic?.name ?? "la clínica";
-                          const address = clinic?.address ?? "";
                           const mod = (appointment as AppointmentRow & { modality?: string }).modality;
-                          const isOnline = mod === "online";
-                          const locationLine = isOnline
-                            ? (appointment.video_link
-                              ? "💻 Consulta online"
-                              : "💻 Consulta online (recibirás el enlace próximamente)")
-                            : address ? `📍 ${address}` : "";
-                          const videoLine = isOnline && appointment.video_link ? `🎥 Enlace de consulta: ${appointment.video_link}` : "";
-                          const msg = [
-                            `Hola ${appointment.patient_name}, te confirmamos tu cita con ${clinicName}:`,
-                            "",
-                            `📅 ${formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label)}`,
-                            locationLine,
-                            videoLine,
-                            "",
-                            `Gestiona tu cita aquí:`,
-                            link,
-                            "",
-                            `— ${clinicName}`,
-                          ].filter(Boolean).join("\n");
+                          const msg = buildAppointmentShareMessage({
+                            kind: "confirmation",
+                            patientName: appointment.patient_name,
+                            clinicName: clinic?.name ?? "la clínica",
+                            serviceName: appointment.service,
+                            dateLabel: formatAppointmentDate(appointment.scheduled_at, appointment.datetime_label),
+                            address: clinic?.address ?? null,
+                            modality: mod === "online" ? "online" : "presencial",
+                            videoLink: appointment.video_link ?? null,
+                            appointmentToken: appointment.token,
+                            appUrl: baseUrl,
+                          });
                           return `https://wa.me/?text=${encodeURIComponent(msg)}`;
                         })()}
                         target="_blank"
