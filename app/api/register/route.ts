@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { wrapEmailHtml } from "@/lib/emailLayout";
 import { checkAndRegisterRateLimit } from "@/lib/rateLimit";
+import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RegisterBody = {
@@ -17,59 +17,6 @@ function getAppUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     "https://app.appoclick.com";
   return appUrl.replace(/\/+$/, "");
-}
-
-async function sendSignupConfirmationEmail(params: {
-  to: string;
-  confirmUrl: string;
-}): Promise<void> {
-  const apiKey = process.env.EMAIL_API_KEY?.trim() || "";
-  const from = process.env.EMAIL_FROM?.trim() || "";
-  if (!apiKey || !from) {
-    throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
-  }
-
-  const body = `
-    <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#1A1A1A;">Confirma tu email</h1>
-    <p style="margin:0 0 18px;font-size:15px;color:#1A1A1A;">
-      Gracias por crear tu cuenta en AppoClick. Haz clic en el botón para confirmar tu email y activar tu panel.
-    </p>
-    <p style="margin:0 0 24px;">
-      <a href="${params.confirmUrl}"
-         style="display:inline-block;background-color:#0E9E82;color:#ffffff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-        Confirmar mi email
-      </a>
-    </p>
-    <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">
-      Si el botón no funciona, copia y pega este enlace en tu navegador:
-    </p>
-    <p style="margin:0 0 20px;font-size:13px;color:#0E9E82;word-break:break-all;">
-      <a href="${params.confirmUrl}" style="color:#0E9E82;">${params.confirmUrl}</a>
-    </p>
-    <p style="margin:0;font-size:12px;color:#9CA3AF;">
-      Si no creaste esta cuenta, ignora este email — no se activará nada sin tu confirmación.
-    </p>
-  `;
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [params.to],
-      subject: "Confirma tu email — AppoClick",
-      html: wrapEmailHtml(body),
-      text: `Confirma tu email en AppoClick: ${params.confirmUrl}\n\nSi no creaste esta cuenta, ignora este email.`,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`Email send failed (${response.status}): ${text}`);
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -178,7 +125,7 @@ export async function POST(request: NextRequest) {
   )}&type=signup`;
 
   try {
-    await sendSignupConfirmationEmail({ to: email, confirmUrl });
+    await sendSignupConfirmationEmail({ to: email, confirmUrl, clinicName });
   } catch (err) {
     // Si el email falla, el user ya existe sin confirmar y puede reenviar
     // desde /verify-email. Registramos pero no rompemos el signup.
