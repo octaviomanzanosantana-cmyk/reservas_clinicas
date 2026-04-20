@@ -16,7 +16,7 @@ import {
   createCalendarEvent,
   getGoogleCalendarBusyRangesForDate,
 } from "@/lib/googleCalendar";
-import { getClinicBySlug } from "@/lib/clinics";
+import { getClinicBySlug, resolveClinicCopyEmail } from "@/lib/clinics";
 import { canUseFeature } from "@/lib/plan";
 import { getServiceByClinicSlugAndName } from "@/lib/services";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -314,7 +314,7 @@ export async function POST(request: Request) {
 
     try {
       await sendAppointmentCreatedEmail(nextAppointment, {
-        notificationEmail: clinicRow?.notification_email,
+        notificationEmail: resolveClinicCopyEmail(clinicRow),
         reviewUrl: clinicRow?.review_url,
         timezone: clinicRow?.timezone,
       });

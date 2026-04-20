@@ -2,7 +2,7 @@ import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } f
 import { sendAppointmentCancelledEmail, sendAppointmentReviewEmail } from "@/lib/appointmentEmails";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
         const bookingUrl = clinic?.slug ? `https://app.appoclick.com/b/${clinic.slug}` : undefined;
         await sendAppointmentCancelledEmail(appointment as AppointmentRow, {
-          notificationEmail: clinic?.notification_email,
+          notificationEmail: resolveClinicCopyEmail(clinic),
           bookingUrl,
           timezone: clinic?.timezone,
         });

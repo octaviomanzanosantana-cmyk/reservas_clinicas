@@ -1,6 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
 import { sendAppointmentCreatedEmail } from "@/lib/appointmentEmails";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { getPatientClinicContext } from "@/lib/patientContext";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       try {
         const clinic = confirmed.clinic_id ? await getClinicById(confirmed.clinic_id) : null;
         await sendAppointmentCreatedEmail(confirmed as AppointmentRow, {
-          notificationEmail: clinic?.notification_email,
+          notificationEmail: resolveClinicCopyEmail(clinic),
           reviewUrl: clinic?.review_url,
           timezone: clinic?.timezone,
         });

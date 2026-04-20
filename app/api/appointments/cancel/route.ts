@@ -1,6 +1,6 @@
 import { getAppointmentByToken, updateAppointmentStatus, type AppointmentRow } from "@/lib/appointments";
 import { sendAppointmentCancelledEmail } from "@/lib/appointmentEmails";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { deleteCalendarEvent } from "@/lib/googleCalendar";
 import { getPatientClinicContext } from "@/lib/patientContext";
 import { NextResponse } from "next/server";
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         ? `https://app.appoclick.com/b/${clinic.slug}`
         : undefined;
       await sendAppointmentCancelledEmail(cancelled as AppointmentRow, {
-        notificationEmail: clinic?.notification_email,
+        notificationEmail: resolveClinicCopyEmail(clinic),
         bookingUrl,
         timezone: clinic?.timezone,
       });

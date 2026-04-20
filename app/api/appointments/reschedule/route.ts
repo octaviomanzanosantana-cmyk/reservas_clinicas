@@ -1,7 +1,7 @@
 import { getAppointmentByToken, updateAppointment } from "@/lib/appointments";
 import { sendAppointmentRescheduledEmail } from "@/lib/appointmentEmails";
 import { getAvailableSlotsForClinicDate } from "@/lib/clinicAvailability";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { buildDateTimeLabel } from "@/lib/dateFormat";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { NextResponse } from "next/server";
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
     try {
       await sendAppointmentRescheduledEmail(updated, {
-        notificationEmail: clinic?.notification_email,
+        notificationEmail: resolveClinicCopyEmail(clinic),
         timezone: clinic?.timezone,
       });
     } catch (error) {

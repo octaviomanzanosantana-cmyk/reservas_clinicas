@@ -1,7 +1,7 @@
 import { assertCurrentClinicAccessForApi, ClinicAccessError } from "@/lib/clinicAuth";
 import { getAppointmentByToken, type AppointmentRow } from "@/lib/appointments";
 import { sendAppointmentRescheduledEmail, sendVideoLinkEmail } from "@/lib/appointmentEmails";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       try {
         const clinic = current.clinic_id ? await getClinicById(current.clinic_id) : null;
         await sendAppointmentRescheduledEmail(data as AppointmentRow, {
-          notificationEmail: clinic?.notification_email,
+          notificationEmail: resolveClinicCopyEmail(clinic),
           timezone: clinic?.timezone,
         });
       } catch (emailError) {
