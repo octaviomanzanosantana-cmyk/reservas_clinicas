@@ -34,8 +34,26 @@ export type ClinicRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   plan_expires_at: string | null;
-  whatsapp_daily_reminders_enabled: boolean;
+  notify_on_new_appointment: boolean;
+  notify_on_whatsapp_reminder: boolean;
 };
+
+/**
+ * Devuelve el email al que enviar copia de emails transaccionales
+ * (confirmación, reprogramación, cancelación), o null si la clínica
+ * tiene notify_on_new_appointment desactivado o no tiene email.
+ *
+ * Centraliza el gate para que todos los callers usen la misma regla.
+ */
+export function resolveClinicCopyEmail(clinic: {
+  notification_email: string | null;
+  notify_on_new_appointment: boolean;
+} | null | undefined): string | null {
+  if (!clinic) return null;
+  if (!clinic.notify_on_new_appointment) return null;
+  const email = clinic.notification_email?.trim();
+  return email ? email : null;
+}
 
 export async function getClinicBySlug(slug: string): Promise<ClinicRow | null> {
   const safeSlug = slug.trim();
@@ -194,7 +212,8 @@ export async function updateClinicBySlug(
       | "offers_online"
       | "logo_has_dark_bg"
       | "timezone"
-      | "whatsapp_daily_reminders_enabled"
+      | "notify_on_new_appointment"
+      | "notify_on_whatsapp_reminder"
     >
   >,
 ): Promise<ClinicRow | null> {
@@ -289,8 +308,11 @@ export async function updateClinicBySlug(
     ...(typeof input.timezone === "string"
       ? { timezone: input.timezone.trim() || "Atlantic/Canary" }
       : {}),
-    ...(typeof input.whatsapp_daily_reminders_enabled === "boolean"
-      ? { whatsapp_daily_reminders_enabled: input.whatsapp_daily_reminders_enabled }
+    ...(typeof input.notify_on_new_appointment === "boolean"
+      ? { notify_on_new_appointment: input.notify_on_new_appointment }
+      : {}),
+    ...(typeof input.notify_on_whatsapp_reminder === "boolean"
+      ? { notify_on_whatsapp_reminder: input.notify_on_whatsapp_reminder }
       : {}),
   };
 

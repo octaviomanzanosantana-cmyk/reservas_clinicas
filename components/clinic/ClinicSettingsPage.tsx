@@ -26,7 +26,8 @@ type ClinicResponse = {
     offers_presencial: boolean;
     offers_online: boolean;
     logo_has_dark_bg: boolean;
-    whatsapp_daily_reminders_enabled?: boolean;
+    notify_on_new_appointment?: boolean;
+    notify_on_whatsapp_reminder?: boolean;
   };
   error?: string;
 };
@@ -51,7 +52,8 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
   const [offersPresencial, setOffersPresencial] = useState(true);
   const [offersOnline, setOffersOnline] = useState(false);
   const [logoHasDarkBg, setLogoHasDarkBg] = useState(false);
-  const [whatsappDailyRemindersEnabled, setWhatsappDailyRemindersEnabled] = useState(false);
+  const [notifyOnNewAppointment, setNotifyOnNewAppointment] = useState(false);
+  const [notifyOnWhatsappReminder, setNotifyOnWhatsappReminder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -97,7 +99,8 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
         setOffersPresencial(clinicData.clinic.offers_presencial ?? true);
         setOffersOnline(clinicData.clinic.offers_online ?? false);
         setLogoHasDarkBg(clinicData.clinic.logo_has_dark_bg ?? false);
-        setWhatsappDailyRemindersEnabled(clinicData.clinic.whatsapp_daily_reminders_enabled ?? false);
+        setNotifyOnNewAppointment(clinicData.clinic.notify_on_new_appointment ?? false);
+        setNotifyOnWhatsappReminder(clinicData.clinic.notify_on_whatsapp_reminder ?? false);
         setGoogleConnected(isGoogleCalendarConnected(googleData));
         setGoogleEmail(googleData.email ?? null);
       } catch (error) {
@@ -136,7 +139,8 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
           offers_presencial: offersPresencial,
           offers_online: offersOnline,
           logo_has_dark_bg: logoHasDarkBg,
-          whatsapp_daily_reminders_enabled: whatsappDailyRemindersEnabled,
+          notify_on_new_appointment: notifyOnNewAppointment,
+          notify_on_whatsapp_reminder: notifyOnWhatsappReminder,
         }),
       });
 
@@ -260,7 +264,7 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
 
               <div className="mt-4 space-y-4">
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">Email de notificación</span>
+                  <span className="text-sm font-medium text-foreground">Email donde recibir notificaciones</span>
                   <input
                     type="email"
                     value={notificationEmail}
@@ -269,9 +273,57 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                     className={INPUT_CLASS}
                   />
                   <p className="mt-1.5 text-xs text-muted">
-                    Opcional. Recibe una copia de cada confirmación de cita en este email.
+                    Si lo dejas vacío, no recibirás copias por email (el paciente sí recibe su confirmación).
                   </p>
                 </label>
+
+                <div className="rounded-[10px] border border-border bg-white p-4">
+                  <p className="text-sm font-medium text-foreground">
+                    ¿Qué notificaciones quieres recibir?
+                  </p>
+
+                  <label className="mt-3 flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={notifyOnNewAppointment}
+                      onChange={(e) => setNotifyOnNewAppointment(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary"
+                    />
+                    <div>
+                      <span className="text-sm text-foreground">
+                        Copia de cada cita nueva reservada por un paciente
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="mt-3 flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={notifyOnWhatsappReminder}
+                      onChange={(e) => setNotifyOnWhatsappReminder(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary"
+                    />
+                    <div>
+                      <span className="text-sm text-foreground">
+                        Resumen matinal con recordatorios para enviar por WhatsApp
+                      </span>
+                      {notifyOnWhatsappReminder ? (
+                        <p className="mt-1 text-xs text-muted">
+                          Cada mañana a las 9:00 recibirás un email con las citas del día siguiente.
+                          Cada cita incluye un botón para enviar un recordatorio por WhatsApp con un
+                          solo clic. También puedes gestionarlas desde Gestión → Recordatorios en tu
+                          panel.
+                        </p>
+                      ) : null}
+                    </div>
+                  </label>
+
+                  {(notifyOnNewAppointment || notifyOnWhatsappReminder) && !notificationEmail.trim() ? (
+                    <p className="mt-3 text-xs text-amber-700">
+                      Necesitas rellenar el email de arriba para recibir estas notificaciones.
+                    </p>
+                  ) : null}
+                </div>
 
                 <label className="block">
                   <span className="text-sm font-medium text-foreground">Enlace de reseñas Google</span>
@@ -302,31 +354,6 @@ export function ClinicSettingsPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicSet
                     Cuando enviar el email de recordatorio al paciente.
                   </p>
                 </label>
-
-                <div className="rounded-[10px] border border-border bg-white p-4">
-                  <p className="font-heading text-sm font-semibold text-foreground">
-                    Recordatorios por WhatsApp
-                  </p>
-                  <label className="mt-3 flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={whatsappDailyRemindersEnabled}
-                      onChange={(e) => setWhatsappDailyRemindersEnabled(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-primary"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-foreground">
-                        Enviar email diario con recordatorios
-                      </span>
-                      <p className="mt-1 text-xs text-muted">
-                        Cada mañana a las 9:00 recibirás un email con las citas del día siguiente.
-                        Cada cita incluye un botón para enviar un recordatorio por WhatsApp con un
-                        solo clic. También puedes gestionarlas desde Gestión → Recordatorios en tu
-                        panel.
-                      </p>
-                    </div>
-                  </label>
-                </div>
               </div>
             </div>
 
