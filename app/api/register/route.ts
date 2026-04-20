@@ -103,6 +103,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Rate limit global por dominio gratuito (gmail/hotmail/outlook/yahoo):
+  // 2 registros por día globalmente. Los bots usan estos dominios y
+  // rotan IPs, así que el límite IP por sí solo no basta. Dominios
+  // corporativos no se limitan — clínica real usa tuclinica.com etc.
+  const FREE_DOMAINS = new Set(["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"]);
+  const emailDomain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+  if (FREE_DOMAINS.has(emailDomain)) {
+    const domainCheck = await checkAndRegisterRateLimit({
+      kind: "signup_free_domain",
+      key: emailDomain,
+      windowMinutes: 60 * 24,
+      maxAttempts: 2,
+      ipAddress: clientIp,
+    });
+    if (!domainCheck.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Demasiados registros con este dominio de email en las últimas 24h. Inténtalo mañana o usa otro email.",
+        },
+        { status: 429, headers: { "Retry-After": String(domainCheck.retryAfterSeconds) } },
+      );
+    }
+  }
+
   // Genera signup link + user vía Supabase Admin API. Esto:
   //  - crea auth.users con email_confirmed_at = NULL
   //  - almacena la metadata de la futura clínica en user_metadata
