@@ -646,7 +646,13 @@ export function ClinicDashboardPage({
                             appointmentToken: appointment.token,
                             appUrl: baseUrl,
                           });
-                          return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                          // api.whatsapp.com/send (NO wa.me): evita redirect
+                          // que re-encoda y corrompe emojis multi-byte.
+                          let raw = (appointment.patient_phone ?? "").replace(/[\s\-().]/g, "");
+                          if (raw && !raw.startsWith("+")) raw = `+34${raw}`;
+                          const digits = raw.replace(/[^\d]/g, "");
+                          const phoneParam = digits ? `phone=${digits}&` : "";
+                          return `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(msg)}`;
                         })()}
                         target="_blank"
                         rel="noreferrer"

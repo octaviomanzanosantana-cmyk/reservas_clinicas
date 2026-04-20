@@ -97,7 +97,8 @@ function buildWaLink(phone: string, message: string): string {
   let raw = phone.replace(/[\s\-().]/g, "");
   if (!raw.startsWith("+")) raw = `+34${raw}`;
   const digits = raw.replace(/[^\d]/g, "");
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  // api.whatsapp.com/send (NO wa.me): evita redirect que corrompe emojis 4B.
+  return `https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`;
 }
 
 export function ClinicRemindersPage({ clinicSlug = PANEL_CLINIC_SLUG }: ClinicRemindersPageProps) {

@@ -4,13 +4,14 @@
 //
 // NO es server-only — se consume desde client components.
 //
-// Emojis via \u{...} en vez de literales: evita corrupción en el bundle
-// de producción con chars fuera del BMP (4 bytes UTF-8). Reportado como
-// %EF%BF%BD (U+FFFD replacement char) en URLs wa.me generadas desde prod.
-const EMOJI_CALENDAR = "\u{1F4C5}"; // 📅
-const EMOJI_LOCATION = "\u{1F4CD}"; // 📍
-const EMOJI_LAPTOP = "\u{1F4BB}"; // 💻
-const EMOJI_VIDEO = "\u{1F3A5}"; // 🎥
+// Emojis construidos con String.fromCodePoint a RUNTIME — defensa definitiva
+// contra corrupción del bundler/minifier con chars fuera del BMP. Ni la
+// fuente del archivo ni el output transpilado tienen bytes multi-byte:
+// el JS generado sólo contiene una llamada a función con un entero.
+const EMOJI_CALENDAR = String.fromCodePoint(0x1f4c5); // 📅
+const EMOJI_LOCATION = String.fromCodePoint(0x1f4cd); // 📍
+const EMOJI_LAPTOP = String.fromCodePoint(0x1f4bb); // 💻
+const EMOJI_VIDEO = String.fromCodePoint(0x1f3a5); // 🎥
 
 export type AppointmentShareKind = "confirmation" | "reminder";
 

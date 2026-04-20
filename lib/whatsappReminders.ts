@@ -239,10 +239,13 @@ export async function resetPastReminders(): Promise<number> {
 }
 
 /**
- * Construye link wa.me válido.
+ * Construye link directo a WhatsApp.
  * - Normaliza el teléfono (quita espacios, guiones, paréntesis, puntos)
  * - Si no empieza por "+", asume España (+34)
- * - wa.me usa el número sin "+", sólo dígitos
+ *
+ * Usa api.whatsapp.com/send (NO wa.me) porque wa.me hace un redirect
+ * server-side que re-encoda el parámetro `text` con form-urlencoded y
+ * corrompe multi-byte UTF-8 (emojis 4 bytes → %EF%BF%BD U+FFFD).
  */
 export function buildWhatsAppLink(phone: string, message: string): string {
   let raw = (phone ?? "").replace(/[\s\-().]/g, "");
@@ -251,7 +254,7 @@ export function buildWhatsAppLink(phone: string, message: string): string {
   }
   const digits = raw.replace(/[^\d]/g, "");
   const encoded = encodeURIComponent(message);
-  return `https://wa.me/${digits}?text=${encoded}`;
+  return `https://api.whatsapp.com/send?phone=${digits}&text=${encoded}`;
 }
 
 const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
