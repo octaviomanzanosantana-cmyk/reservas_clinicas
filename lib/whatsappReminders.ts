@@ -23,7 +23,7 @@ export type ClinicWithTomorrowAppointments = {
   clinic_address: string | null;
   notification_email: string;
   timezone: string;
-  whatsapp_daily_reminders_enabled: boolean;
+  notify_on_whatsapp_reminder: boolean;
   appointments: TomorrowAppointment[];
 };
 
@@ -49,7 +49,7 @@ type ClinicDbRow = {
   address: string | null;
   notification_email: string | null;
   timezone: string | null;
-  whatsapp_daily_reminders_enabled: boolean;
+  notify_on_whatsapp_reminder: boolean;
 };
 
 function normalizeModality(raw: string | null): "presencial" | "online" {
@@ -131,8 +131,8 @@ function localIsoToUtc(localIso: string, timezone: string): string {
 export async function getTomorrowRemindersData(): Promise<ClinicWithTomorrowAppointments[]> {
   const { data: clinics, error: clinicsError } = await supabaseAdmin
     .from("clinics")
-    .select("id, slug, name, address, notification_email, timezone, whatsapp_daily_reminders_enabled")
-    .eq("whatsapp_daily_reminders_enabled", true);
+    .select("id, slug, name, address, notification_email, timezone, notify_on_whatsapp_reminder")
+    .eq("notify_on_whatsapp_reminder", true);
 
   if (clinicsError) throw new Error(clinicsError.message);
 
@@ -169,7 +169,7 @@ export async function getTomorrowRemindersData(): Promise<ClinicWithTomorrowAppo
       clinic_address: clinic.address,
       notification_email: notificationEmail,
       timezone,
-      whatsapp_daily_reminders_enabled: clinic.whatsapp_daily_reminders_enabled,
+      notify_on_whatsapp_reminder: clinic.notify_on_whatsapp_reminder,
       appointments,
     });
   }
