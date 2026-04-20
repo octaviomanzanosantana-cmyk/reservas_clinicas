@@ -9,6 +9,7 @@ type RegisterBody = {
   password?: unknown;
   clinicName?: unknown;
   dpa_accepted?: unknown;
+  website?: unknown; // honeypot
 };
 
 function getAppUrl(): string {
@@ -32,7 +33,27 @@ export async function POST(request: NextRequest) {
   const password = typeof body.password === "string" ? body.password : "";
   const clinicName = typeof body.clinicName === "string" ? body.clinicName.trim() : "";
   const dpaAccepted = body.dpa_accepted === true;
+  const websiteHoneypot = typeof body.website === "string" ? body.website.trim() : "";
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+
+  // Honeypot: campo oculto que bots rellenan. Soft error (200 + ok:false)
+  // igual que en reserva pública para proteger usuarios cuyo gestor de
+  // contraseñas haya rellenado por error — no crea user ni clínica.
+  if (websiteHoneypot.length > 0) {
+    console.warn("[register] honeypot triggered", {
+      ip: clientIp,
+      websiteValue: websiteHoneypot.slice(0, 50),
+      email: email.slice(0, 50),
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "signup_verification_failed",
+        message: "Hubo un problema procesando tu registro. Por favor, inténtalo de nuevo.",
+      },
+      { status: 200 },
+    );
+  }
 
   if (!email || !password || !clinicName) {
     return NextResponse.json(

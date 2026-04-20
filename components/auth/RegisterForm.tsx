@@ -9,6 +9,7 @@ export function RegisterForm() {
   const [clinicName, setClinicName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot: humanos no lo ven
   const [submitting, setSubmitting] = useState(false);
   const [dpaAccepted, setDpaAccepted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,10 +29,19 @@ export function RegisterForm() {
           password,
           clinicName: clinicName.trim(),
           dpa_accepted: true,
+          website,
         }),
       });
 
-      const data = (await res.json()) as { error?: string; message?: string };
+      const data = (await res.json()) as { ok?: boolean; error?: string; message?: string };
+
+      // Honeypot disparado: error suave, resetea campo oculto y pide reintentar.
+      if (data.error === "signup_verification_failed") {
+        setWebsite("");
+        throw new Error(
+          data.message ?? "Hubo un problema procesando tu registro. Por favor, inténtalo de nuevo.",
+        );
+      }
 
       if (!res.ok) {
         throw new Error(data.error ?? "No se pudo crear la cuenta");
@@ -86,6 +96,21 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Honeypot — bots rellenan, humanos no lo ven (display:none + offscreen) */}
+      <div aria-hidden="true" style={{ display: "none", position: "absolute", left: "-9999px" }}>
+        <label>
+          Website
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+          />
+        </label>
+      </div>
+
       <label className="block">
         <span className="text-sm font-medium text-foreground">
           Nombre de tu clínica
