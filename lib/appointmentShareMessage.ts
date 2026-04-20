@@ -3,6 +3,14 @@
 // como desde el email matinal + panel de recordatorios (modo reminder).
 //
 // NO es server-only — se consume desde client components.
+//
+// Emojis via \u{...} en vez de literales: evita corrupción en el bundle
+// de producción con chars fuera del BMP (4 bytes UTF-8). Reportado como
+// %EF%BF%BD (U+FFFD replacement char) en URLs wa.me generadas desde prod.
+const EMOJI_CALENDAR = "\u{1F4C5}"; // 📅
+const EMOJI_LOCATION = "\u{1F4CD}"; // 📍
+const EMOJI_LAPTOP = "\u{1F4BB}"; // 💻
+const EMOJI_VIDEO = "\u{1F3A5}"; // 🎥
 
 export type AppointmentShareKind = "confirmation" | "reminder";
 
@@ -36,13 +44,15 @@ export function buildAppointmentShareMessage(params: AppointmentShareParams): st
   const isOnline = params.modality === "online";
   const locationLine = isOnline
     ? params.videoLink
-      ? "💻 Consulta online"
-      : "💻 Consulta online (recibirás el enlace próximamente)"
+      ? `${EMOJI_LAPTOP} Consulta online`
+      : `${EMOJI_LAPTOP} Consulta online (recibirás el enlace próximamente)`
     : params.address?.trim()
-      ? `📍 ${params.address.trim()}`
+      ? `${EMOJI_LOCATION} ${params.address.trim()}`
       : "";
   const videoLine =
-    isOnline && params.videoLink ? `🎥 Enlace de consulta: ${params.videoLink}` : "";
+    isOnline && params.videoLink
+      ? `${EMOJI_VIDEO} Enlace de consulta: ${params.videoLink}`
+      : "";
 
   const manageUrl = `${params.appUrl.replace(/\/+$/, "")}/a/${params.appointmentToken}`;
 
@@ -51,7 +61,7 @@ export function buildAppointmentShareMessage(params: AppointmentShareParams): st
   // suficientes.
   return [
     opening,
-    `📅 ${params.dateLabel}`,
+    `${EMOJI_CALENDAR} ${params.dateLabel}`,
     locationLine,
     videoLine,
     "",
