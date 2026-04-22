@@ -44,3 +44,9 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Supabase CLI local metadata (linked project ref, secrets, etc.)
+supabase/.temp/
+
+# Claude Code worktrees (per-feature working trees, local only)
+.claude/worktrees/
