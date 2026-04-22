@@ -238,3 +238,73 @@ export async function sendTrialExpiredEmail(params: TrialEmailParams): Promise<v
     text: buildExpiredText(params),
   });
 }
+
+// ============================================================================
+// Email #1 · Bienvenida + trial iniciado (día 0, tras confirmar email)
+// ============================================================================
+
+const UL_STYLE = "margin:0 0 16px;padding-left:20px;";
+const LI_STYLE = "margin:0 0 8px;font-size:15px;color:#1A1A1A;line-height:1.6;";
+
+function buildWelcomeTrialStartedHtml(params: TrialEmailParams): string {
+  const name = escapeHtml(params.toName);
+  const clinic = escapeHtml(params.clinicName);
+  const body = `
+    <p style="${P_STYLE}">Hola ${name},</p>
+    <p style="${P_STYLE}">
+      Tu email está confirmado y tu cuenta de <strong>${clinic}</strong> ya está activa en Appoclick.
+    </p>
+    <p style="${P_STYLE}">
+      Tienes <strong>15 días de prueba gratuita</strong> con todas las funciones del plan Starter. Durante este tiempo puedes:
+    </p>
+    <ul style="${UL_STYLE}">
+      <li style="${LI_STYLE}">Recibir reservas online desde tu enlace personal (pégalo en tu web, Instagram o WhatsApp).</li>
+      <li style="${LI_STYLE}">Enviar recordatorios automáticos a tus pacientes por email y WhatsApp.</li>
+      <li style="${LI_STYLE}">Sincronizar tu agenda con Google Calendar.</li>
+    </ul>
+    <p style="${P_STYLE}">
+      No tienes que añadir tarjeta durante la prueba. Pasados los 15 días, si no has añadido método de pago, tu cuenta pasará al plan Free automáticamente — sin cobros, sin sorpresas.
+    </p>
+    ${buildCtaButton("Empezar a usar Appoclick", BASE_URL)}
+    <p style="${P_STYLE}">
+      Si te atascas con algo, escríbenos a hola@appoclick.com. Te respondemos rápido.
+    </p>
+  `;
+  return wrapEmailHtml(body);
+}
+
+function buildWelcomeTrialStartedText(params: TrialEmailParams): string {
+  return [
+    `Hola ${params.toName},`,
+    "",
+    `Tu email está confirmado y tu cuenta de ${params.clinicName} ya está activa en Appoclick.`,
+    "",
+    "Tienes 15 días de prueba gratuita con todas las funciones del plan Starter. Durante este tiempo puedes:",
+    "",
+    "- Recibir reservas online desde tu enlace personal (pégalo en tu web, Instagram o WhatsApp).",
+    "- Enviar recordatorios automáticos a tus pacientes por email y WhatsApp.",
+    "- Sincronizar tu agenda con Google Calendar.",
+    "",
+    "No tienes que añadir tarjeta durante la prueba. Pasados los 15 días, si no has añadido método de pago, tu cuenta pasará al plan Free automáticamente — sin cobros, sin sorpresas.",
+    "",
+    `Empezar a usar Appoclick: ${BASE_URL}`,
+    "",
+    "Si te atascas con algo, escríbenos a hola@appoclick.com. Te respondemos rápido.",
+  ].join("\n");
+}
+
+export async function sendWelcomeTrialStartedEmail(params: TrialEmailParams): Promise<void> {
+  const { apiKey, from } = getEmailConfig();
+  if (!apiKey || !from) {
+    throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
+  }
+
+  await sendEmail({
+    apiKey,
+    from,
+    to: params.toEmail,
+    subject: "Bienvenido a Appoclick — tu prueba de 15 días empieza ahora",
+    html: buildWelcomeTrialStartedHtml(params),
+    text: buildWelcomeTrialStartedText(params),
+  });
+}

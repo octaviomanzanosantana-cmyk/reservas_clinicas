@@ -1,6 +1,7 @@
 import { createClinic, TRIAL_DAYS } from "@/lib/clinics";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendWelcomeTrialStartedEmail } from "@/lib/trialEmails";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -157,6 +158,34 @@ export async function GET(request: NextRequest) {
         clinic_provisioned: true,
       },
     });
+
+    // Email de bienvenida con trial. Aislado en try/catch: si falla,
+    // no bloqueamos la confirmación del email ni la redirección.
+    // Check is_pilot: formalmente inalcanzable hoy (clínicas nuevas
+    // tienen is_pilot=false por schema), pero defensive contra flujos
+    // futuros que puedan reutilizar este path.
+    const userEmail = user.email?.trim();
+    if (userEmail && !clinic.is_pilot) {
+      try {
+        const fullName =
+          typeof user.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name.trim()
+            : "";
+        const toName = fullName || clinicName;
+        await sendWelcomeTrialStartedEmail({
+          toEmail: userEmail,
+          toName,
+          clinicName,
+        });
+      } catch (err) {
+        console.error("[auth/confirm] welcome email failed", {
+          userId: user.id,
+          clinicId: clinic.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        // No re-throw: la confirmación del email debe completarse.
+      }
+    }
 
     const redirect = url.clone();
     redirect.pathname = `/clinic/${clinic.slug}`;
