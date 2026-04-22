@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireCurrentClinicForApi } from "@/lib/clinicAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getStripe, PLAN_PRICES } from "@/lib/stripe";
+import {
+  getStripe,
+  PLAN_PRICES,
+  type StripeInterval,
+  type StripePlan,
+} from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +25,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const priceId = PLAN_PRICES[planId]?.[interval];
+    const VALID_PLANS = new Set<StripePlan>(["starter", "pro"]);
+    const VALID_INTERVALS = new Set<StripeInterval>(["monthly", "yearly"]);
+
+    if (!VALID_PLANS.has(planId as StripePlan)) {
+      return NextResponse.json(
+        { error: "Plan no válido" },
+        { status: 400 },
+      );
+    }
+    if (!VALID_INTERVALS.has(interval as StripeInterval)) {
+      return NextResponse.json(
+        { error: "Intervalo no válido" },
+        { status: 400 },
+      );
+    }
+
+    const typedPlanId = planId as StripePlan;
+    const typedInterval = interval as StripeInterval;
+    const priceId = PLAN_PRICES[typedPlanId][typedInterval];
     if (!priceId) {
       return NextResponse.json(
-        { error: "Plan o intervalo no válido" },
+        { error: `Precio no configurado para ${typedPlanId}/${typedInterval}` },
         { status: 400 },
       );
     }
@@ -74,7 +97,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         clinic_id: clinic.id,
         clinic_slug: clinic.slug,
-        plan_id: planId,
+        plan_id: typedPlanId,
       },
     });
 

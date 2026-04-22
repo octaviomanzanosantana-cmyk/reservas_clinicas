@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getStripe, PRICE_TO_PLAN } from "@/lib/stripe";
+import { getStripe, PRICE_TO_PLAN, getStripeWebhookSecret } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type Stripe from "stripe";
 
@@ -17,15 +17,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // STRIPE_WEBHOOK_SECRET — configure in .env.local after setting up webhook in Stripe Dashboard
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  if (!webhookSecret) {
-    console.error("STRIPE_WEBHOOK_SECRET is not configured");
-    return NextResponse.json(
-      { error: "Webhook secret not configured" },
-      { status: 500 },
-    );
-  }
+  const webhookSecret = getStripeWebhookSecret();
 
   let event: Stripe.Event;
 
