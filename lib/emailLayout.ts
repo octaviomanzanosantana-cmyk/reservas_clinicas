@@ -1,6 +1,28 @@
 import "server-only";
 
 /**
+ * Renderiza un botón CTA teal Appoclick con estilo consistente para emails
+ * transaccionales. Tabla-based + inline styles para compatibilidad con
+ * Outlook / Gmail / Apple Mail.
+ *
+ * Nota: `label` y `url` se interpolan tal cual. Si el caller recibe datos
+ * de origen no confiable, debe escaparlos antes (mismo patrón que el resto
+ * de emails del proyecto).
+ */
+export function buildCtaButton(label: string, url: string): string {
+  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background-color:#0E9E82;border-radius:10px;">
+      <a href="${url}"
+         style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.02em;">
+        ${label}
+      </a>
+    </td>
+  </tr>
+</table>`;
+}
+
+/**
  * Envuelve el contenido HTML de un email con el layout de marca Appoclick:
  * - Header teal con wordmark en blanco
  * - Cuerpo sobre fondo gris claro
