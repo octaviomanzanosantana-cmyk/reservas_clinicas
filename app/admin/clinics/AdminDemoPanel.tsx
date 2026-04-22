@@ -391,7 +391,7 @@ export default function AdminDemoPanel() {
                     <th className="px-4 py-2.5 font-medium">Trial</th>
                     <th className="px-4 py-2.5 font-medium">Cobro</th>
                     <th className="px-4 py-2.5 font-medium">Citas</th>
-                    <th className="px-4 py-2.5 font-medium">Acciones</th>
+                    <th className="px-4 py-2.5 font-medium sticky right-0 bg-card z-[1]">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -408,7 +408,9 @@ export default function AdminDemoPanel() {
                         </div>
                         <p className="text-xs text-muted">{c.slug}</p>
                       </td>
-                      <td className="px-4 py-2.5 text-muted">{c.owner_email ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-muted max-w-[220px] truncate" title={c.owner_email ?? ""}>
+                        {c.owner_email ?? "—"}
+                      </td>
                       <td className="px-4 py-2.5">
                         <select
                           value={c.plan ?? "free"}
@@ -448,7 +450,7 @@ export default function AdminDemoPanel() {
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-muted">{c.appointment_count}</td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-2.5 sticky right-0 bg-card">
                         <div className="relative">
                           <button
                             type="button"
