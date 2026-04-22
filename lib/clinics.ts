@@ -158,6 +158,9 @@ export async function createClinic(
     | "google_token_expires_at"
   > & {
     logo_url?: string | null;
+    plan?: "free" | "starter" | "pro" | "business" | "enterprise";
+    subscription_status?: "trial" | "active" | "past_due" | "canceled" | "free";
+    trial_ends_at?: string | null;
   },
 ): Promise<ClinicRow> {
   const slug = input.slug.trim().toLowerCase();
@@ -181,6 +184,13 @@ export async function createClinic(
       google_token_scope: input.google_token_scope?.trim() || null,
       google_token_type: input.google_token_type?.trim() || null,
       google_token_expires_at: input.google_token_expires_at?.trim() || null,
+      ...(input.plan !== undefined ? { plan: input.plan } : {}),
+      ...(input.subscription_status !== undefined
+        ? { subscription_status: input.subscription_status }
+        : {}),
+      ...(input.trial_ends_at !== undefined
+        ? { trial_ends_at: input.trial_ends_at }
+        : {}),
     })
     .select("*")
     .single<ClinicRow>();
