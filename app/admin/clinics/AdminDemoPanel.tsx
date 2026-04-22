@@ -1,7 +1,18 @@
 "use client";
 
+import ConfirmModal from "@/components/ConfirmModal";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useCallback, useEffect, useState } from "react";
+
+type LifecycleSummary = {
+  timestamp: string;
+  processed: {
+    trial_5d: { sent: number; failed: number };
+    trial_24h: { sent: number; failed: number };
+    trial_expired: { sent: number; failed: number; downgraded: number };
+  };
+  errors: Array<{ clinicId: string; step: string; error: string }>;
+};
 
 type ClinicItem = {
   id: string;
@@ -91,6 +102,12 @@ export default function AdminDemoPanel() {
   const [changingStatus, setChangingStatus] = useState<string | null>(null);
   const [enteringClinic, setEnteringClinic] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Lifecycle trigger (Sprint Comercial Chat 3, Fase 4)
+  const [lifecycleConfirmOpen, setLifecycleConfirmOpen] = useState(false);
+  const [lifecycleRunning, setLifecycleRunning] = useState(false);
+  const [lifecycleSummary, setLifecycleSummary] = useState<LifecycleSummary | null>(null);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
@@ -255,6 +272,30 @@ export default function AdminDemoPanel() {
     }
   };
 
+  const handleRunLifecycle = async () => {
+    setLifecycleConfirmOpen(false);
+    setLifecycleRunning(true);
+    setLifecycleError(null);
+    try {
+      const res = await fetch("/api/admin/run-daily-lifecycle", {
+        method: "POST",
+        headers: ADMIN_HEADERS,
+      });
+      const data = (await res.json()) as Partial<LifecycleSummary> & { error?: string };
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      // Refresca la tabla: clínicas expiradas pueden haber pasado a free.
+      void loadClinics();
+      setLifecycleSummary(data as LifecycleSummary);
+    } catch (err) {
+      setLifecycleError(err instanceof Error ? err.message : "Error desconocido");
+      setLifecycleSummary(null);
+    } finally {
+      setLifecycleRunning(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background px-4 py-8">
       <div className="mx-auto max-w-5xl space-y-6">
@@ -300,6 +341,96 @@ export default function AdminDemoPanel() {
             </div>
           </div>
         ) : null}
+
+        <ConfirmModal
+          open={lifecycleConfirmOpen}
+          title="Ejecutar ciclo de vida de trials"
+          description="Esta acción enviará emails reales a las clínicas cuyo trial esté a punto de expirar o haya expirado, y aplicará downgrade a Free a las expiradas. Las clínicas piloto (Miriam Lorenzo, Symbios Psicología) quedan excluidas automáticamente."
+          cancelLabel="Cancelar"
+          confirmLabel="Ejecutar ahora"
+          onCancel={() => setLifecycleConfirmOpen(false)}
+          onConfirm={() => void handleRunLifecycle()}
+        />
+
+        {/* Lifecycle trigger */}
+        <div className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
+          <h2 className="font-heading text-lg font-semibold text-foreground">Ciclo de vida de trials</h2>
+          <p className="mt-2 text-xs text-muted">
+            Se ejecuta automáticamente cada día a las 09:00 UTC. Pulsa el botón para ejecutarlo manualmente.
+          </p>
+          <button
+            type="button"
+            onClick={() => setLifecycleConfirmOpen(true)}
+            disabled={lifecycleRunning}
+            className="mt-4 rounded-[10px] bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {lifecycleRunning
+              ? "Ejecutando..."
+              : lifecycleSummary
+                ? "Ejecutar de nuevo"
+                : lifecycleError
+                  ? "Reintentar"
+                  : "Ejecutar ciclo de vida de trials"}
+          </button>
+
+          {lifecycleError ? (
+            <div className="mt-4 rounded-[10px] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {lifecycleError}
+            </div>
+          ) : null}
+
+          {lifecycleSummary ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-muted">
+                Ejecutado: {new Date(lifecycleSummary.timestamp).toLocaleString("es-ES")}
+              </p>
+              <div className="overflow-x-auto rounded-[10px] border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted">
+                      <th className="px-4 py-2.5 font-medium">Paso</th>
+                      <th className="px-4 py-2.5 font-medium">Enviados</th>
+                      <th className="px-4 py-2.5 font-medium">Fallidos</th>
+                      <th className="px-4 py-2.5 font-medium">Downgraded</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border/50">
+                      <td className="px-4 py-2.5 font-medium text-foreground">trial_5d</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_5d.sent}</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_5d.failed}</td>
+                      <td className="px-4 py-2.5 text-muted">—</td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="px-4 py-2.5 font-medium text-foreground">trial_24h</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_24h.sent}</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_24h.failed}</td>
+                      <td className="px-4 py-2.5 text-muted">—</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2.5 font-medium text-foreground">trial_expired</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_expired.sent}</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_expired.failed}</td>
+                      <td className="px-4 py-2.5 text-muted">{lifecycleSummary.processed.trial_expired.downgraded}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              {lifecycleSummary.errors.length > 0 ? (
+                <div>
+                  <p className="text-sm font-medium text-foreground">Errores detectados:</p>
+                  <ul className="mt-2 space-y-1 text-xs text-red-700">
+                    {lifecycleSummary.errors.map((e, idx) => (
+                      <li key={idx} className="break-words">
+                        {e.step} · {e.clinicId} · {e.error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
 
         {/* Header */}
         <div className="rounded-[14px] border-[0.5px] border-border bg-card p-6">
