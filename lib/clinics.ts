@@ -49,6 +49,8 @@ export type ClinicRow = {
   pending_plan_change: "free" | "starter" | "pro" | "business" | "enterprise" | null;
   pending_plan_change_at: string | null;
   holded_contact_id: string | null;
+  is_pilot: boolean;
+  last_trial_email_sent: "5d" | "24h" | "expired" | null;
 };
 
 /**
