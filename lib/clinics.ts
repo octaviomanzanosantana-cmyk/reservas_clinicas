@@ -36,6 +36,12 @@ export type ClinicRow = {
   plan_expires_at: string | null;
   notify_on_new_appointment: boolean;
   notify_on_whatsapp_reminder: boolean;
+  subscription_status: "trial" | "active" | "past_due" | "canceled" | "free";
+  trial_ends_at: string | null;
+  canceled_at: string | null;
+  pending_plan_change: "free" | "starter" | "pro" | "business" | "enterprise" | null;
+  pending_plan_change_at: string | null;
+  holded_contact_id: string | null;
 };
 
 /**
