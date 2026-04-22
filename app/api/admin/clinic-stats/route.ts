@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     // Get all clinics with their owner email
     const { data: clinics } = await supabaseAdmin
       .from("clinics")
-      .select("id, slug, name, plan, is_demo, created_at")
+      .select("id, slug, name, plan, is_demo, created_at, subscription_status, trial_ends_at, stripe_subscription_id")
       .order("created_at", { ascending: false });
 
     const clinicIds = (clinics ?? []).map((c) => c.id);

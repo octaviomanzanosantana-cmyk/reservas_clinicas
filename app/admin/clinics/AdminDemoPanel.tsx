@@ -13,9 +13,17 @@ type ClinicItem = {
   created_at: string;
   owner_email: string | null;
   appointment_count: number;
+  subscription_status:
+    | "trial"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "free";
+  trial_ends_at: string | null;
+  stripe_subscription_id: string | null;
 };
 
-type Filter = "all" | "demo" | "real";
+type Filter = "all" | "demo" | "real" | "trial" | "paying";
 
 function normalizeSlug(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -28,6 +36,33 @@ const PLAN_BADGE: Record<string, string> = {
   starter: "bg-emerald-100 text-emerald-700",
   pro: "bg-violet-100 text-violet-700",
 };
+
+const STATUS_BADGE: Record<string, string> = {
+  trial: "bg-[var(--badge-pending-bg)] text-[var(--badge-pending-text)]",
+  active: "bg-[var(--badge-confirmed-bg)] text-[var(--badge-confirmed-text)]",
+  past_due: "bg-red-100 text-red-700",
+  canceled: "bg-gray-100 text-gray-600",
+  free: "bg-gray-50 text-gray-500",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  trial: "Trial",
+  active: "Activa",
+  past_due: "Pago fallido",
+  canceled: "Cancelada",
+  free: "Free",
+};
+
+function trialDaysLeft(trialEndsAt: string | null): string {
+  if (!trialEndsAt) return "—";
+  const endMs = new Date(trialEndsAt).getTime();
+  const nowMs = Date.now();
+  const daysLeft = Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return "Expirado";
+  if (daysLeft === 0) return "Hoy";
+  if (daysLeft === 1) return "1 día";
+  return `${daysLeft} días`;
+}
 
 const ADMIN_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
@@ -54,6 +89,7 @@ export default function AdminDemoPanel() {
 
   // Plan change
   const [changingPlan, setChangingPlan] = useState<string | null>(null);
+  const [changingStatus, setChangingStatus] = useState<string | null>(null);
   const [enteringClinic, setEnteringClinic] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
@@ -81,6 +117,8 @@ export default function AdminDemoPanel() {
   const filteredClinics = allClinics.filter((c) => {
     if (filter === "demo") return c.is_demo;
     if (filter === "real") return !c.is_demo;
+    if (filter === "trial") return c.subscription_status === "trial";
+    if (filter === "paying") return c.stripe_subscription_id !== null;
     return true;
   });
 
@@ -162,6 +200,33 @@ export default function AdminDemoPanel() {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
       setChangingPlan(null);
+    }
+  };
+
+  const handleChangeStatus = async (clinicId: string, newStatus: string) => {
+    setChangingStatus(clinicId);
+    try {
+      const res = await fetch("/api/admin/change-subscription-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...ADMIN_HEADERS },
+        body: JSON.stringify({ clinic_id: clinicId, subscription_status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Error");
+      }
+      // Optimistic update
+      setAllClinics((prev) =>
+        prev.map((c) =>
+          c.id === clinicId
+            ? { ...c, subscription_status: newStatus as ClinicItem["subscription_status"] }
+            : c,
+        ),
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error");
+    } finally {
+      setChangingStatus(null);
     }
   };
 
@@ -266,7 +331,7 @@ export default function AdminDemoPanel() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <h2 className="font-heading text-lg font-semibold text-foreground">Clínicas ({filteredClinics.length})</h2>
             <div className="flex gap-1.5">
-              {(["all", "demo", "real"] as Filter[]).map((f) => (
+              {(["all", "demo", "real", "trial", "paying"] as Filter[]).map((f) => (
                 <button
                   key={f}
                   type="button"
@@ -275,7 +340,11 @@ export default function AdminDemoPanel() {
                     filter === f ? "bg-primary text-white" : "border border-border text-muted hover:text-foreground"
                   }`}
                 >
-                  {f === "all" ? "Todas" : f === "demo" ? "Demos" : "Reales"}
+                  {f === "all" ? "Todas"
+                   : f === "demo" ? "Demos"
+                   : f === "real" ? "Reales"
+                   : f === "trial" ? "En trial"
+                   : "Paying"}
                 </button>
               ))}
             </div>
@@ -293,6 +362,9 @@ export default function AdminDemoPanel() {
                     <th className="px-4 py-2.5 font-medium">Clínica</th>
                     <th className="px-4 py-2.5 font-medium">Email</th>
                     <th className="px-4 py-2.5 font-medium">Plan</th>
+                    <th className="px-4 py-2.5 font-medium">Estado</th>
+                    <th className="px-4 py-2.5 font-medium">Trial</th>
+                    <th className="px-4 py-2.5 font-medium">Cobro</th>
                     <th className="px-4 py-2.5 font-medium">Citas</th>
                     <th className="px-4 py-2.5 font-medium">Tipo</th>
                     <th className="px-4 py-2.5 font-medium">Acciones</th>
@@ -317,6 +389,32 @@ export default function AdminDemoPanel() {
                           <option value="starter">Starter</option>
                           <option value="pro">Pro</option>
                         </select>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <select
+                          value={c.subscription_status}
+                          onChange={(e) => void handleChangeStatus(c.id, e.target.value)}
+                          disabled={changingStatus === c.id}
+                          className={`rounded-full border-0 px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[c.subscription_status] ?? STATUS_BADGE.free} cursor-pointer disabled:opacity-60`}
+                        >
+                          <option value="trial">Trial</option>
+                          <option value="active">Activa</option>
+                          <option value="past_due">Pago fallido</option>
+                          <option value="canceled">Cancelada</option>
+                          <option value="free">Free</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted text-xs">
+                        {c.subscription_status === "trial" ? trialDaysLeft(c.trial_ends_at) : "—"}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {c.stripe_subscription_id !== null ? (
+                          <span className="rounded-full bg-[var(--badge-confirmed-bg)] text-[var(--badge-confirmed-text)] px-2 py-0.5 text-xs font-medium">Paga</span>
+                        ) : c.subscription_status === "active" ? (
+                          <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-medium">Piloto</span>
+                        ) : (
+                          <span className="text-xs text-muted">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-2.5 text-muted">{c.appointment_count}</td>
                       <td className="px-4 py-2.5">
