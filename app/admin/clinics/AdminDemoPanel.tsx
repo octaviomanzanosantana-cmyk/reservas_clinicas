@@ -1,7 +1,6 @@
 "use client";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 type ClinicItem = {
@@ -91,6 +90,7 @@ export default function AdminDemoPanel() {
   const [changingPlan, setChangingPlan] = useState<string | null>(null);
   const [changingStatus, setChangingStatus] = useState<string | null>(null);
   const [enteringClinic, setEnteringClinic] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
@@ -113,6 +113,13 @@ export default function AdminDemoPanel() {
   }, []);
 
   useEffect(() => { void loadClinics(); }, [loadClinics]);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleClickOutside = () => setOpenMenuId(null);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [openMenuId]);
 
   const filteredClinics = allClinics.filter((c) => {
     if (filter === "demo") return c.is_demo;
@@ -227,6 +234,24 @@ export default function AdminDemoPanel() {
       alert(err instanceof Error ? err.message : "Error");
     } finally {
       setChangingStatus(null);
+    }
+  };
+
+  const handleEnterClinic = async (slug: string) => {
+    setEnteringClinic(slug);
+    try {
+      const res = await fetch("/api/admin/impersonate-clinic", {
+        method: "POST",
+        headers: ADMIN_HEADERS,
+        body: JSON.stringify({ slug }),
+      });
+      const data = (await res.json()) as { token?: string; error?: string };
+      if (!res.ok || !data.token) throw new Error(data.error ?? "Error");
+      window.open(`/admin/enter/${slug}?token=${data.token}`, "_blank");
+    } catch {
+      setError("No se pudo acceder al panel");
+    } finally {
+      setEnteringClinic(null);
     }
   };
 
@@ -366,7 +391,6 @@ export default function AdminDemoPanel() {
                     <th className="px-4 py-2.5 font-medium">Trial</th>
                     <th className="px-4 py-2.5 font-medium">Cobro</th>
                     <th className="px-4 py-2.5 font-medium">Citas</th>
-                    <th className="px-4 py-2.5 font-medium">Tipo</th>
                     <th className="px-4 py-2.5 font-medium">Acciones</th>
                   </tr>
                 </thead>
@@ -374,7 +398,14 @@ export default function AdminDemoPanel() {
                   {filteredClinics.map((c) => (
                     <tr key={c.id} className="border-b border-border/50 last:border-0">
                       <td className="px-4 py-2.5">
-                        <p className="font-medium text-foreground">{c.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground">{c.name}</p>
+                          {c.is_demo && (
+                            <span className="rounded-full bg-[var(--badge-pending-bg)] text-[var(--badge-pending-text)] px-2 py-0.5 text-[10px] font-medium">
+                              Demo
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted">{c.slug}</p>
                       </td>
                       <td className="px-4 py-2.5 text-muted">{c.owner_email ?? "—"}</td>
@@ -418,50 +449,54 @@ export default function AdminDemoPanel() {
                       </td>
                       <td className="px-4 py-2.5 text-muted">{c.appointment_count}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          c.is_demo
-                            ? "bg-[var(--badge-pending-bg)] text-[var(--badge-pending-text)]"
-                            : "bg-[var(--badge-confirmed-bg)] text-[var(--badge-confirmed-text)]"
-                        }`}>
-                          {c.is_demo ? "Demo" : "Real"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="relative">
                           <button
                             type="button"
-                            disabled={enteringClinic === c.slug}
-                            onClick={async () => {
-                              setEnteringClinic(c.slug);
-                              try {
-                                const res = await fetch("/api/admin/impersonate-clinic", {
-                                  method: "POST",
-                                  headers: ADMIN_HEADERS,
-                                  body: JSON.stringify({ slug: c.slug }),
-                                });
-                                const data = (await res.json()) as { token?: string; error?: string };
-                                if (!res.ok || !data.token) throw new Error(data.error ?? "Error");
-                                window.open(`/admin/enter/${c.slug}?token=${data.token}`, "_blank");
-                              } catch {
-                                setError("No se pudo acceder al panel");
-                              } finally {
-                                setEnteringClinic(null);
-                              }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === c.id ? null : c.id);
                             }}
-                            className="rounded-[8px] bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
+                            className="rounded-[8px] border border-border px-2 py-1 text-xs text-muted hover:text-foreground hover:border-foreground/40 transition-colors"
+                            aria-label="Acciones"
                           >
-                            {enteringClinic === c.slug ? "..." : "Entrar al panel"}
+                            •••
                           </button>
-                          <Link href={`/b/${c.slug}`} target="_blank" className="rounded-[8px] border border-border px-2.5 py-1.5 text-xs text-muted hover:text-foreground">
-                            Reservas
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(c)}
-                            className="rounded-[8px] border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50"
-                          >
-                            Eliminar
-                          </button>
+                          {openMenuId === c.id && (
+                            <div
+                              className="absolute right-0 z-10 mt-1 w-44 rounded-[10px] border border-border bg-card shadow-lg overflow-hidden"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  void handleEnterClinic(c.slug);
+                                }}
+                                className="w-full px-3 py-2 text-left text-xs text-foreground hover:bg-muted/10"
+                              >
+                                Entrar al panel
+                              </button>
+                              <a
+                                href={`/b/${c.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setOpenMenuId(null)}
+                                className="block w-full px-3 py-2 text-left text-xs text-foreground hover:bg-muted/10"
+                              >
+                                Ver reservas
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteTarget(c);
+                                }}
+                                className="w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50 border-t border-border"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
