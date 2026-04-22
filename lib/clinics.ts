@@ -1,6 +1,13 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+/**
+ * Duration of the free trial in days.
+ * Used by /auth/confirm to set trial_ends_at, and will be used by
+ * trial reminder crons and expiration jobs in future sprints.
+ */
+export const TRIAL_DAYS = 15;
+
 export type ClinicRow = {
   id: string;
   slug: string;

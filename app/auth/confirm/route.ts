@@ -1,4 +1,4 @@
-import { createClinic } from "@/lib/clinics";
+import { createClinic, TRIAL_DAYS } from "@/lib/clinics";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { type EmailOtpType } from "@supabase/supabase-js";
@@ -107,6 +107,10 @@ export async function GET(request: NextRequest) {
   const baseSlug = toSlug(clinicName) || toSlug(emailLocalPart) || "clinica";
   const slug = await findUniqueSlug(baseSlug);
 
+  const trialEndsAt = new Date(
+    Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
   try {
     const clinic = await createClinic({
       slug,
@@ -124,6 +128,9 @@ export async function GET(request: NextRequest) {
       google_token_type: null,
       google_token_expires_at: null,
       logo_url: null,
+      plan: "starter",
+      subscription_status: "trial",
+      trial_ends_at: trialEndsAt,
     });
 
     await supabaseAdmin.from("clinic_users").insert({
