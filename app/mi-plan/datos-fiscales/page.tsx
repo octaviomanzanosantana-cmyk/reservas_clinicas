@@ -1,6 +1,7 @@
+import { FiscalDataForm } from "@/components/billing/FiscalDataForm";
 import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { TaxDataRow } from "@/lib/taxData";
+import type { TaxDataInput, TaxDataRow } from "@/lib/taxData";
 
 type ClinicName = { name: string };
 
@@ -24,13 +25,28 @@ async function getExistingTaxData(
   return data ?? null;
 }
 
+function toInput(row: TaxDataRow): TaxDataInput {
+  return {
+    legal_name: row.legal_name,
+    tax_id: row.tax_id,
+    tax_id_type: row.tax_id_type,
+    address_street: row.address_street,
+    address_city: row.address_city,
+    address_province: row.address_province,
+    address_postal_code: row.address_postal_code,
+    address_country: row.address_country,
+  };
+}
+
 export default async function DatosFiscalesPage() {
   const access = await requireCurrentClinicForRequest();
 
-  const [clinicName, existing] = await Promise.all([
+  const [clinicName, existingRow] = await Promise.all([
     getClinicName(access.clinicId),
     getExistingTaxData(access.clinicId),
   ]);
+
+  const existingInput = existingRow ? toInput(existingRow) : null;
 
   return (
     <section className="overflow-hidden rounded-[14px] border-[0.5px] border-border bg-card">
@@ -46,32 +62,11 @@ export default async function DatosFiscalesPage() {
           de que añadas un método de pago.
         </p>
 
-        <div className="mt-8 rounded-[10px] border-[0.5px] border-border bg-background p-6">
-          <p className="text-sm text-muted">
-            Formulario en construcción. Commit 2A.4b añadirá el componente
-            FiscalDataForm con los datos actuales:
-          </p>
-          <pre className="mt-4 overflow-x-auto text-xs text-foreground">
-{JSON.stringify(
-  {
-    clinicId: access.clinicId,
-    clinicName,
-    hasExistingData: existing !== null,
-    existing: existing
-      ? {
-          legal_name: existing.legal_name,
-          tax_id: existing.tax_id,
-          tax_id_type: existing.tax_id_type,
-          address_country: existing.address_country,
-          tax_regime: existing.tax_regime,
-          vat_validated: existing.vat_validated,
-        }
-      : null,
-  },
-  null,
-  2,
-)}
-          </pre>
+        <div className="mt-8">
+          <FiscalDataForm
+            defaultLegalName={clinicName}
+            existing={existingInput}
+          />
         </div>
       </div>
     </section>
