@@ -1,6 +1,7 @@
 import "server-only";
 
 import { wrapEmailHtml } from "@/lib/emailLayout";
+import { sendEmail } from "./sendEmail";
 
 type SendSignupConfirmationEmailParams = {
   to: string;
@@ -88,23 +89,12 @@ export async function sendSignupConfirmationEmail(
     throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [params.to],
-      subject: `Confirma tu email — ${params.clinicName}`,
-      html: buildHtml(params),
-      text: buildText(params),
-    }),
+  await sendEmail({
+    apiKey,
+    from,
+    to: [params.to],
+    subject: `Confirma tu email — ${params.clinicName}`,
+    html: buildHtml(params),
+    text: buildText(params),
   });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`Email send failed (${response.status}): ${text}`);
-  }
 }
