@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AppointmentRow } from "@/lib/appointments";
 import { wrapEmailHtml } from "@/lib/emailLayout";
+import { sendEmail } from "./sendEmail";
 
 type AppointmentEmailCopy = {
   subject: string;
@@ -29,35 +30,6 @@ function getEmailConfig() {
   const from = process.env.EMAIL_FROM?.trim() || "";
   const appUrl = getAppUrl();
   return { apiKey, from, appUrl };
-}
-
-async function sendEmail(params: {
-  apiKey: string;
-  from: string;
-  to: string[];
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: params.from,
-      to: params.to,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    }),
-  });
-
-  if (!response.ok) {
-    const responseText = await response.text().catch(() => "");
-    throw new Error(`Email send failed (${response.status}): ${responseText}`);
-  }
 }
 
 function formatFullDateTime(appointment: AppointmentRow, timezone?: string | null): string {
