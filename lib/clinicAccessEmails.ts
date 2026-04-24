@@ -1,6 +1,7 @@
 import "server-only";
 
 import { wrapEmailHtml } from "@/lib/emailLayout";
+import { sendEmail } from "./sendEmail";
 
 type SendClinicAccessRecoveryEmailInput = {
   to: string;
@@ -62,25 +63,13 @@ export async function sendClinicAccessRecoveryEmail(
     </p>
   `);
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-      html,
-    }),
+  await sendEmail({
+    apiKey,
+    from,
+    to: [to],
+    subject,
+    html,
+    text,
+    errorContext: "No se pudo enviar el email de acceso",
   });
-
-  if (!response.ok) {
-    const responseText = await response.text().catch(() => "");
-    throw new Error(
-      `No se pudo enviar el email de acceso (${response.status}): ${responseText}`,
-    );
-  }
 }
