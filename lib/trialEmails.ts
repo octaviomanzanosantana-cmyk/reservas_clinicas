@@ -1,6 +1,7 @@
 import "server-only";
 
 import { buildCtaButton, wrapEmailHtml } from "@/lib/emailLayout";
+import { sendEmail } from "./sendEmail";
 
 type TrialEmailParams = {
   toEmail: string;
@@ -31,35 +32,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-async function sendEmail(params: {
-  apiKey: string;
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-  text: string;
-}): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: params.from,
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-      text: params.text,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`Email send failed (${response.status}): ${text}`);
-  }
 }
 
 // ============================================================================
@@ -113,7 +85,7 @@ export async function sendTrial5DaysEmail(params: TrialEmailParams): Promise<voi
   await sendEmail({
     apiKey,
     from,
-    to: params.toEmail,
+    to: [params.toEmail],
     subject: "Te quedan 5 días de prueba en Appoclick",
     html: build5DaysHtml(params),
     text: build5DaysText(params),
@@ -170,7 +142,7 @@ export async function sendTrial24HoursEmail(params: TrialEmailParams): Promise<v
   await sendEmail({
     apiKey,
     from,
-    to: params.toEmail,
+    to: [params.toEmail],
     subject: "Tu prueba en Appoclick termina mañana",
     html: build24HoursHtml(params),
     text: build24HoursText(params),
@@ -232,7 +204,7 @@ export async function sendTrialExpiredEmail(params: TrialEmailParams): Promise<v
   await sendEmail({
     apiKey,
     from,
-    to: params.toEmail,
+    to: [params.toEmail],
     subject: "Tu prueba ha terminado — estás en el plan Free",
     html: buildExpiredHtml(params),
     text: buildExpiredText(params),
@@ -302,7 +274,7 @@ export async function sendWelcomeTrialStartedEmail(params: TrialEmailParams): Pr
   await sendEmail({
     apiKey,
     from,
-    to: params.toEmail,
+    to: [params.toEmail],
     subject: "Bienvenido a Appoclick — tu prueba de 15 días empieza ahora",
     html: buildWelcomeTrialStartedHtml(params),
     text: buildWelcomeTrialStartedText(params),
