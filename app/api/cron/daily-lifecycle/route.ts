@@ -85,6 +85,11 @@ async function loadTrialClinics(
     .select("id, slug, name, trial_ends_at, last_trial_email_sent")
     .eq("subscription_status", "trial")
     .eq("is_pilot", false)
+    // Excluir clínicas con tarjeta añadida: Stripe gestiona su
+    // ciclo de vida (próximo cobro + emails propios). Los emails
+    // del cron son para empujar a completar datos, no recordatorios
+    // genéricos.
+    .is("stripe_subscription_id", null)
     .not("trial_ends_at", "is", null)
     .lte("trial_ends_at", upperBoundIso)
     .order("trial_ends_at", { ascending: true });
