@@ -1,6 +1,7 @@
 import "server-only";
 
 import { wrapEmailHtml } from "@/lib/emailLayout";
+import { sendEmail } from "./sendEmail";
 import {
   buildReminderMessage,
   buildWhatsAppLink,
@@ -22,35 +23,6 @@ function getEmailConfig(): EmailConfig {
     apiKey: process.env.EMAIL_API_KEY?.trim() || "",
     from: process.env.EMAIL_FROM?.trim() || "",
   };
-}
-
-async function sendEmail(params: {
-  apiKey: string;
-  from: string;
-  to: string[];
-  subject: string;
-  html: string;
-  text: string;
-}): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: params.from,
-      to: params.to,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    }),
-  });
-
-  if (!response.ok) {
-    const responseText = await response.text().catch(() => "");
-    throw new Error(`Email send failed (${response.status}): ${responseText}`);
-  }
 }
 
 function escapeHtml(value: string): string {
