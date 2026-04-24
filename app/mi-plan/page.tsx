@@ -1,3 +1,4 @@
+import { PaymentMethodSection } from "@/components/billing/PaymentMethodSection";
 import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
@@ -8,6 +9,7 @@ type ClinicSummary = {
   subscription_status: string;
   trial_ends_at: string | null;
   stripe_subscription_id: string | null;
+  plan_expires_at: string | null;
   is_pilot: boolean;
 };
 
@@ -17,7 +19,7 @@ async function getClinicSummary(clinicId: string): Promise<ClinicSummary | null>
   const { data } = await supabaseAdmin
     .from("clinics")
     .select(
-      "name, plan, subscription_status, trial_ends_at, stripe_subscription_id, is_pilot",
+      "name, plan, subscription_status, trial_ends_at, stripe_subscription_id, plan_expires_at, is_pilot",
     )
     .eq("id", clinicId)
     .maybeSingle<ClinicSummary>();
@@ -53,7 +55,19 @@ function formatDateES(iso: string | null): string | null {
   });
 }
 
-export default async function MiPlanPage() {
+export default async function MiPlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
+  const checkoutStatus =
+    params.checkout === "success"
+      ? "success"
+      : params.checkout === "cancel"
+        ? "cancel"
+        : null;
+
   const access = await requireCurrentClinicForRequest();
 
   const [clinic, taxDataExists] = await Promise.all([
@@ -231,17 +245,20 @@ export default async function MiPlanPage() {
         </div>
       </section>
 
-      {/* Método de pago (placeholder Fase 2B) */}
+      {/* Método de pago */}
       <section className="overflow-hidden rounded-[14px] border-[0.5px] border-border bg-card">
         <div className="px-6 py-7 md:px-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
             Método de pago
           </p>
-          <p className="mt-3 text-sm leading-7 text-muted">
-            {clinic.stripe_subscription_id
-              ? "Tu método de pago está registrado en Stripe."
-              : "Aún no has añadido método de pago. Estará disponible próximamente."}
-          </p>
+          <div className="mt-4">
+            <PaymentMethodSection
+              hasSubscription={Boolean(clinic.stripe_subscription_id)}
+              hasFiscalData={taxDataExists}
+              planExpiresAt={clinic.plan_expires_at ?? null}
+              checkoutStatus={checkoutStatus}
+            />
+          </div>
         </div>
       </section>
 
