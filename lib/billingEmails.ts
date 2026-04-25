@@ -56,7 +56,6 @@ function formatDateES(iso: string): string {
 
 export async function sendPaymentMethodAddedEmail(params: {
   toEmail: string;
-  toName: string;
   clinicName: string;
   trialEndsAt: string; // ISO
   amountLabel: string; // p.ej. "19 €" o "190 €"
@@ -72,7 +71,7 @@ export async function sendPaymentMethodAddedEmail(params: {
 
   const bodyHtml = `
     <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1A1A1A;">
-      Hola ${params.toName},
+      Hola,
     </p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1A1A1A;">
       Tu tarjeta está registrada en Appoclick. Todavía no hemos cobrado nada.
@@ -90,7 +89,7 @@ export async function sendPaymentMethodAddedEmail(params: {
     </p>
   `;
 
-  const text = `Hola ${params.toName},
+  const text = `Hola,
 
 Tu tarjeta está registrada en Appoclick. Todavía no hemos cobrado nada.
 

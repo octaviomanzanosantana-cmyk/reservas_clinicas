@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getStripe, PRICE_TO_PLAN, getStripeWebhookSecret } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type Stripe from "stripe";
+import { sendPaymentMethodAddedEmail } from "@/lib/billingEmails";
 
 // Disable body parsing — Stripe needs raw body for signature verification
 export const runtime = "nodejs";
@@ -300,6 +301,228 @@ async function handleInvoicePaymentFailed(
   logEvent(event, `clinic ${clinic.slug} marked past_due`);
 }
 
+async function handleCheckoutSessionCompleted(
+  event: Stripe.Event,
+  session: Stripe.Checkout.Session,
+) {
+  const metadata = session.metadata ?? {};
+
+  if (session.mode !== "setup") {
+    logEvent(event, "checkout.session.completed skip: not setup mode", {
+      mode: session.mode,
+      sessionId: session.id,
+    });
+    return;
+  }
+
+  const clinicId = metadata.clinic_id?.trim();
+  const interval = metadata.interval?.trim();
+  const priceId = metadata.price_id?.trim();
+
+  if (!clinicId || !interval || !priceId) {
+    logWarn(event, "checkout.session.completed missing metadata", {
+      clinicId,
+      interval,
+      priceId,
+    });
+    return;
+  }
+
+  if (interval !== "monthly" && interval !== "yearly") {
+    logWarn(event, "checkout.session.completed invalid interval", { interval });
+    return;
+  }
+
+  const setupIntentId =
+    typeof session.setup_intent === "string"
+      ? session.setup_intent
+      : session.setup_intent?.id;
+
+  if (!setupIntentId) {
+    logWarn(event, "checkout.session.completed without setup_intent", {
+      sessionId: session.id,
+    });
+    return;
+  }
+
+  // Expandir SetupIntent para obtener el payment_method
+  const stripeForIntent = getStripe();
+  const expandedIntent = await stripeForIntent.setupIntents.retrieve(
+    setupIntentId,
+  );
+
+  const paymentMethodId =
+    typeof expandedIntent.payment_method === "string"
+      ? expandedIntent.payment_method
+      : expandedIntent.payment_method?.id;
+
+  if (!paymentMethodId) {
+    logWarn(event, "setup_intent without payment_method after expand", {
+      sessionId: session.id,
+      setupIntentId,
+    });
+    return;
+  }
+
+  const customerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id;
+
+  if (!customerId) {
+    logWarn(event, "checkout.session.completed without customer", {
+      sessionId: session.id,
+    });
+    return;
+  }
+
+  // Leer la clínica
+  const { data: clinic, error } = await supabaseAdmin
+    .from("clinics")
+    .select(
+      "id, name, slug, stripe_subscription_id, trial_ends_at, stripe_customer_id",
+    )
+    .eq("id", clinicId)
+    .maybeSingle<{
+      id: string;
+      name: string;
+      slug: string;
+      stripe_subscription_id: string | null;
+      trial_ends_at: string | null;
+      stripe_customer_id: string | null;
+    }>();
+
+  if (error || !clinic) {
+    logWarn(event, "checkout.session.completed clinic not found", {
+      clinicId,
+      error: error?.message,
+    });
+    return;
+  }
+
+  // Idempotencia defensiva: si ya tiene subscription, saltar.
+  if (clinic.stripe_subscription_id) {
+    logEvent(event, "checkout.session.completed skip: clinic already has subscription", {
+      clinicId: clinic.id,
+      existingSubscriptionId: clinic.stripe_subscription_id,
+    });
+    return;
+  }
+
+  // Crear Subscription en Stripe ---------------------------------
+  const stripe = getStripe();
+
+  // Solo pasamos trial_end si está en el futuro. Si trial_ends_at
+  // es null o ya venció, omitimos el campo y Stripe inicia la
+  // suscripción en estado active (cobro inmediato). Esto evita
+  // cobros sorpresa si el estado en BD está inconsistente.
+  const nowUnix = Math.floor(Date.now() / 1000);
+  const candidateTrialEnd = clinic.trial_ends_at
+    ? Math.floor(new Date(clinic.trial_ends_at).getTime() / 1000)
+    : null;
+  const trialEndUnix =
+    candidateTrialEnd && candidateTrialEnd > nowUnix
+      ? candidateTrialEnd
+      : undefined;
+
+  if (clinic.trial_ends_at && !trialEndUnix) {
+    logEvent(event, "trial_ends_at in the past — starting active subscription", {
+      clinicId: clinic.id,
+      trialEndsAt: clinic.trial_ends_at,
+    });
+  }
+
+  const subscription = await stripe.subscriptions.create({
+    customer: customerId,
+    items: [{ price: priceId }],
+    default_payment_method: paymentMethodId,
+    trial_end: trialEndUnix,
+    metadata: {
+      clinic_id: clinic.id,
+      clinic_slug: clinic.slug,
+      interval,
+    },
+  });
+
+  logEvent(event, "subscription created from checkout.session.completed", {
+    clinicId: clinic.id,
+    subscriptionId: subscription.id,
+    trialEnd: subscription.trial_end,
+  });
+
+  // Guardar stripe_subscription_id en clinics -------------------
+  const { error: updateError } = await supabaseAdmin
+    .from("clinics")
+    .update({ stripe_subscription_id: subscription.id })
+    .eq("id", clinic.id);
+
+  if (updateError) {
+    console.error(
+      "[stripe-webhook] failed to save subscription_id after setup_intent",
+      {
+        clinicId: clinic.id,
+        subscriptionId: subscription.id,
+        error: updateError.message,
+      },
+    );
+    // No re-throw: el subscription.created/updated event posterior
+    // también actualizará la clínica, así que no es bloqueante.
+  }
+
+  // Enviar email "tarjeta añadida correctamente" -----------------
+  try {
+    // Obtener email del owner
+    const { data: ownerRow } = await supabaseAdmin
+      .from("clinic_users")
+      .select("user_id")
+      .eq("clinic_id", clinic.id)
+      .maybeSingle<{ user_id: string }>();
+
+    if (!ownerRow?.user_id) {
+      logWarn(event, "checkout.session.completed owner not found for email", {
+        clinicId: clinic.id,
+      });
+      return;
+    }
+
+    const { data: userRow } = await supabaseAdmin.auth.admin.getUserById(
+      ownerRow.user_id,
+    );
+    const ownerEmail = userRow?.user?.email;
+
+    if (!ownerEmail) {
+      logWarn(event, "checkout.session.completed owner email not found", {
+        clinicId: clinic.id,
+      });
+      return;
+    }
+
+    // Determinar labels amount + plan
+    const amountLabel = interval === "yearly" ? "190 €" : "19 €";
+    const planLabel =
+      interval === "yearly" ? "Starter anual" : "Starter mensual";
+
+    await sendPaymentMethodAddedEmail({
+      toEmail: ownerEmail,
+      clinicName: clinic.name,
+      trialEndsAt: clinic.trial_ends_at ?? new Date().toISOString(),
+      amountLabel,
+      planLabel,
+    });
+
+    logEvent(event, "payment_method_added email sent", {
+      clinicId: clinic.id,
+      toEmail: ownerEmail,
+    });
+  } catch (err) {
+    console.error("[stripe-webhook] payment_method_added email failed", {
+      clinicId: clinic.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    // No re-throw: el email no es bloqueante para el flow.
+  }
+}
+
 // ============================================================================
 // Main POST handler
 // ============================================================================
@@ -379,6 +602,12 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await handleInvoicePaymentFailed(event, invoice);
+        break;
+      }
+
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutSessionCompleted(event, session);
         break;
       }
 
