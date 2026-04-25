@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getStripe, PRICE_TO_PLAN, getStripeWebhookSecret } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type Stripe from "stripe";
-import { sendPaymentMethodAddedEmail } from "@/lib/billingEmails";
+import {
+  sendPaymentMethodAddedEmail,
+  sendPaymentSucceededEmail,
+  sendPaymentFailedEmail,
+} from "@/lib/billingEmails";
 
 // Disable body parsing — Stripe needs raw body for signature verification
 export const runtime = "nodejs";
@@ -51,6 +55,65 @@ function logWarn(event: Stripe.Event, msg: string, extra?: Record<string, unknow
     `[stripe-webhook] ${event.type} ${event.id} — WARN: ${msg}`,
     extra ? { ...extra } : "",
   );
+}
+
+/**
+ * Devuelve el email del owner de una clínica, o null si no se
+ * puede resolver. Loguea el motivo del null.
+ */
+async function getClinicOwnerEmail(
+  event: Stripe.Event,
+  clinicId: string,
+): Promise<string | null> {
+  const { data: ownerRow } = await supabaseAdmin
+    .from("clinic_users")
+    .select("user_id")
+    .eq("clinic_id", clinicId)
+    .maybeSingle<{ user_id: string }>();
+
+  if (!ownerRow?.user_id) {
+    logWarn(event, "owner not found for clinic", { clinicId });
+    return null;
+  }
+
+  const { data: userRow } = await supabaseAdmin.auth.admin.getUserById(
+    ownerRow.user_id,
+  );
+  const ownerEmail = userRow?.user?.email ?? null;
+
+  if (!ownerEmail) {
+    logWarn(event, "owner email not found for clinic", { clinicId });
+    return null;
+  }
+
+  return ownerEmail;
+}
+
+/**
+ * Formatea un importe en céntimos a "19 €" / "1.234,50 €".
+ */
+function formatAmount(amountCents: number, currency: string): string {
+  const value = amountCents / 100;
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+  }).format(value);
+}
+
+/**
+ * Devuelve el label del plan + interval para emails.
+ * priceId puede ser cualquier ID conocido en PRICE_TO_PLAN o no.
+ */
+function buildPlanLabel(
+  priceId: string | null | undefined,
+  interval: string | null | undefined,
+): string {
+  const plan = priceId ? PRICE_TO_PLAN[priceId] : null;
+  const planName = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "Plan";
+  const intervalLabel =
+    interval === "year" || interval === "yearly" ? "anual" : "mensual";
+  return `${planName} ${intervalLabel}`;
 }
 
 // ============================================================================
@@ -257,6 +320,86 @@ async function handleInvoicePaymentSucceeded(
     });
   }
 
+  // Enviar email "Cobro procesado" — solo si hubo cobro real -----
+  const amountPaid = invoice.amount_paid ?? 0;
+  if (amountPaid > 0) {
+    try {
+      const ownerEmail = await getClinicOwnerEmail(event, clinic.id);
+      if (ownerEmail) {
+        // Necesitamos el name de la clínica (no está en el SELECT actual)
+        const { data: clinicFull } = await supabaseAdmin
+          .from("clinics")
+          .select("name")
+          .eq("id", clinic.id)
+          .maybeSingle<{ name: string }>();
+
+        const clinicName = clinicFull?.name ?? clinic.slug;
+
+        // Derivar plan/interval del primer line item de la invoice.
+        // En Stripe API 2026-03-25.dahlia, el price vive bajo
+        // pricing.price_details.price (puede ser id string o Price expandido).
+        // recurring.interval no está disponible directamente — consultamos
+        // el Price para obtenerlo.
+        const line = invoice.lines?.data?.[0];
+        const priceField = line?.pricing?.price_details?.price ?? null;
+        const priceId =
+          typeof priceField === "string"
+            ? priceField
+            : (priceField?.id ?? null);
+
+        let intervalRaw: string | null = null;
+        if (priceId) {
+          try {
+            const priceObj = await getStripe().prices.retrieve(priceId);
+            intervalRaw = priceObj.recurring?.interval ?? null;
+          } catch (priceErr) {
+            logWarn(event, "could not retrieve price for interval lookup", {
+              priceId,
+              error:
+                priceErr instanceof Error ? priceErr.message : String(priceErr),
+            });
+          }
+        }
+
+        const amountLabel = formatAmount(
+          amountPaid,
+          invoice.currency ?? "eur",
+        );
+        const planLabel = buildPlanLabel(priceId, intervalRaw);
+
+        // Próxima fecha de cobro: end del periodo del line item
+        const nextChargeUnix = line?.period?.end ?? null;
+        const nextChargeAt =
+          nextChargeUnix && typeof nextChargeUnix === "number"
+            ? new Date(nextChargeUnix * 1000).toISOString()
+            : new Date().toISOString();
+
+        await sendPaymentSucceededEmail({
+          toEmail: ownerEmail,
+          toName: clinicName,
+          clinicName,
+          amountLabel,
+          planLabel,
+          nextChargeAt,
+        });
+
+        logEvent(event, "payment_succeeded email sent", {
+          clinicId: clinic.id,
+          toEmail: ownerEmail,
+          amountPaid,
+        });
+      }
+    } catch (err) {
+      console.error("[stripe-webhook] payment_succeeded email failed", {
+        clinicId: clinic.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // No-throw: el handler ya hizo su trabajo (estado BD).
+    }
+  } else {
+    logEvent(event, `clinic ${clinic.slug} invoice with amount=0 — no email`);
+  }
+
   logEvent(event, `clinic ${clinic.slug} payment succeeded`, {
     amount: invoice.amount_paid,
   });
@@ -296,6 +439,45 @@ async function handleInvoicePaymentFailed(
 
   if (error) {
     throw new Error(`Supabase update failed: ${error.message}`);
+  }
+
+  // Enviar email "No hemos podido cobrar" --------------------------
+  try {
+    const ownerEmail = await getClinicOwnerEmail(event, clinic.id);
+    if (ownerEmail) {
+      const { data: clinicFull } = await supabaseAdmin
+        .from("clinics")
+        .select("name")
+        .eq("id", clinic.id)
+        .maybeSingle<{ name: string }>();
+
+      const clinicName = clinicFull?.name ?? clinic.slug;
+
+      const amountDue = invoice.amount_due ?? invoice.total ?? 0;
+      const amountLabel = formatAmount(
+        amountDue,
+        invoice.currency ?? "eur",
+      );
+
+      await sendPaymentFailedEmail({
+        toEmail: ownerEmail,
+        toName: clinicName,
+        clinicName,
+        amountLabel,
+      });
+
+      logEvent(event, "payment_failed email sent", {
+        clinicId: clinic.id,
+        toEmail: ownerEmail,
+        amountDue,
+      });
+    }
+  } catch (err) {
+    console.error("[stripe-webhook] payment_failed email failed", {
+      clinicId: clinic.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    // No-throw.
   }
 
   logEvent(event, `clinic ${clinic.slug} marked past_due`);
@@ -471,31 +653,8 @@ async function handleCheckoutSessionCompleted(
 
   // Enviar email "tarjeta añadida correctamente" -----------------
   try {
-    // Obtener email del owner
-    const { data: ownerRow } = await supabaseAdmin
-      .from("clinic_users")
-      .select("user_id")
-      .eq("clinic_id", clinic.id)
-      .maybeSingle<{ user_id: string }>();
-
-    if (!ownerRow?.user_id) {
-      logWarn(event, "checkout.session.completed owner not found for email", {
-        clinicId: clinic.id,
-      });
-      return;
-    }
-
-    const { data: userRow } = await supabaseAdmin.auth.admin.getUserById(
-      ownerRow.user_id,
-    );
-    const ownerEmail = userRow?.user?.email;
-
-    if (!ownerEmail) {
-      logWarn(event, "checkout.session.completed owner email not found", {
-        clinicId: clinic.id,
-      });
-      return;
-    }
+    const ownerEmail = await getClinicOwnerEmail(event, clinic.id);
+    if (!ownerEmail) return;
 
     // Determinar labels amount + plan
     const amountLabel = interval === "yearly" ? "190 €" : "19 €";
