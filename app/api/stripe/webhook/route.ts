@@ -174,12 +174,22 @@ async function handleSubscriptionCreatedOrUpdated(
       ? "canceled"
       : newStatus;
 
-  // Build update payload
+  // Build update payload.
+  // Durante un trial, item.current_period_end refleja el periodo actual
+  // (≈ now), no la fecha de primer cobro. La "próxima renovación" que
+  // el usuario espera ver es trial_end. Fuera de trial, usamos el
+  // current_period_end del item.
+  const nowUnixForExpiry = Math.floor(Date.now() / 1000);
+  const candidateEndUnix =
+    subscription.trial_end && subscription.trial_end > nowUnixForExpiry
+      ? subscription.trial_end
+      : item?.current_period_end ?? null;
+
   const update: Record<string, unknown> = {
     stripe_customer_id: customerId,
     stripe_subscription_id: subscription.id,
     subscription_status: effectiveStatus,
-    plan_expires_at: tsToIso(item?.current_period_end ?? null),
+    plan_expires_at: tsToIso(candidateEndUnix),
   };
 
   if (mappedPlan) {
