@@ -292,7 +292,11 @@ async function handleInvoicePaymentSucceeded(
   }
 
   const periodEnd = (invoice as unknown as { period_end?: number }).period_end;
-  if (periodEnd) {
+  // Solo avanzamos plan_expires_at si hubo cobro real. Stripe emite
+  // invoices de 0€ al iniciar el trial cuyo period_end ≈ ahora, y
+  // pisarían la fecha correcta escrita por customer.subscription.created.
+  // Mismo guard que ya protege el email "Cobro procesado" más abajo.
+  if (periodEnd && (invoice.amount_paid ?? 0) > 0) {
     update.plan_expires_at = tsToIso(periodEnd);
   }
 
