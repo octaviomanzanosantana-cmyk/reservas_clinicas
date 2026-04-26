@@ -624,17 +624,20 @@ async function handleCheckoutSessionCompleted(
     });
   }
 
-  const subscription = await stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: priceId }],
-    default_payment_method: paymentMethodId,
-    trial_end: trialEndUnix,
-    metadata: {
-      clinic_id: clinic.id,
-      clinic_slug: clinic.slug,
-      interval,
+  const subscription = await stripe.subscriptions.create(
+    {
+      customer: customerId,
+      items: [{ price: priceId }],
+      default_payment_method: paymentMethodId,
+      trial_end: trialEndUnix,
+      metadata: {
+        clinic_id: clinic.id,
+        clinic_slug: clinic.slug,
+        interval,
+      },
     },
-  });
+    { idempotencyKey: session.id },
+  );
 
   logEvent(event, "subscription created from checkout.session.completed", {
     clinicId: clinic.id,
@@ -657,8 +660,14 @@ async function handleCheckoutSessionCompleted(
         error: updateError.message,
       },
     );
-    // No re-throw: el subscription.created/updated event posterior
-    // también actualizará la clínica, así que no es bloqueante.
+    // Re-throw: garantiza que el outer catch borre el claim de
+    // stripe_events_processed y Stripe reintente el webhook entero.
+    // Así el email "Tarjeta añadida" solo sale cuando BD ha persistido
+    // stripe_subscription_id. La idempotencyKey en subscriptions.create
+    // (session.id) evita que el reintento duplique la subscription en Stripe.
+    throw new Error(
+      `Failed to persist stripe_subscription_id: ${updateError.message}`,
+    );
   }
 
   // Enviar email "tarjeta añadida correctamente" -----------------
