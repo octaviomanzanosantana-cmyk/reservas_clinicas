@@ -816,6 +816,18 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "setup_intent.succeeded": {
+        const setupIntent = event.data.object as Stripe.SetupIntent;
+        console.info(
+          `[stripe-webhook] setup_intent.succeeded recibido (no procesado, ` +
+            `manejado vía checkout.session.completed): ` +
+            `setup_intent_id=${setupIntent.id} ` +
+            `customer=${setupIntent.customer ?? "null"} ` +
+            `payment_method=${setupIntent.payment_method ?? "null"}`,
+        );
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
       default:
         logWarn(event, "unhandled event type");
         break;
