@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   invoice_number TEXT,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
   currency TEXT NOT NULL DEFAULT 'EUR',
-  tax_regime TEXT CHECK (tax_regime IN ('igic_7', 'iva_21', 'isp', 'vat_intra_ue', 'none')),
+  tax_regime TEXT CHECK (tax_regime IN ('igic_7', 'iva_21', 'isp', 'isp_intra_ue', 'none')),
   pdf_url TEXT,
   issued_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -109,7 +109,7 @@ CREATE POLICY "Clinic members read own invoices"
 
 COMMENT ON TABLE invoices IS 'Facturas emitidas (v1 manuales desde Holded, v2 automaticas via API).';
 COMMENT ON COLUMN invoices.amount_cents IS 'Importe en centimos para evitar errores de coma flotante.';
-COMMENT ON COLUMN invoices.tax_regime IS 'Regimen fiscal aplicado: igic_7 (Canarias), iva_21 (peninsular DNI), isp (empresa ES CIF), vat_intra_ue (UE), none.';
+COMMENT ON COLUMN invoices.tax_regime IS 'Regimen fiscal aplicado: igic_7 (Canarias), iva_21 (peninsular DNI), isp (empresa ES CIF), isp_intra_ue (UE), none.';
 
 -- -----------------------------------------------------------------------------
 -- BLOQUE 3B: tabla tax_data

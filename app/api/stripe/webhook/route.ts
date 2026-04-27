@@ -317,6 +317,25 @@ async function handleInvoicePaymentSucceeded(
       ? ((invoice as unknown as { charge: string }).charge)
       : null;
 
+  // Copia tax_regime desde tax_data (decisión de diseño documentada en
+  // 20260423_sprint_comercial_fase_2a_tax_data.sql: el régimen se almacena,
+  // no se recalcula). Fallback 'none' si tax_data falta — no debería pasar
+  // porque setup-checkout exige tax_data antes de crear el Customer en Stripe.
+  const { data: taxData } = await supabaseAdmin
+    .from("tax_data")
+    .select("tax_regime")
+    .eq("clinic_id", clinic.id)
+    .maybeSingle<{ tax_regime: string | null }>();
+
+  if (!taxData) {
+    console.warn(
+      `[stripe-webhook] tax_data no encontrado para clinic_id=${clinic.id}, ` +
+        `usando fallback 'none' en invoice ${invoice.id}`,
+    );
+  }
+
+  const taxRegime = taxData?.tax_regime ?? "none";
+
   const { error: invoiceError } = await supabaseAdmin.from("invoices").insert({
     clinic_id: clinic.id,
     stripe_invoice_id: invoice.id,
@@ -324,6 +343,7 @@ async function handleInvoicePaymentSucceeded(
     amount_cents: invoice.amount_paid ?? invoice.total ?? 0,
     currency: (invoice.currency ?? "eur").toUpperCase(),
     issued_at: tsToIso(invoice.created),
+    tax_regime: taxRegime,
   });
 
   if (invoiceError) {
