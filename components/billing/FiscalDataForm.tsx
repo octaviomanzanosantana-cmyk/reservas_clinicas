@@ -59,29 +59,39 @@ const COUNTRY_OPTIONS = [
     .sort((a, b) => a.label.localeCompare(b.label, "es")),
 ];
 
-const TAX_ID_TYPE_OPTIONS: { value: TaxIdType; label: string; hint: string }[] =
-  [
-    {
-      value: "cif",
-      label: "CIF (empresa)",
-      hint: "Letra + 7 dígitos + letra/dígito. Ej: B76357201.",
-    },
-    {
-      value: "dni_autonomo",
-      label: "DNI (autónomo)",
-      hint: "8 dígitos + letra. Solo para personas con actividad económica.",
-    },
-    {
-      value: "nie_empresarial",
-      label: "NIE (empresarial)",
-      hint: "X/Y/Z + 7 dígitos + letra. Solo para actividad económica.",
-    },
-    {
-      value: "vat_eu",
-      label: "VAT intracomunitario (UE)",
-      hint: "Código país + número. Ej: DE123456789.",
-    },
-  ];
+type TaxIdTypeOption = {
+  value: TaxIdType;
+  label: string;
+  format: string;
+  example: string;
+};
+
+const TAX_ID_TYPE_OPTIONS: TaxIdTypeOption[] = [
+  {
+    value: "cif",
+    label: "CIF (empresa)",
+    format: "Letra + 7 dígitos + letra/dígito",
+    example: "B76357201",
+  },
+  {
+    value: "dni_autonomo",
+    label: "DNI (autónomo)",
+    format: "8 dígitos + letra",
+    example: "12345678Z",
+  },
+  {
+    value: "nie_empresarial",
+    label: "NIE (empresarial)",
+    format: "X/Y/Z + 7 dígitos + letra",
+    example: "X1234567L",
+  },
+  {
+    value: "vat_eu",
+    label: "VAT intracomunitario (UE)",
+    format: "Código país + número",
+    example: "FR12345678901",
+  },
+];
 
 export function FiscalDataForm({
   defaultLegalName,
@@ -127,7 +137,12 @@ export function FiscalDataForm({
       return;
     }
     if (!validateTaxIdFormat(trimmedTaxId, taxIdType)) {
-      setErrorMessage("El formato del identificador fiscal no es válido.");
+      const opt = TAX_ID_TYPE_OPTIONS.find((o) => o.value === taxIdType);
+      setErrorMessage(
+        opt
+          ? `El formato no es válido. Esperado: ${opt.format} · Ej: ${opt.example}`
+          : "El formato del identificador fiscal no es válido.",
+      );
       setSubmitting(false);
       return;
     }
@@ -176,9 +191,9 @@ export function FiscalDataForm({
     }
   };
 
-  const selectedTypeHint = TAX_ID_TYPE_OPTIONS.find(
+  const selectedTypeOption = TAX_ID_TYPE_OPTIONS.find(
     (opt) => opt.value === taxIdType,
-  )?.hint;
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -212,9 +227,9 @@ export function FiscalDataForm({
             </option>
           ))}
         </select>
-        {selectedTypeHint ? (
+        {selectedTypeOption ? (
           <span className="mt-1.5 block text-xs text-muted">
-            {selectedTypeHint}
+            {selectedTypeOption.format}. Ej: {selectedTypeOption.example}
           </span>
         ) : null}
       </label>
