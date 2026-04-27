@@ -8,6 +8,7 @@ import {
   validateTaxIdFormat,
 } from "@/lib/taxData";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type FiscalDataFormProps = {
   defaultLegalName: string;
@@ -103,7 +104,6 @@ export function FiscalDataForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isSpain = country === "ES";
 
@@ -111,7 +111,6 @@ export function FiscalDataForm({
     event.preventDefault();
     setSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     // Validaciones frontend --------------------------------------
     const trimmedLegalName = legalName.trim();
@@ -158,15 +157,20 @@ export function FiscalDataForm({
       const data = (await response.json()) as ApiResponse;
 
       if (!response.ok) {
-        setErrorMessage(data.error ?? "No se pudieron guardar los datos.");
+        toast.error("No se pudieron guardar los datos fiscales", {
+          description: data.error ?? "Inténtalo de nuevo en unos minutos.",
+        });
         return;
       }
 
-      setSuccessMessage(
-        "Datos fiscales guardados. Ya puedes añadir un método de pago cuando quieras.",
-      );
+      toast.success("Datos fiscales guardados", {
+        description:
+          "Ya puedes añadir un método de pago cuando quieras.",
+      });
     } catch {
-      setErrorMessage("Error de conexión. Inténtalo de nuevo.");
+      toast.error("No se pudieron guardar los datos fiscales", {
+        description: "Error de conexión. Inténtalo de nuevo.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -322,16 +326,10 @@ export function FiscalDataForm({
         </label>
       </div>
 
-      {/* Mensajes de error / éxito */}
+      {/* Errores de validación inline (campos mal rellenados) */}
       {errorMessage ? (
         <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm text-red-800">{errorMessage}</p>
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="rounded-[10px] border border-primary/30 bg-primary/5 px-4 py-3">
-          <p className="text-sm text-primary">{successMessage}</p>
         </div>
       ) : null}
 

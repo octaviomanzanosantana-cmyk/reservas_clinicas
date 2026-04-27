@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -55,7 +56,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${jakarta.variable} ${dm.variable} antialiased`}>{children}</body>
+      <body className={`${jakarta.variable} ${dm.variable} antialiased`}>
+        {children}
+        <Toaster
+          position="bottom-right"
+          duration={3500}
+          toastOptions={{
+            classNames: {
+              toast:
+                "rounded-[10px] border-[0.5px] border-border bg-card text-foreground shadow-sm",
+              title: "text-sm font-medium",
+              description: "text-sm text-muted",
+              success: "border-primary/30",
+              error: "border-red-500/30",
+            },
+          }}
+        />
+      </body>
     </html>
   );
 }
