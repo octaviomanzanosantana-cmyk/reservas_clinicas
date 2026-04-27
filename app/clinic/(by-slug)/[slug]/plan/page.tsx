@@ -1,11 +1,5 @@
-import { ClinicPlanPage } from "@/components/clinic/ClinicPlanPage";
+import { redirect } from "next/navigation";
 
-export default async function DynamicClinicPlanPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-
-  return <ClinicPlanPage clinicSlug={slug} />;
+export default function ClinicPlanRedirect() {
+  redirect("/mi-plan");
 }
