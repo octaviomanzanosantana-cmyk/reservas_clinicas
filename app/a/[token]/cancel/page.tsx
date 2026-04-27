@@ -3,13 +3,13 @@
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
-import Toast from "@/components/Toast";
 import { toViewAppointment, toViewAppointmentOrNull, type AppointmentRowLike } from "@/lib/appointmentView";
 import { fetchPatientAppointmentDetails, type PatientClinicData } from "@/lib/patientClient";
 import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export default function CancelPage() {
   const params = useParams();
@@ -20,7 +20,6 @@ export default function CancelPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
-  const [toastVisible, setToastVisible] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -78,6 +77,7 @@ export default function CancelPage() {
           setClinic(data.clinic ?? null);
           setCalendarWarning(data.calendarWarning ?? null);
           setCancelled(true);
+          toast.success("Acción realizada. La clínica ha sido notificada.");
         }
       } catch {
         // noop
@@ -137,11 +137,6 @@ export default function CancelPage() {
             Volver a la cita
           </Link>
 
-          <Toast
-            message="Acción realizada. La clínica ha sido notificada."
-            visible={toastVisible}
-            onHide={() => setToastVisible(false)}
-          />
           {calendarWarning ? (
             <p className="text-center text-xs text-muted">
               Cita cancelada. No se pudo actualizar Google Calendar: {calendarWarning}
@@ -198,7 +193,7 @@ export default function CancelPage() {
         <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>
     );
-  }, [appointment, calendarWarning, cancelling, cancelled, clinic, loadError, loading, toastVisible, token]);
+  }, [appointment, calendarWarning, cancelling, cancelled, clinic, loadError, loading, token]);
 
   return <div className="space-y-4">{content}</div>;
 }

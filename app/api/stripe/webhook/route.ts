@@ -699,10 +699,13 @@ async function handleCheckoutSessionCompleted(
     const ownerEmail = await getClinicOwnerEmail(event, clinic.id);
     if (!ownerEmail) return;
 
-    // Determinar labels amount + plan
-    const amountLabel = interval === "yearly" ? "190 €" : "19 €";
-    const planLabel =
-      interval === "yearly" ? "Starter anual" : "Starter mensual";
+    // Leer importe + interval del Price de Stripe (sin hardcode 19/190)
+    const priceObj = await getStripe().prices.retrieve(priceId);
+    const amountLabel = formatAmount(
+      priceObj.unit_amount ?? 0,
+      priceObj.currency ?? "eur",
+    );
+    const planLabel = buildPlanLabel(priceId, priceObj.recurring?.interval);
 
     await sendPaymentMethodAddedEmail({
       toEmail: ownerEmail,

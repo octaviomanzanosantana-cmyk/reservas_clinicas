@@ -3,7 +3,6 @@
 import AppointmentCard from "@/components/AppointmentCard";
 import HeaderBar from "@/components/HeaderBar";
 import PatientFooter from "@/components/patient/PatientFooter";
-import Toast from "@/components/Toast";
 import { toViewAppointmentOrNull, type AppointmentRowLike } from "@/lib/appointmentView";
 import {
   buildGoogleCalendarUrl,
@@ -15,6 +14,7 @@ import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export default function ConfirmPage() {
   const params = useParams();
@@ -22,7 +22,6 @@ export default function ConfirmPage() {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [clinic, setClinic] = useState<PatientClinicData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [toastVisible, setToastVisible] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
 
@@ -50,9 +49,13 @@ export default function ConfirmPage() {
         };
 
         if (active) {
-          setAppointment(toViewAppointmentOrNull(data.appointment ?? null));
+          const viewApp = toViewAppointmentOrNull(data.appointment ?? null);
+          setAppointment(viewApp);
           setClinic(data.clinic ?? null);
           setCalendarWarning(data.calendarWarning ?? null);
+          if (viewApp) {
+            toast.success("Acción realizada. La clínica ha sido notificada.");
+          }
         }
       } catch {
         if (active) { setAppointment(null); setClinic(null); }
@@ -181,11 +184,6 @@ export default function ConfirmPage() {
           Volver a la cita
         </Link>
 
-        <Toast
-          message="Acción realizada. La clínica ha sido notificada."
-          visible={toastVisible}
-          onHide={() => setToastVisible(false)}
-        />
         {calendarWarning ? (
           <p className="text-center text-xs text-muted">
             Cita confirmada. No se pudo actualizar Google Calendar: {calendarWarning}
@@ -194,7 +192,7 @@ export default function ConfirmPage() {
         <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>
     );
-  }, [appointment, calendarWarning, changed, clinic, loading, toastVisible, token]);
+  }, [appointment, calendarWarning, changed, clinic, loading, token]);
 
   return <div className="space-y-4">{content}</div>;
 }

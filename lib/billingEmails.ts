@@ -7,7 +7,7 @@ import { sendEmail } from "./sendEmail";
  * Emails transaccionales de billing.
  *
  * Se disparan desde:
- * - setup_intent.succeeded → sendPaymentMethodAddedEmail.
+ * - checkout.session.completed (mode=setup) → sendPaymentMethodAddedEmail.
  * - invoice.payment_succeeded → sendPaymentSucceededEmail.
  * - invoice.payment_failed → sendPaymentFailedEmail.
  *
