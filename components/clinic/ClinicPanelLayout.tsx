@@ -16,6 +16,7 @@ type NavItem = {
   label: string;
   icon: React.ReactNode;
   external?: boolean;
+  matchPrefix?: boolean;
 };
 
 type ClinicSummary = {
@@ -183,7 +184,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     { href: `${basePath}/hours`, label: "Horarios", icon: <SunIcon /> },
   ];
   const accountItems: NavItem[] = [
-    { href: "/mi-plan", label: "Mi plan", icon: <CardIcon /> },
+    { href: "/mi-plan", label: "Mi plan", icon: <CardIcon />, matchPrefix: true },
   ];
 
   const handleLogout = async () => {
@@ -205,7 +206,9 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-text-active)] font-semibold before:content-[''] before:absolute before:left-[-10px] before:top-[6px] before:bottom-[6px] before:w-[3px] before:bg-[var(--sidebar-active-bar)] before:rounded-[0_3px_3px_0]";
 
   const renderItem = (item: NavItem) => {
-    const isActive = pathname === item.href;
+    const isActive = item.matchPrefix
+      ? pathname === item.href || pathname.startsWith(`${item.href}/`)
+      : pathname === item.href;
     const cls = `${itemBase} ${isActive ? activeCls : inactiveCls}`;
 
     if (item.external) {

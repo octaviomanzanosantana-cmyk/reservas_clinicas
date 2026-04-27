@@ -1,3 +1,4 @@
+import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
 import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 
 export default async function MiPlanLayout({
@@ -5,12 +6,14 @@ export default async function MiPlanLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Guard: si no hay sesión o no tiene clínica, redirige a /login.
-  await requireCurrentClinicForRequest();
+  const clinicAccess = await requireCurrentClinicForRequest();
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12">
-      <div className="mx-auto max-w-2xl">{children}</div>
-    </main>
+    <ClinicPanelLayout
+      clinicSlug={clinicAccess.clinicSlug}
+      basePath={`/clinic/${clinicAccess.clinicSlug}`}
+    >
+      {children}
+    </ClinicPanelLayout>
   );
 }
