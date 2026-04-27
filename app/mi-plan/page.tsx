@@ -2,6 +2,7 @@ import { PaymentMethodSection } from "@/components/billing/PaymentMethodSection"
 import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
+import { InvoicesSection } from "./InvoicesSection";
 
 type ClinicSummary = {
   name: string;
@@ -261,6 +262,9 @@ export default async function MiPlanPage({
           </div>
         </div>
       </section>
+
+      {/* Comprobantes */}
+      <InvoicesSection trialEndsAt={clinic.trial_ends_at} />
 
       {/* Footer de ayuda */}
       <section className="px-6 md:px-8">
