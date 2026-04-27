@@ -151,7 +151,7 @@ export function EditPatientModal({
           ) : modality === "online" && !canUseFeature(clinicPlan as Plan, "video_link") ? (
             <p className="text-xs text-[#9CA3AF]">
               Enlace de videollamada disponible en el plan Starter.{" "}
-              <Link href={`${basePath}/plan`} className="text-[#0E9E82] hover:underline">Actualiza tu plan →</Link>
+              <Link href="/mi-plan" className="text-[#0E9E82] hover:underline">Actualiza tu plan →</Link>
             </p>
           ) : null}
         </div>

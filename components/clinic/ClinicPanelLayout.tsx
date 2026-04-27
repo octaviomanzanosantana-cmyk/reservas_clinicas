@@ -183,7 +183,7 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
     { href: `${basePath}/hours`, label: "Horarios", icon: <SunIcon /> },
   ];
   const accountItems: NavItem[] = [
-    { href: `${basePath}/plan`, label: "Mi plan", icon: <CardIcon /> },
+    { href: "/mi-plan", label: "Mi plan", icon: <CardIcon /> },
   ];
 
   const handleLogout = async () => {

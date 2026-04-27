@@ -458,7 +458,7 @@ export function ClinicDashboardPage({
           </div>
           <p className="mt-3 text-xs">
             <Link
-              href={`${basePath}/plan`}
+              href="/mi-plan"
               className="text-[#0E9E82] font-medium hover:underline"
             >
               {monthlyAppointmentCount >= 50

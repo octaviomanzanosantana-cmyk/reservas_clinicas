@@ -8,5 +8,5 @@ export default async function ClinicDefaultPlanRedirectPage() {
     redirect("/login");
   }
 
-  redirect(`/clinic/${clinicAccess.clinicSlug}/plan`);
+  redirect("/mi-plan");
 }
