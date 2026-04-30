@@ -228,7 +228,7 @@ async function handleSubscriptionDeleted(
 ): Promise<void> {
   const { data: clinic } = await supabaseAdmin
     .from("clinics")
-    .select("id, slug")
+    .select("id, slug, canceled_at")
     .eq("stripe_subscription_id", subscription.id)
     .maybeSingle();
 
@@ -239,15 +239,23 @@ async function handleSubscriptionDeleted(
     return;
   }
 
+  const updatePayload: Record<string, unknown> = {
+    plan: "free",
+    subscription_status: "free",
+    stripe_subscription_id: null,
+    plan_expires_at: null,
+    trial_ends_at: null,
+  };
+  // Solo escribimos canceled_at si está NULL: handleSubscriptionCreatedOrUpdated
+  // ya lo captura cuando el usuario cancela con cancel_at_period_end=true.
+  // En cancelación inmediata (Stripe Dashboard) este handler es el primero en correr.
+  if (!(clinic as { canceled_at?: string | null }).canceled_at) {
+    updatePayload.canceled_at = new Date().toISOString();
+  }
+
   const { error } = await supabaseAdmin
     .from("clinics")
-    .update({
-      plan: "free",
-      subscription_status: "free",
-      stripe_subscription_id: null,
-      plan_expires_at: null,
-      trial_ends_at: null,
-    })
+    .update(updatePayload)
     .eq("id", clinic.id);
 
   if (error) {
