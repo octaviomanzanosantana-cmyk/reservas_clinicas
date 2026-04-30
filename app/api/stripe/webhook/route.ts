@@ -299,13 +299,16 @@ async function handleInvoicePaymentSucceeded(
     update.subscription_status = "active";
   }
 
-  const periodEnd = (invoice as unknown as { period_end?: number }).period_end;
-  // Solo avanzamos plan_expires_at si hubo cobro real. Stripe emite
-  // invoices de 0€ al iniciar el trial cuyo period_end ≈ ahora, y
-  // pisarían la fecha correcta escrita por customer.subscription.created.
-  // Mismo guard que ya protege el email "Cobro procesado" más abajo.
-  if (periodEnd && (invoice.amount_paid ?? 0) > 0) {
-    update.plan_expires_at = tsToIso(periodEnd);
+  // Avanzamos plan_expires_at SOLO si hubo cobro real (amount_paid > 0).
+  // Stripe emite invoices de 0€ al iniciar el trial que pisarían la fecha
+  // correcta escrita por customer.subscription.created.
+  //
+  // Usamos lines.data[0].period.end (no invoice.period_end, deprecado en
+  // API moderna y suele venir vacío). Mismo dato que el email "Cobro
+  // procesado" más abajo — garantía de coherencia con Stripe Dashboard.
+  const linePeriodEnd = invoice.lines?.data?.[0]?.period?.end ?? null;
+  if (linePeriodEnd && (invoice.amount_paid ?? 0) > 0) {
+    update.plan_expires_at = tsToIso(linePeriodEnd);
   }
 
   if (Object.keys(update).length > 0) {
