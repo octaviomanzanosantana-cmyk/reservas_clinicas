@@ -8,6 +8,7 @@ import {
   validateTaxIdFormat,
 } from "@/lib/taxData";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type FiscalDataFormProps = {
@@ -114,6 +115,7 @@ export function FiscalDataForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const isSpain = country === "ES";
 
@@ -182,6 +184,9 @@ export function FiscalDataForm({
         description:
           "Ya puedes añadir un método de pago cuando quieras.",
       });
+      // Refresca server components para invalidar banners ámbar de
+      // "datos fiscales pendientes" que leen tax_data desde BD.
+      router.refresh();
     } catch {
       toast.error("No se pudieron guardar los datos fiscales", {
         description: "Error de conexión. Inténtalo de nuevo.",
