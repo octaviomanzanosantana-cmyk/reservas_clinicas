@@ -6,6 +6,7 @@ import {
   sendPaymentMethodAddedEmail,
   sendPaymentSucceededEmail,
   sendPaymentFailedEmail,
+  sendSubscriptionCanceledEmail,
 } from "@/lib/billingEmails";
 
 // Disable body parsing — Stripe needs raw body for signature verification
@@ -262,6 +263,36 @@ async function handleSubscriptionDeleted(
     throw new Error(`Supabase update failed: ${error.message}`);
   }
 
+  // Email "Suscripción cancelada → Free" — try/catch para no romper el
+  // handler si falla el envío. La BD ya quedó actualizada, el email es
+  // nice-to-have. Mismo patrón que payment_succeeded.
+  try {
+    const ownerEmail = await getClinicOwnerEmail(event, clinic.id);
+    if (ownerEmail) {
+      const { data: clinicFull } = await supabaseAdmin
+        .from("clinics")
+        .select("name")
+        .eq("id", clinic.id)
+        .maybeSingle<{ name: string }>();
+      const clinicName = clinicFull?.name ?? clinic.slug;
+
+      await sendSubscriptionCanceledEmail({
+        toEmail: ownerEmail,
+        toName: clinicName,
+        clinicName,
+      });
+
+      logEvent(event, "subscription_canceled email sent", {
+        clinicId: clinic.id,
+        toEmail: ownerEmail,
+      });
+    }
+  } catch (err) {
+    console.error("[stripe-webhook] subscription_canceled email failed", {
+      clinicId: clinic.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
   logEvent(event, `clinic ${clinic.slug} downgraded to free`);
 }
 

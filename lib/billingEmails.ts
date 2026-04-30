@@ -222,3 +222,67 @@ Mientras tanto, tu cuenta sigue activa. Si necesitas ayuda, responde a este emai
     text,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email #4: suscripción cancelada → pasas a Free
+// ---------------------------------------------------------------------------
+
+export async function sendSubscriptionCanceledEmail(params: {
+  toEmail: string;
+  toName: string;
+  clinicName: string;
+}): Promise<void> {
+  const { apiKey, from } = getEmailConfig();
+  if (!apiKey || !from) {
+    throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
+  }
+
+  const subject = "Tu suscripción ha terminado — sigues con Free";
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1A1A1A;">
+      Hola ${params.toName},
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Tu suscripción a Appoclick para ${params.clinicName} se ha cerrado.
+      A partir de ahora estás en el plan <strong>Free</strong>.
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Tus datos siguen aquí: clínica, servicios, citas, pacientes,
+      configuración. Nada se ha borrado, nada se ha perdido. Si vuelves
+      en cualquier momento, lo encuentras todo igual.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Las únicas diferencias en Free son los límites del plan
+      (1 servicio, hasta 50 citas al mes, sin recordatorios). Si los
+      necesitas, puedes reactivar Starter cuando quieras.
+    </p>
+    ${buildCtaButton("Ver mi plan", MI_PLAN_URL)}
+    <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6B7280;">
+      Si la cancelación fue un error o quieres volver más adelante,
+      desde el mismo enlace puedes reactivar la suscripción sin fricción.
+      Si necesitas ayuda, responde a este email o escribe a hola@appoclick.com.
+    </p>
+  `;
+
+  const text = `Hola ${params.toName},
+
+Tu suscripción a Appoclick para ${params.clinicName} se ha cerrado. A partir de ahora estás en el plan Free.
+
+Tus datos siguen aquí: clínica, servicios, citas, pacientes, configuración. Nada se ha borrado, nada se ha perdido. Si vuelves en cualquier momento, lo encuentras todo igual.
+
+Las únicas diferencias en Free son los límites del plan (1 servicio, hasta 50 citas al mes, sin recordatorios). Si los necesitas, puedes reactivar Starter cuando quieras.
+
+Ver mi plan: ${MI_PLAN_URL}
+
+Si la cancelación fue un error o quieres volver más adelante, desde el mismo enlace puedes reactivar la suscripción sin fricción. Si necesitas ayuda, responde a este email o escribe a hola@appoclick.com.`;
+
+  await sendEmail({
+    apiKey,
+    from,
+    to: [params.toEmail],
+    subject,
+    html: wrapEmailHtml(bodyHtml),
+    text,
+  });
+}
