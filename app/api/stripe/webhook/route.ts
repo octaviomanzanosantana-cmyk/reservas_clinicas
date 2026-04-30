@@ -354,96 +354,50 @@ async function handleInvoicePaymentSucceeded(
   }
 
   // Create invoice record
-  // En Stripe API moderna invoice.charge está deprecado y suele venir vacío.
-  // Resolvemos el charge ID desde payment_intent en cascada para auditar
-  // correctamente cada cobro.
-  let chargeId: string | null =
-    typeof (invoice as unknown as { charge?: unknown }).charge === "string"
-      ? ((invoice as unknown as { charge: string }).charge)
-      : null;
-
-  // API moderna 2026-03-25.dahlia: el charge vive en
-  // invoice.payments.data[0].payment. Si payment_intent está expandido,
-  // leemos latest_charge directamente; si no, retrieve a la API.
-  if (!chargeId) {
-    const payments = (invoice as unknown as { payments?: { data?: Array<{ payment?: unknown }> } }).payments;
-    const firstPayment = payments?.data?.[0]?.payment;
-    if (firstPayment) {
-      const piExpanded = firstPayment as {
-        latest_charge?: unknown;
-        payment_intent?: unknown;
-      };
-      const lc = piExpanded.latest_charge;
-      if (typeof lc === "string") {
-        chargeId = lc;
-      } else if (lc && typeof (lc as { id?: string }).id === "string") {
-        chargeId = (lc as { id: string }).id;
-      } else {
-        const piRef = piExpanded.payment_intent;
-        const piIdFromPayments =
-          typeof piRef === "string"
-            ? piRef
-            : (piRef as { id?: string } | null)?.id ?? null;
-        if (piIdFromPayments) {
-          try {
-            const pi = await getStripe().paymentIntents.retrieve(piIdFromPayments);
-            const latestCharge = pi.latest_charge;
-            chargeId =
-              typeof latestCharge === "string"
-                ? latestCharge
-                : (latestCharge as { id?: string } | null)?.id ?? null;
-          } catch (piErr) {
-            logWarn(event, "could not retrieve payment_intent (from payments.data) for charge lookup", {
-              paymentIntentId: piIdFromPayments,
-              error: piErr instanceof Error ? piErr.message : String(piErr),
-            });
-          }
+  // En Stripe API moderna 2026-03-25.dahlia el campo invoice.charge está
+  // deprecado y invoice.payments no viene expandido por defecto en el
+  // payload del webhook. Solución: retrieve la invoice con expand explícito
+  // de payments.data.payment para obtener el charge ID. Una llamada extra
+  // al API por cobro real (~1/mes/cliente) — coste aceptable a cambio de
+  // robustez frente a futuros cambios de estructura.
+  let chargeId: string | null = null;
+  if ((invoice.amount_paid ?? 0) > 0 && invoice.id) {
+    try {
+      const expanded = await getStripe().invoices.retrieve(invoice.id, {
+        expand: ["payments.data.payment"],
+      });
+      const firstPayment = (
+        expanded as unknown as {
+          payments?: { data?: Array<{ payment?: unknown }> };
+        }
+      ).payments?.data?.[0]?.payment;
+      if (firstPayment) {
+        const pi = firstPayment as {
+          latest_charge?: unknown;
+          id?: string;
+        };
+        const lc = pi.latest_charge;
+        if (typeof lc === "string") {
+          chargeId = lc;
+        } else if (lc && typeof (lc as { id?: string }).id === "string") {
+          chargeId = (lc as { id: string }).id;
         }
       }
-    }
-  }
-
-  if (!chargeId) {
-    const piField = (invoice as unknown as { payment_intent?: unknown }).payment_intent;
-    const piId = typeof piField === "string" ? piField : (piField as { id?: string } | null)?.id ?? null;
-    if (piId) {
-      try {
-        const pi = await getStripe().paymentIntents.retrieve(piId);
-        const latestCharge = pi.latest_charge;
-        chargeId =
-          typeof latestCharge === "string"
-            ? latestCharge
-            : (latestCharge as { id?: string } | null)?.id ?? null;
-      } catch (piErr) {
-        logWarn(event, "could not retrieve payment_intent for charge lookup", {
-          paymentIntentId: piId,
-          error: piErr instanceof Error ? piErr.message : String(piErr),
-        });
-      }
+    } catch (retrieveErr) {
+      logWarn(event, "could not retrieve expanded invoice for charge lookup", {
+        invoiceId: invoice.id,
+        error:
+          retrieveErr instanceof Error
+            ? retrieveErr.message
+            : String(retrieveErr),
+      });
     }
   }
 
   if (!chargeId && (invoice.amount_paid ?? 0) > 0) {
-    // Dump diagnóstico para casos donde la cascada falla. Útil para
-    // descubrir cambios de estructura entre versiones de Stripe API.
-    const invoiceTopKeys = Object.keys(invoice as unknown as Record<string, unknown>);
-    const paymentsField = (invoice as unknown as { payments?: unknown }).payments;
-    const paymentsKeys =
-      paymentsField && typeof paymentsField === "object"
-        ? Object.keys(paymentsField as Record<string, unknown>)
-        : null;
-    const firstPaymentKeys = (() => {
-      const p = paymentsField as { data?: Array<Record<string, unknown>> } | undefined;
-      const item = p?.data?.[0];
-      return item ? Object.keys(item) : null;
-    })();
     logWarn(event, "could not resolve charge id for paid invoice", {
       invoiceId: invoice.id,
       amountPaid: invoice.amount_paid,
-      invoiceTopKeys,
-      paymentsKeys,
-      firstPaymentKeys,
-      paymentsRaw: JSON.stringify(paymentsField).slice(0, 500),
     });
   }
 
