@@ -366,6 +366,25 @@ async function handleInvoicePaymentSucceeded(
       const expanded = await getStripe().invoices.retrieve(invoice.id, {
         expand: ["payments.data.payment"],
       });
+      // DIAGNÓSTICO TEMPORAL: dump de estructura real de invoice expandida
+      const expandedAsRecord = expanded as unknown as Record<string, unknown>;
+      const expandedKeys = Object.keys(expandedAsRecord);
+      const paymentsField = expandedAsRecord.payments;
+      const paymentsKeys =
+        paymentsField && typeof paymentsField === "object"
+          ? Object.keys(paymentsField as Record<string, unknown>)
+          : null;
+      const firstDataItem = (paymentsField as { data?: unknown[] } | undefined)?.data?.[0];
+      const firstDataItemKeys =
+        firstDataItem && typeof firstDataItem === "object"
+          ? Object.keys(firstDataItem as Record<string, unknown>)
+          : null;
+      console.log("[stripe-webhook] DIAG retrieve expanded", {
+        invoiceId: invoice.id,
+        expandedKeys,
+        paymentsKeys,
+        firstDataItemKeys,
+      });
       const firstPayment = (
         expanded as unknown as {
           payments?: { data?: Array<{ payment?: unknown }> };
