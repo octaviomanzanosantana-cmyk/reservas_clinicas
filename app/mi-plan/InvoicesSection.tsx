@@ -56,9 +56,9 @@ function formatTrialDate(iso: string | null): string | null {
 function inferPlanLabel(
   invoice: InvoiceSummary,
 ): string {
-  if (invoice.description && invoice.description.trim().length > 0) {
-    return invoice.description.trim();
-  }
+  // Ignoramos invoice.description: Stripe la genera en inglés
+  // ("1 × Starter (at €19.00 / month)") y no es traducible sin parsing
+  // frágil. Mapeo directo amount_paid → label en español.
   if (invoice.amount_paid === 1900) return "Starter mensual";
   if (invoice.amount_paid === 19000) return "Starter anual";
   return "Suscripción";
