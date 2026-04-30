@@ -320,10 +320,40 @@ async function handleInvoicePaymentSucceeded(
   }
 
   // Create invoice record
-  const chargeId =
+  // En Stripe API moderna invoice.charge está deprecado y suele venir vacío.
+  // Resolvemos el charge ID desde payment_intent en cascada para auditar
+  // correctamente cada cobro.
+  let chargeId: string | null =
     typeof (invoice as unknown as { charge?: unknown }).charge === "string"
       ? ((invoice as unknown as { charge: string }).charge)
       : null;
+
+  if (!chargeId) {
+    const piField = (invoice as unknown as { payment_intent?: unknown }).payment_intent;
+    const piId = typeof piField === "string" ? piField : (piField as { id?: string } | null)?.id ?? null;
+    if (piId) {
+      try {
+        const pi = await getStripe().paymentIntents.retrieve(piId);
+        const latestCharge = pi.latest_charge;
+        chargeId =
+          typeof latestCharge === "string"
+            ? latestCharge
+            : (latestCharge as { id?: string } | null)?.id ?? null;
+      } catch (piErr) {
+        logWarn(event, "could not retrieve payment_intent for charge lookup", {
+          paymentIntentId: piId,
+          error: piErr instanceof Error ? piErr.message : String(piErr),
+        });
+      }
+    }
+  }
+
+  if (!chargeId && (invoice.amount_paid ?? 0) > 0) {
+    logWarn(event, "could not resolve charge id for paid invoice", {
+      invoiceId: invoice.id,
+      amountPaid: invoice.amount_paid,
+    });
+  }
 
   // Copia tax_regime desde tax_data (decisión de diseño documentada en
   // 20260423_sprint_comercial_fase_2a_tax_data.sql: el régimen se almacena,
