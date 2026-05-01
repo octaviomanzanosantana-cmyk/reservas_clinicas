@@ -180,10 +180,30 @@ export function EditAppointmentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
-        <h2 className="font-heading text-lg font-semibold text-foreground">Editar cita</h2>
-        <p className="mt-1 text-sm text-muted">
-          {appointment.service} · {formatDate(appointment.scheduled_at, appointment.datetime_label)}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-lg font-semibold text-foreground">Editar cita</h2>
+            <p className="mt-1 text-sm text-muted">
+              {appointment.service} · {formatDate(appointment.scheduled_at, appointment.datetime_label)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="-mr-2 -mt-2 shrink-0 rounded-full p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-foreground"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
 
         {/* Sección 1: Datos del paciente */}
         <section className="mt-5 border-t border-[#F3F4F6] pt-5">
