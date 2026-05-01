@@ -360,6 +360,12 @@ async function handleInvoicePaymentSucceeded(
   // de payments.data.payment para obtener el charge ID. Una llamada extra
   // al API por cobro real (~1/mes/cliente) — coste aceptable a cambio de
   // robustez frente a futuros cambios de estructura.
+  //
+  // TODO Sprint 2.1 — el path payments.data[0].payment.latest_charge no
+  // resuelve en API 2026-03-25.dahlia (validado e2e Sprint 2). Stripe
+  // charge_id queda null en tabla invoices. NO bloquea producción —
+  // auditoría interna únicamente. Resolver con documentación oficial
+  // Stripe en mano antes de cutover, semana del 11-17 mayo 2026.
   let chargeId: string | null = null;
   if ((invoice.amount_paid ?? 0) > 0 && invoice.id) {
     try {
