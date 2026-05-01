@@ -177,9 +177,42 @@ export function EditAppointmentModal({
     }
   };
 
+  const initialPatientName = appointment.patient_name;
+  const initialPatientEmail = appointment.patient_email ?? "";
+  const initialPatientPhone = appointment.patient_phone ?? "";
+  const initialModality: "presencial" | "online" =
+    appointment.modality === "online" ? "online" : "presencial";
+  const initialVideoLink = appointment.video_link ?? "";
+
+  const patientDirty =
+    name !== initialPatientName ||
+    email !== initialPatientEmail ||
+    phone !== initialPatientPhone ||
+    modality !== initialModality ||
+    videoLink !== initialVideoLink;
+  const rescheduleDirty = selectedSlot !== null;
+  const hasUnsavedChanges = patientDirty || rescheduleDirty;
+
+  const handleClose = () => {
+    if (savingPatient || rescheduling) return; // operación en curso
+    if (
+      hasUnsavedChanges &&
+      !window.confirm("Tienes cambios sin guardar. ¿Seguro que quieres cerrar?")
+    ) {
+      return;
+    }
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={handleClose}
+    >
+      <div
+        className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[14px] border-[0.5px] border-[#E5E7EB] bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className="font-heading text-lg font-semibold text-foreground">Editar cita</h2>
@@ -189,7 +222,7 @@ export function EditAppointmentModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Cerrar"
             className="-mr-2 -mt-2 shrink-0 rounded-full p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-foreground"
           >
@@ -400,7 +433,7 @@ export function EditAppointmentModal({
         <div className="mt-6 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-[10px] border-[0.5px] border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#6B7280] transition-colors hover:text-foreground"
           >
             Cerrar
