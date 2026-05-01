@@ -1,6 +1,6 @@
 "use client";
 
-import { EditPatientModal, type EditableAppointment } from "@/components/clinic/EditPatientModal";
+import { EditAppointmentModal, type EditableAppointment } from "@/components/clinic/EditAppointmentModal";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -199,14 +199,15 @@ export function ClinicPatientsPage({
 
   return (
     <div className="space-y-6">
-      {/* Edit modal */}
+      {/* Edit modal — sin onReschedule: esta página solo edita datos del paciente */}
       {editingAppointment ? (
-        <EditPatientModal
+        <EditAppointmentModal
           appointment={editingAppointment}
+          clinicSlug={clinicSlug}
           clinicPlan={clinicPlan}
           basePath={basePath}
           formatDate={formatDate}
-          onSave={handleSavePatient}
+          onSavePatient={handleSavePatient}
           onClose={() => setEditingAppointment(null)}
         />
       ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import { EditPatientModal } from "@/components/clinic/EditPatientModal";
+import { EditAppointmentModal, type ReschedulePayload } from "@/components/clinic/EditAppointmentModal";
 import { buildAppointmentShareMessage } from "@/lib/appointmentShareMessage";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { canUseFeature } from "@/lib/plan";
@@ -345,15 +345,45 @@ export function ClinicDashboardPage({
     setTimeout(() => setEditFeedback(null), 4000);
   }, []);
 
+  const handleReschedule = useCallback(async (payload: ReschedulePayload) => {
+    const response = await fetch("/api/clinic/appointments/reschedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = (await response.json()) as {
+      appointment?: AppointmentRow;
+      error?: string;
+      calendarWarning?: string | null;
+    };
+    if (!response.ok || !result.appointment) {
+      throw new Error(result.error ?? "No se pudo reagendar la cita");
+    }
+
+    setAppointments((current) =>
+      current.map((a) => (a.token === payload.token ? { ...a, ...result.appointment! } : a)),
+    );
+    setEditingAppointment(null);
+
+    if (result.calendarWarning) {
+      setEditFeedback(`Cita reagendada, pero Google Calendar no se sincronizó: ${result.calendarWarning}`);
+    } else {
+      setEditFeedback("Cita reagendada correctamente");
+    }
+    setTimeout(() => setEditFeedback(null), 4000);
+  }, []);
+
   return (
     <div className="space-y-8">
       {editingAppointment ? (
-        <EditPatientModal
+        <EditAppointmentModal
           appointment={editingAppointment}
+          clinicSlug={clinicSlug}
           clinicPlan={clinic?.plan ?? "free"}
           basePath={basePath}
           formatDate={formatAppointmentDate}
-          onSave={handleSavePatient}
+          onSavePatient={handleSavePatient}
+          onReschedule={handleReschedule}
           onClose={() => setEditingAppointment(null)}
         />
       ) : null}
