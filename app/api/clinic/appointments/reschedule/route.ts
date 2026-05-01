@@ -1,11 +1,12 @@
 import { getAppointmentByToken } from "@/lib/appointments";
+import { sendAppointmentRescheduledEmail } from "@/lib/appointmentEmails";
 import {
   applyRescheduleUpdate,
   regenerateDatetimeLabel,
   validateSlotAvailable,
 } from "@/lib/appointmentReschedule";
 import { ClinicAccessError, requireCurrentClinicForApi } from "@/lib/clinicAuth";
-import { getClinicById } from "@/lib/clinics";
+import { getClinicById, resolveClinicCopyEmail } from "@/lib/clinics";
 import { updateCalendarEvent } from "@/lib/googleCalendar";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
@@ -13,6 +14,7 @@ import { NextResponse } from "next/server";
 type RescheduleBody = {
   token?: string;
   new_scheduled_at?: string;
+  notify_patient?: boolean;
 };
 
 const EDITABLE_STATUSES = new Set(["confirmed", "pending"]);
@@ -24,6 +26,7 @@ export async function POST(request: Request) {
 
     const token = body.token?.trim().toLowerCase();
     const newScheduledAtRaw = body.new_scheduled_at?.trim();
+    const notifyPatient = body.notify_patient !== false; // default true
 
     if (!token) {
       return NextResponse.json({ error: "token es requerido" }, { status: 400 });
@@ -124,6 +127,21 @@ export async function POST(request: Request) {
       } catch (error) {
         calendarWarning =
           error instanceof Error ? error.message : "No se pudo sincronizar Google Calendar";
+      }
+    }
+
+    // 8. Notificación al paciente (no bloqueante — error en email no rompe la operación)
+    if (notifyPatient) {
+      try {
+        await sendAppointmentRescheduledEmail(updated, {
+          notificationEmail: resolveClinicCopyEmail(clinic),
+          timezone: clinic?.timezone,
+        });
+      } catch (emailError) {
+        console.error("[clinic.reschedule] Failed to send rescheduled email", {
+          token: updated.token,
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+        });
       }
     }
 
