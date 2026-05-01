@@ -430,15 +430,6 @@ export function EditAppointmentModal({
           </section>
         ) : null}
 
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-[10px] border-[0.5px] border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#6B7280] transition-colors hover:text-foreground"
-          >
-            Cerrar
-          </button>
-        </div>
       </div>
     </div>
   );
