@@ -1,14 +1,20 @@
 "use client";
 
 import { ClinicSetupBanner } from "@/components/clinic/ClinicSetupBanner";
+import {
+  EditAppointmentModal,
+  type EditableAppointment,
+  type ReschedulePayload,
+} from "@/components/clinic/EditAppointmentModal";
 import { PANEL_CLINIC_SLUG } from "@/lib/clinicPanel";
 import { buildDaySlotsFromTimeRange, formatTimeLabel } from "@/lib/availability";
 import { getTodayInputValue } from "@/lib/dateFormat";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ClinicData = {
   name: string;
+  plan?: string | null;
 };
 
 type ClinicHourRow = {
@@ -24,6 +30,7 @@ type AppointmentRow = {
   id: number;
   token: string;
   patient_name: string;
+  patient_email?: string | null;
   patient_phone: string | null;
   service: string;
   modality?: string | null;
@@ -31,6 +38,7 @@ type AppointmentRow = {
   scheduled_at: string | null;
   datetime_label: string;
   status: string;
+  video_link?: string | null;
   updated_at: string;
 };
 
@@ -158,6 +166,11 @@ export function ClinicCalendarPage({
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<AppointmentRow | null>(null);
+  const [feedback, setFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(
+    null,
+  );
+  const [reloadCounter, setReloadCounter] = useState(0);
 
   const shiftSelectedDate = (days: number) => {
     const baseDate = parseDateInput(selectedDate) ?? new Date();
@@ -276,9 +289,85 @@ export function ClinicCalendarPage({
     return () => {
       active = false;
     };
-  }, [clinicSlug, selectedDate, selectedDateObject, viewMode, weekDates]);
+  }, [clinicSlug, reloadCounter, selectedDate, selectedDateObject, viewMode, weekDates]);
 
   const appointments = appointmentsByDate[selectedDate] ?? [];
+
+  const handleAppointmentClick = useCallback((appointment: AppointmentRow) => {
+    setEditingAppointment(appointment);
+  }, []);
+
+  const showFeedback = useCallback((tone: "success" | "error", message: string) => {
+    setFeedback({ tone, message });
+    setTimeout(() => setFeedback(null), 4000);
+  }, []);
+
+  const handleSavePatient = useCallback(
+    async (data: {
+      token: string;
+      patient_name: string;
+      patient_email: string | null;
+      patient_phone: string | null;
+      modality: string;
+      video_link: string | null;
+    }) => {
+      const response = await fetch("/api/appointments/update-patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = (await response.json()) as { appointment?: AppointmentRow; error?: string };
+      if (!response.ok || !result.appointment) {
+        throw new Error(result.error ?? "No se pudo actualizar");
+      }
+
+      setEditingAppointment(null);
+      setReloadCounter((c) => c + 1);
+      showFeedback("success", "Datos del paciente actualizados");
+    },
+    [showFeedback],
+  );
+
+  const handleReschedule = useCallback(
+    async (payload: ReschedulePayload) => {
+      const response = await fetch("/api/clinic/appointments/reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = (await response.json()) as {
+        appointment?: AppointmentRow;
+        error?: string;
+        calendarWarning?: string | null;
+      };
+      if (!response.ok || !result.appointment) {
+        throw new Error(result.error ?? "No se pudo reagendar la cita");
+      }
+
+      setEditingAppointment(null);
+      setReloadCounter((c) => c + 1);
+
+      if (result.calendarWarning) {
+        showFeedback(
+          "error",
+          `Cita reagendada, pero Google Calendar no se sincronizó: ${result.calendarWarning}`,
+        );
+      } else {
+        showFeedback("success", "Cita reagendada correctamente");
+      }
+    },
+    [showFeedback],
+  );
+
+  const formatDateForModal = useCallback((scheduledAt: string | null, fallback: string) => {
+    if (!scheduledAt) return fallback;
+    const dt = new Date(scheduledAt);
+    if (Number.isNaN(dt.getTime())) return fallback;
+    return new Intl.DateTimeFormat("es-ES", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(dt);
+  }, []);
 
   const agendaSlots = useMemo(() => {
     if (!selectedDateObject || currentDaySchedules.length === 0) {
@@ -353,6 +442,31 @@ export function ClinicCalendarPage({
 
   return (
     <div className="space-y-8">
+      {editingAppointment ? (
+        <EditAppointmentModal
+          appointment={editingAppointment as EditableAppointment}
+          clinicSlug={clinicSlug}
+          clinicPlan={clinic?.plan ?? "free"}
+          basePath={basePath}
+          formatDate={formatDateForModal}
+          onSavePatient={handleSavePatient}
+          onReschedule={handleReschedule}
+          onClose={() => setEditingAppointment(null)}
+        />
+      ) : null}
+
+      {feedback ? (
+        <div
+          className={`fixed bottom-6 right-6 z-50 rounded-[10px] px-4 py-3 text-sm font-medium shadow-lg ${
+            feedback.tone === "success"
+              ? "border-[1.5px] border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-[1.5px] border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {feedback.message}
+        </div>
+      ) : null}
+
       <ClinicSetupBanner clinicSlug={clinicSlug} basePath={basePath} />
       <section className="overflow-hidden rounded-[30px] border border-white/70 bg-white/90 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.4)]">
         <div className="bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.14),_transparent_38%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,0.98))] p-7 md:p-8">
@@ -482,10 +596,11 @@ export function ClinicCalendarPage({
                         {slotLabel}
                       </div>
                       {appointment ? (
-                        <Link
-                          href={`/a/${appointment.token}`}
+                        <button
+                          type="button"
+                          onClick={() => handleAppointmentClick(appointment)}
                           title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                          className="flex rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_32px_-26px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
+                          className="flex w-full text-left rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_32px_-26px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-slate-50"
                         >
                           <div
                             className={`w-1.5 shrink-0 rounded-l-[22px] ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
@@ -508,7 +623,7 @@ export function ClinicCalendarPage({
                               </span>
                             ) : null}
                           </div>
-                        </Link>
+                        </button>
                       ) : (
                         <Link
                           href={`${basePath}/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}
@@ -594,10 +709,11 @@ export function ClinicCalendarPage({
                             className={`min-w-0 border-b border-l border-slate-200 p-2 ${isDayInactive ? "bg-slate-50" : "bg-white"}`}
                           >
                             {!slotExists ? null : appointment ? (
-                              <Link
-                                href={`/a/${appointment.token}`}
+                              <button
+                                type="button"
+                                onClick={() => handleAppointmentClick(appointment)}
                                 title={`Paciente: ${appointment.patient_name}\nServicio: ${appointment.service}\nModalidad: ${appointment.modality === "online" ? "Online" : "Presencial"}\nTeléfono: ${appointment.patient_phone?.trim() || "—"}\nEstado: ${statusMeta?.label ?? appointment.status}`}
-                                className="flex w-full min-w-0 max-w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-white"
+                                className="flex w-full min-w-0 max-w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 text-left shadow-[0_14px_28px_-24px_rgba(15,23,42,0.45)] transition-all duration-150 hover:border-slate-300 hover:bg-white"
                               >
                                 <div
                                   className={`w-1 shrink-0 rounded-l-[20px] ${statusMeta?.accentClassName ?? "bg-slate-400"}`}
@@ -620,7 +736,7 @@ export function ClinicCalendarPage({
                                     </span>
                                   ) : null}
                                 </div>
-                              </Link>
+                              </button>
                             ) : (
                               <Link
                                 href={`${basePath}/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
