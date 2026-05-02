@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getAdminUser } from "@/lib/adminAuth";
 import {
   ClinicUserProvisioningError,
   provisionClinicUserAccess,
@@ -10,8 +11,6 @@ type CreateClinicUserBody = {
   clinic_id?: unknown;
 };
 
-const ADMIN_API_SECRET = process.env.ADMIN_API_SECRET?.trim();
-
 function normalizeEmail(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -21,15 +20,8 @@ function normalizeClinicId(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!ADMIN_API_SECRET) {
-    return NextResponse.json(
-      { error: "Missing ADMIN_API_SECRET" },
-      { status: 500 },
-    );
-  }
-
-  const providedSecret = request.headers.get("x-admin-secret")?.trim();
-  if (!providedSecret || providedSecret !== ADMIN_API_SECRET) {
+  const admin = await getAdminUser();
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
