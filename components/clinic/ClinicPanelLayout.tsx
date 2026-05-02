@@ -9,6 +9,7 @@ type ClinicPanelLayoutProps = {
   children: React.ReactNode;
   clinicSlug: string;
   basePath: string;
+  banner?: React.ReactNode;
 };
 
 type NavItem = {
@@ -144,7 +145,7 @@ function deriveInitial(name: string | null, fallback: string): string {
   return (source[0] ?? "?").toUpperCase();
 }
 
-export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPanelLayoutProps) {
+export function ClinicPanelLayout({ children, clinicSlug, basePath, banner }: ClinicPanelLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [supabase] = useState(() => createSupabaseBrowserClient());
@@ -305,7 +306,10 @@ export function ClinicPanelLayout({ children, clinicSlug, basePath }: ClinicPane
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1 pb-6">{children}</main>
+        <main className="min-w-0 flex-1 pb-6">
+          {banner}
+          {children}
+        </main>
       </div>
     </div>
   );
