@@ -1,5 +1,6 @@
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
+import SubscriptionBanner from "@/components/clinic/SubscriptionBanner";
 import { requireClinicAccessForSlug } from "@/lib/clinicAuth";
 import { cookies } from "next/headers";
 
@@ -15,12 +16,16 @@ export default async function DynamicClinicLayout({
   const cookieStore = await cookies();
   const adminToken = cookieStore.get("admin_token")?.value ?? null;
 
-  await requireClinicAccessForSlug(slug, adminToken);
+  const clinicAccess = await requireClinicAccessForSlug(slug, adminToken);
 
   return (
     <>
       <ImpersonationBanner />
-      <ClinicPanelLayout clinicSlug={slug} basePath={`/clinic/${slug}`}>
+      <ClinicPanelLayout
+        clinicSlug={slug}
+        basePath={`/clinic/${slug}`}
+        banner={<SubscriptionBanner clinicId={clinicAccess.clinicId} />}
+      >
         {children}
       </ClinicPanelLayout>
     </>

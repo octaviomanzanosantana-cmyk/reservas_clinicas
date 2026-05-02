@@ -21,7 +21,6 @@ export default async function SubscriptionBanner({ clinicId }: Props) {
     .eq("id", clinicId)
     .maybeSingle();
 
-  // Si hay error o no hay datos, fail-silent (no romper el panel)
   if (error || !data) return null;
 
   const clinic: ClinicSubscriptionInfo = {
