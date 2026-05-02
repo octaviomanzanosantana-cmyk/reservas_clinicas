@@ -105,21 +105,30 @@ export async function requireClinicAccessForSlug(
   clinicSlug: string,
   adminToken?: string | null,
 ): Promise<CurrentClinicAccess> {
+  const safeSlug = clinicSlug.trim();
+
   // Check admin impersonation token first
   if (adminToken) {
-    const valid = await verifyAdminImpersonationToken(adminToken, clinicSlug);
+    const valid = await verifyAdminImpersonationToken(adminToken, safeSlug);
     if (valid) {
-      return {
-        userId: "admin-impersonation",
-        clinicId: clinicSlug,
-        clinicSlug,
-        role: "admin",
-      };
+      const { data: clinic } = await supabaseAdmin
+        .from("clinics")
+        .select("id")
+        .eq("slug", safeSlug)
+        .maybeSingle();
+
+      if (clinic?.id) {
+        return {
+          userId: "admin-impersonation",
+          clinicId: clinic.id,
+          clinicSlug: safeSlug,
+          role: "admin",
+        };
+      }
     }
   }
 
   const access = await requireCurrentClinicForRequest();
-  const safeSlug = clinicSlug.trim();
 
   if (access.clinicSlug !== safeSlug) {
     redirect(`/clinic/${access.clinicSlug}`);
