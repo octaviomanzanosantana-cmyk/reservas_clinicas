@@ -1,15 +1,6 @@
 import { getAdminUser } from "@/lib/adminAuth";
 import { NextResponse } from "next/server";
 
-function verifyAdmin(
-  request: Request,
-  admin: { id: string; email: string } | null,
-): boolean {
-  if (admin) return true;
-  const secret = request.headers.get("x-admin-secret");
-  return Boolean(secret && secret === process.env.ADMIN_API_SECRET?.trim());
-}
-
 /**
  * Sanitiza un mensaje para la respuesta JSON pública:
  *  - reemplaza cualquier token que parezca email por "[email]"
@@ -27,12 +18,11 @@ function sanitizeErrorForResponse(msg: string): string {
  * Reenvía la request al endpoint cron interno con CRON_SECRET en la auth
  * header, y devuelve la respuesta del cron tal cual al cliente.
  *
- * Auth dual (patrón común de /api/admin/*): sesión admin vía getAdminUser()
- * o fallback con header x-admin-secret == ADMIN_API_SECRET.
+ * Auth: sesión admin vía getAdminUser() (sesión Supabase + ADMIN_EMAILS).
  */
-export async function POST(request: Request) {
+export async function POST() {
   const admin = await getAdminUser();
-  if (!verifyAdmin(request, admin)) {
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
