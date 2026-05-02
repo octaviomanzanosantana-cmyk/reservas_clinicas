@@ -1,3 +1,4 @@
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
 import { requireClinicAccessForSlug } from "@/lib/clinicAuth";
 import { cookies } from "next/headers";
@@ -11,15 +12,17 @@ export default async function DynamicClinicLayout({
 }) {
   const { slug } = await params;
 
-  // Read admin_token from cookie (set by the redirect page)
   const cookieStore = await cookies();
   const adminToken = cookieStore.get("admin_token")?.value ?? null;
 
   await requireClinicAccessForSlug(slug, adminToken);
 
   return (
-    <ClinicPanelLayout clinicSlug={slug} basePath={`/clinic/${slug}`}>
-      {children}
-    </ClinicPanelLayout>
+    <>
+      <ImpersonationBanner />
+      <ClinicPanelLayout clinicSlug={slug} basePath={`/clinic/${slug}`}>
+        {children}
+      </ClinicPanelLayout>
+    </>
   );
 }
