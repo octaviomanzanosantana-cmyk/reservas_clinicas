@@ -259,15 +259,14 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/impersonate-clinic", {
         method: "POST",
-        headers: ADMIN_HEADERS,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug }),
       });
-      const data = (await res.json()) as { token?: string; error?: string };
-      if (!res.ok || !data.token) throw new Error(data.error ?? "Error");
-      window.open(`/admin/enter/${slug}?token=${data.token}`, "_blank");
+      const data = (await res.json()) as { redirect_to?: string; error?: string };
+      if (!res.ok || !data.redirect_to) throw new Error(data.error ?? "Error");
+      window.location.href = data.redirect_to;
     } catch {
       setError("No se pudo acceder al panel");
-    } finally {
       setEnteringClinic(null);
     }
   };
