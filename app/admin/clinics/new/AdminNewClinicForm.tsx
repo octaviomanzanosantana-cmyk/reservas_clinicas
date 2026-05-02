@@ -48,7 +48,6 @@ export default function AdminNewClinicForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_API_SECRET ?? "",
         },
         body: JSON.stringify({
           name,

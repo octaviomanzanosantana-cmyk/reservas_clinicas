@@ -74,13 +74,6 @@ function trialDaysLeft(trialEndsAt: string | null): string {
   return `${daysLeft} días`;
 }
 
-const ADMIN_HEADERS: Record<string, string> = {
-  "Content-Type": "application/json",
-  ...(typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ADMIN_API_SECRET
-    ? { "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_API_SECRET }
-    : {}),
-};
-
 export default function AdminDemoPanel() {
   const [allClinics, setAllClinics] = useState<ClinicItem[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -113,7 +106,7 @@ export default function AdminDemoPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/clinic-stats", { headers: ADMIN_HEADERS });
+      const res = await fetch("/api/admin/clinic-stats");
       const data = (await res.json()) as { clinics?: ClinicItem[]; error?: string };
 
       if (!res.ok) {
@@ -187,7 +180,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/demo-clinics", {
         method: "DELETE",
-        headers: ADMIN_HEADERS,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clinic_id: deleteTarget.id }),
       });
       if (!res.ok) {
@@ -210,7 +203,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/change-plan", {
         method: "POST",
-        headers: ADMIN_HEADERS,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clinic_id: clinicId, plan }),
       });
       if (!res.ok) throw new Error("Error al cambiar plan");
@@ -232,7 +225,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/change-subscription-status", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...ADMIN_HEADERS },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clinic_id: clinicId, subscription_status: newStatus }),
       });
       if (!res.ok) {
@@ -278,7 +271,6 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/admin/run-daily-lifecycle", {
         method: "POST",
-        headers: ADMIN_HEADERS,
       });
       const data = (await res.json()) as Partial<LifecycleSummary> & { error?: string };
       if (!res.ok || data.error) {
