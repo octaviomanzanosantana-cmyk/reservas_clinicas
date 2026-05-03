@@ -2,6 +2,7 @@
 
 import { PlanIntervalSelector, type PlanInterval } from "./PlanIntervalSelector";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type PaymentMethodSectionProps = {
   hasSubscription: boolean;
@@ -39,8 +40,30 @@ export function PaymentMethodSection({
   const [interval, setInterval] = useState<PlanInterval>("monthly");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [portalSubmitting, setPortalSubmitting] = useState(false);
 
   const nextRenewalDate = formatDateES(planExpiresAt);
+
+  const handleOpenPortal = async () => {
+    setPortalSubmitting(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      toast.error("No se pudo abrir el portal", {
+        description: data.error ?? "Inténtalo de nuevo en unos segundos.",
+      });
+    } catch {
+      toast.error("No se pudo abrir el portal", {
+        description: "Inténtalo de nuevo en unos segundos.",
+      });
+    } finally {
+      setPortalSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -95,6 +118,14 @@ export function PaymentMethodSection({
             Próxima renovación: {nextRenewalDate}
           </p>
         ) : null}
+        <button
+          type="button"
+          onClick={handleOpenPortal}
+          disabled={portalSubmitting}
+          className="mt-4 w-full rounded-[10px] bg-primary px-5 py-3 font-heading text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {portalSubmitting ? "Abriendo…" : "Gestionar pago y facturas"}
+        </button>
       </div>
     );
   }
