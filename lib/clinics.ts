@@ -27,6 +27,7 @@ export type ClinicRow = {
   google_token_expires_at: string | null;
   notification_email: string | null;
   review_url: string | null;
+  review_email_enabled: boolean;
   reminder_hours: number;
   offers_presencial: boolean;
   offers_online: boolean;

@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     if (body.status === "completed" && !current.review_sent_at && isPrimeraVisita) {
       const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
 
-      if (appointment.patient_email) {
+      if (appointment.patient_email && clinic?.review_email_enabled === true) {
         try {
           await sendAppointmentReviewEmail(
             appointment as AppointmentRow,
