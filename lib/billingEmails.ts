@@ -286,3 +286,72 @@ Si la cancelación fue un error o quieres volver más adelante, desde el mismo e
     text,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email #5: cancelación recibida — sigues activo hasta endsAt
+// ---------------------------------------------------------------------------
+
+export async function sendCancellationRequestedEmail(params: {
+  toEmail: string;
+  toName: string;
+  clinicName: string;
+  endsAt: string; // ISO de plan_expires_at
+}): Promise<void> {
+  const { apiKey, from } = getEmailConfig();
+  if (!apiKey || !from) {
+    throw new Error("EMAIL_API_KEY o EMAIL_FROM sin configurar");
+  }
+
+  const endDateFormatted = formatDateES(params.endsAt);
+  const nextDayIso = new Date(
+    new Date(params.endsAt).getTime() + 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const endDateNextDayFormatted = formatDateES(nextDayIso);
+
+  const subject = `Cancelación recibida — sigues activo hasta el ${endDateFormatted}`;
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#1A1A1A;">
+      Hola ${params.toName},
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Hemos recibido tu solicitud de cancelación para ${params.clinicName}.
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Tu suscripción Starter sigue activa hasta el
+      <strong>${endDateFormatted}</strong>. Hasta esa fecha mantienes
+      acceso completo a todas las funciones.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      A partir del <strong>${endDateNextDayFormatted}</strong> pasarás
+      al plan Free. Tus servicios, citas, pacientes y configuración se
+      mantienen — solo cambian los límites del plan.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#1A1A1A;">
+      Si te lo piensas mejor, puedes reactivar tu suscripción con un
+      click desde tu panel.
+    </p>
+    ${buildCtaButton("Volver a mi plan", MI_PLAN_URL)}
+  `;
+
+  const text = `Hola ${params.toName},
+
+Hemos recibido tu solicitud de cancelación para ${params.clinicName}.
+
+Tu suscripción Starter sigue activa hasta el ${endDateFormatted}. Hasta esa fecha mantienes acceso completo a todas las funciones.
+
+A partir del ${endDateNextDayFormatted} pasarás al plan Free. Tus servicios, citas, pacientes y configuración se mantienen — solo cambian los límites del plan.
+
+Si te lo piensas mejor, puedes reactivar tu suscripción con un click desde tu panel.
+
+Volver a mi plan: ${MI_PLAN_URL}`;
+
+  await sendEmail({
+    apiKey,
+    from,
+    to: [params.toEmail],
+    subject,
+    html: wrapEmailHtml(bodyHtml),
+    text,
+  });
+}
