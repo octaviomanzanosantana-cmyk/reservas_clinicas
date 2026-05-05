@@ -69,11 +69,13 @@ export async function getCurrentClinicForRequest(): Promise<CurrentClinicAccess 
 
 export async function requireCurrentClinicForRequest(): Promise<CurrentClinicAccess> {
   const access = await getCurrentClinicForRequest();
-  if (!access) {
-    redirect("/login");
-  }
+  if (access) return access;
 
-  return access;
+  // Fallback: check admin impersonation cookie (paridad con requireCurrentClinicForApi)
+  const impersonation = await tryAdminImpersonation();
+  if (impersonation) return impersonation;
+
+  redirect("/login");
 }
 
 export async function verifyAdminImpersonationToken(
