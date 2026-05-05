@@ -48,15 +48,13 @@ export async function POST(request: Request) {
     const codeHash = hashCode(code);
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
 
-    const { error: insertError } = await supabaseAdmin.from("two_factor_codes").insert({
+    await supabaseAdmin.from("two_factor_codes").insert({
       user_id: userId,
       code_hash: codeHash,
       expires_at: expiresAt,
       used: false,
       attempts: 0,
     });
-
-    console.log("[2fa-send] user_id:", userId, "insert_error:", insertError?.message ?? "none");
 
     // Send email
     const apiKey = process.env.EMAIL_API_KEY?.trim();

@@ -254,7 +254,6 @@ async function sendAppointmentEmail(
       });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic copy", {
-        clinicEmail,
         appointmentToken: appointment.token,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -367,7 +366,6 @@ export async function sendAppointmentReminderEmail(
       });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic reminder copy", {
-        clinicEmail,
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -416,7 +414,6 @@ export async function sendAppointmentCancelledEmail(
       });
     } catch (error) {
       console.error("[appointments.email] Failed to send clinic cancellation copy", {
-        clinicEmail,
         error: error instanceof Error ? error.message : String(error),
       });
     }

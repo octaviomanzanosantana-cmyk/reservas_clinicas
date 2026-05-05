@@ -175,7 +175,9 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // Si el email falla, el user ya existe sin confirmar y puede reenviar
     // desde /verify-email. Registramos pero no rompemos el signup.
-    console.error("[register] email send failed", err);
+    console.error("[register] email send failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   return NextResponse.json(

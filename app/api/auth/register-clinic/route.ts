@@ -135,7 +135,9 @@ export async function POST(request: Request) {
         await sendClinicWelcomeEmail(email, name!);
       }
     } catch (emailErr) {
-      console.error("[register-clinic] Welcome email failed", emailErr);
+      console.error("[register-clinic] Welcome email failed", {
+        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+      });
     }
 
     return NextResponse.json({

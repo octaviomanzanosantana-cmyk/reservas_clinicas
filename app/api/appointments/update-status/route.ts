@@ -84,9 +84,6 @@ export async function POST(request: Request) {
     const isPrimeraVisita = !current.appointment_type || current.appointment_type === "primera_visita";
     if (body.status === "completed" && !current.review_sent_at && isPrimeraVisita) {
       const clinic = appointment.clinic_id ? await getClinicById(appointment.clinic_id) : null;
-      console.log("[review email] status:", body.status);
-      console.log("[review email] review_url:", clinic?.review_url ?? null);
-      console.log("[review email] patient_email:", appointment.patient_email ?? null);
 
       if (appointment.patient_email) {
         try {
