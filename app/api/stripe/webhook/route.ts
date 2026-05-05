@@ -169,9 +169,11 @@ async function handleSubscriptionCreatedOrUpdated(
     });
   }
 
-  // Handle cancel_at_period_end: user requested cancellation but period still active
+  // Handle cancel_at_period_end: user requested cancellation but period still active.
+  // Cubre tanto suscripciones active como trial (un cliente puede cancelar durante el trial).
   const effectiveStatus: ClinicSubStatus =
-    subscription.cancel_at_period_end && newStatus === "active"
+    subscription.cancel_at_period_end &&
+    (newStatus === "active" || newStatus === "trial")
       ? "canceled"
       : newStatus;
 
@@ -204,7 +206,14 @@ async function handleSubscriptionCreatedOrUpdated(
   }
 
   if (effectiveStatus === "canceled" && clinic.subscription_status !== "canceled") {
+    // Entrando a canceled: marcar timestamp.
     update.canceled_at = new Date().toISOString();
+  } else if (
+    effectiveStatus !== "canceled" &&
+    clinic.subscription_status === "canceled"
+  ) {
+    // Saliendo de canceled (reactivación): limpiar timestamp.
+    update.canceled_at = null;
   }
 
   const { error } = await supabaseAdmin
