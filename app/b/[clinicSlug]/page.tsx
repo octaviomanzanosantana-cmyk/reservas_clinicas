@@ -952,7 +952,7 @@ export default function PublicBookingPage() {
                       <span className="text-sm text-muted">
                         He leído y acepto la{" "}
                         <a
-                          href="/privacy"
+                          href="https://appoclick.com/privacidad"
                           target="_blank"
                           rel="noreferrer"
                           className="font-medium text-foreground underline"
@@ -995,11 +995,11 @@ export default function PublicBookingPage() {
           </section>
         )}
         <footer className="mt-8 text-center text-xs text-muted">
-          <a href="/privacy" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+          <a href="https://appoclick.com/privacidad" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
             Política de privacidad
           </a>
           <span className="mx-2">·</span>
-          <a href="/legal" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+          <a href="https://appoclick.com/aviso-legal" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
             Aviso legal
           </a>
           <span className="mx-2">·</span>
