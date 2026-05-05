@@ -1,4 +1,5 @@
 import { PaymentMethodSection } from "@/components/billing/PaymentMethodSection";
+import { SubscriptionActions } from "@/components/billing/SubscriptionActions";
 import { requireCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
@@ -12,6 +13,7 @@ type ClinicSummary = {
   stripe_subscription_id: string | null;
   plan_expires_at: string | null;
   is_pilot: boolean;
+  canceled_at: string | null;
 };
 
 type TaxDataExists = { clinic_id: string };
@@ -20,7 +22,7 @@ async function getClinicSummary(clinicId: string): Promise<ClinicSummary | null>
   const { data } = await supabaseAdmin
     .from("clinics")
     .select(
-      "name, plan, subscription_status, trial_ends_at, stripe_subscription_id, plan_expires_at, is_pilot",
+      "name, plan, subscription_status, trial_ends_at, stripe_subscription_id, plan_expires_at, is_pilot, canceled_at",
     )
     .eq("id", clinicId)
     .maybeSingle<ClinicSummary>();
@@ -194,11 +196,30 @@ export default async function MiPlanPage({
               <h2 className="mt-3 font-heading text-xl font-semibold text-foreground">
                 Suscripción cancelada
               </h2>
-              <p className="mt-2 text-sm leading-7 text-muted">
-                Tu cuenta pasará a Free cuando termine tu periodo pagado.
-              </p>
+              {formatDateES(clinic.plan_expires_at) ? (
+                <p className="mt-2 text-sm leading-7 text-muted">
+                  Tu suscripción seguirá activa hasta el{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatDateES(clinic.plan_expires_at)}
+                  </span>
+                  . A partir de esa fecha pasarás al plan Free. Tus datos
+                  se conservan.
+                </p>
+              ) : (
+                <p className="mt-2 text-sm leading-7 text-muted">
+                  Tu cuenta pasará a Free cuando termine tu periodo pagado.
+                </p>
+              )}
             </>
           ) : null}
+
+          <SubscriptionActions
+            subscriptionStatus={clinic.subscription_status}
+            stripeSubscriptionId={clinic.stripe_subscription_id}
+            planExpiresAt={clinic.plan_expires_at}
+            canceledAt={clinic.canceled_at}
+            isPilot={clinic.is_pilot}
+          />
         </div>
       </section>
 
