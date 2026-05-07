@@ -22,12 +22,27 @@ type ClinicForReactivate = {
  * POST /api/billing/reactivate
  *
  * Operación inversa a /api/billing/cancel: marca la suscripción
- * Stripe con cancel_at_period_end=false. El webhook
- * customer.subscription.updated se encarga de devolver la BD a
- * subscription_status='active' y resetear canceled_at (B7).
+ * Stripe con cancel_at_period_end=false.
  *
- * Idempotente: si la subscription ya tenía
- * cancel_at_period_end=false, devuelve 200 sin llamar update.
+ * Sincronización BD:
+ *  - Sprint 6 (B7): el webhook customer.subscription.updated
+ *    devuelve la BD a subscription_status='active' y resetea
+ *    canceled_at cuando llega.
+ *  - Sprint 7.5 — branch desync (A1.6): si Stripe ya está activa
+ *    (cancel_at_period_end=false) pero BD aún muestra canceled,
+ *    reparar BD directamente sin esperar webhook (que puede no
+ *    disparar si el estado Stripe no cambia).
+ *  - Sprint 7.5 — path normal: tras subscriptions.update
+ *    cap=false, persistir subscription_status='active',
+ *    canceled_at=null y plan_expires_at inline para evitar la
+ *    race en que router.refresh() del cliente re-fetcha la RSC
+ *    antes de que llegue el webhook.
+ *  - El webhook customer.subscription.updated sigue siendo fuente
+ *    de verdad e idempotente (no-op si la BD ya coincide).
+ *
+ * Idempotencia Stripe: si la subscription ya tenía
+ * cancel_at_period_end=false, no se llama subscriptions.update.
+ * El branch desync sí puede escribir BD aunque no toque Stripe.
  */
 export async function POST() {
   try {
@@ -165,6 +180,37 @@ export async function POST() {
     const endsAtIso = endUnix
       ? new Date(endUnix * 1000).toISOString()
       : clinic.plan_expires_at;
+
+    // BD inline update: avoid race where router.refresh() re-fetches
+    // RSC before customer.subscription.updated webhook reaches BD.
+    // Webhook remains source of truth and is idempotent (no-op if
+    // BD already matches expected state).
+    if (endsAtIso !== null) {
+      const { error: syncError } = await supabaseAdmin
+        .from("clinics")
+        .update({
+          subscription_status: "active",
+          canceled_at: null,
+          plan_expires_at: endsAtIso,
+        })
+        .eq("id", clinic.id);
+
+      if (syncError) {
+        console.warn(
+          "[api/billing/reactivate] BD inline sync failed (webhook will repair)",
+          {
+            clinicId: clinic.id,
+            code: syncError.code,
+            message: syncError.message,
+          },
+        );
+      }
+    } else {
+      console.warn(
+        "[api/billing/reactivate] endsAtIso null, skipping BD inline (webhook will repair)",
+        { clinicId: clinic.id },
+      );
+    }
 
     return NextResponse.json({
       ok: true,

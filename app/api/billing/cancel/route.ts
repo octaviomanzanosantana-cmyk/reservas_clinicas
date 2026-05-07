@@ -31,9 +31,17 @@ type CancelBody = Partial<{
  *
  * Marca la suscripción Stripe con cancel_at_period_end=true,
  * registra el feedback en subscription_cancellations y envía
- * el email #12 "cancelación recibida". El downgrade efectivo a
- * Free lo gestiona el webhook customer.subscription.deleted al
- * vencer el periodo (email #13).
+ * el email #12 "cancelación recibida".
+ *
+ * Sincronización BD:
+ *  - Sprint 7.5: el endpoint persiste subscription_status='canceled',
+ *    canceled_at y plan_expires_at inline tras el Stripe update para
+ *    evitar la race en que router.refresh() del cliente re-fetcha la
+ *    RSC antes de que llegue el webhook.
+ *  - El webhook customer.subscription.updated sigue siendo fuente de
+ *    verdad e idempotente (no-op si la BD ya coincide).
+ *  - El downgrade efectivo canceled → free al vencer el periodo lo
+ *    sigue gestionando customer.subscription.deleted (email #13).
  *
  * Idempotente: si la subscription ya tenía cancel_at_period_end=true,
  * devuelve 200 sin reinsertar feedback ni reenviar email.
@@ -152,6 +160,40 @@ export async function POST(request: Request) {
     const endsAtIso = endUnix
       ? new Date(endUnix * 1000).toISOString()
       : null;
+
+    // BD inline update: avoid race where router.refresh() re-fetches
+    // RSC before customer.subscription.updated webhook reaches BD.
+    // Webhook remains source of truth and is idempotent (no-op if
+    // BD already matches expected state).
+    // Defensive: skip BD inline if endsAtIso is null (improbable —
+    // requires Stripe response without trial_end nor current_period_end).
+    // Webhook will set plan_expires_at when it arrives.
+    if (endsAtIso !== null) {
+      const { error: syncError } = await supabaseAdmin
+        .from("clinics")
+        .update({
+          subscription_status: "canceled",
+          canceled_at: new Date().toISOString(),
+          plan_expires_at: endsAtIso,
+        })
+        .eq("id", clinic.id);
+
+      if (syncError) {
+        console.warn(
+          "[api/billing/cancel] BD inline sync failed (webhook will repair)",
+          {
+            clinicId: clinic.id,
+            code: syncError.code,
+            message: syncError.message,
+          },
+        );
+      }
+    } else {
+      console.warn(
+        "[api/billing/cancel] endsAtIso null, skipping BD inline (webhook will set plan_expires_at)",
+        { clinicId: clinic.id },
+      );
+    }
 
     // INSERT subscription_cancellations (non-fatal: la fila es
     // analítica interna; Stripe es la fuente de verdad del estado).
