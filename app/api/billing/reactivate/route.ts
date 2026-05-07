@@ -13,6 +13,7 @@ type ClinicForReactivate = {
   stripe_subscription_id: string | null;
   plan_expires_at: string | null;
   is_pilot: boolean;
+  canceled_at: string | null;
 };
 
 /**
@@ -37,7 +38,7 @@ export async function POST() {
     const { data: clinic } = await supabaseAdmin
       .from("clinics")
       .select(
-        "id, name, subscription_status, stripe_subscription_id, plan_expires_at, is_pilot",
+        "id, name, subscription_status, stripe_subscription_id, plan_expires_at, is_pilot, canceled_at",
       )
       .eq("id", access.clinicId)
       .maybeSingle<ClinicForReactivate>();
@@ -102,6 +103,44 @@ export async function POST() {
     );
 
     if (current.cancel_at_period_end === false) {
+      // Defensive: BD/Stripe desync. Stripe says "active" but BD has
+      // canceled flag. Repair BD directly (do not wait for webhook,
+      // may not fire if Stripe state is unchanged).
+      if (
+        clinic.subscription_status === "canceled" ||
+        clinic.canceled_at !== null
+      ) {
+        const { error: repairError } = await supabaseAdmin
+          .from("clinics")
+          .update({
+            subscription_status: "active",
+            canceled_at: null,
+          })
+          .eq("id", clinic.id);
+
+        if (repairError) {
+          console.error("[api/billing/reactivate] BD repair failed", {
+            clinicId: clinic.id,
+            code: repairError.code,
+            message: repairError.message,
+          });
+          return NextResponse.json(
+            { ok: false, error: "repair_failed" },
+            { status: 500 },
+          );
+        }
+
+        console.warn("[api/billing/reactivate] BD repaired (desync)", {
+          clinicId: clinic.id,
+        });
+        return NextResponse.json({
+          ok: true,
+          already_active: true,
+          repaired: true,
+          plan_expires_at: clinic.plan_expires_at,
+        });
+      }
+
       console.info(
         "[api/billing/reactivate] already active (idempotent)",
         { clinicId: clinic.id },
