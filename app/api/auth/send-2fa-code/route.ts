@@ -22,13 +22,25 @@ export async function POST(request: Request) {
     }
 
     // Rate limit: check if a code was sent less than 60s ago
-    const { data: recent } = await supabaseAdmin
+    const { data: recent, error: recentError } = await supabaseAdmin
       .from("two_factor_codes")
       .select("created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (recentError) {
+      console.error("[api/auth/send-2fa-code] rate-limit query failed", {
+        userId,
+        code: recentError.code,
+        message: recentError.message,
+      });
+      return NextResponse.json(
+        { ok: false, error: "internal_error" },
+        { status: 500 },
+      );
+    }
 
     if (recent?.created_at) {
       const lastSent = new Date(recent.created_at).getTime();
@@ -38,23 +50,55 @@ export async function POST(request: Request) {
     }
 
     // Invalidate previous codes
-    await supabaseAdmin
+    const { error: invalidateError } = await supabaseAdmin
       .from("two_factor_codes")
       .update({ used: true })
       .eq("user_id", userId)
       .eq("used", false);
 
+    if (invalidateError) {
+      console.error(
+        "[api/auth/send-2fa-code] failed to invalidate previous codes",
+        {
+          userId,
+          code: invalidateError.code,
+          message: invalidateError.message,
+        },
+      );
+      return NextResponse.json(
+        { ok: false, error: "internal_error" },
+        { status: 500 },
+      );
+    }
+
     const code = generate6DigitCode();
     const codeHash = hashCode(code);
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
 
-    await supabaseAdmin.from("two_factor_codes").insert({
-      user_id: userId,
-      code_hash: codeHash,
-      expires_at: expiresAt,
-      used: false,
-      attempts: 0,
-    });
+    const { error: insertError } = await supabaseAdmin
+      .from("two_factor_codes")
+      .insert({
+        user_id: userId,
+        code_hash: codeHash,
+        expires_at: expiresAt,
+        used: false,
+        attempts: 0,
+      });
+
+    if (insertError) {
+      console.error(
+        "[api/auth/send-2fa-code] failed to insert new code",
+        {
+          userId,
+          code: insertError.code,
+          message: insertError.message,
+        },
+      );
+      return NextResponse.json(
+        { ok: false, error: "internal_error" },
+        { status: 500 },
+      );
+    }
 
     // Send email
     const apiKey = process.env.EMAIL_API_KEY?.trim();
@@ -101,8 +145,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("[api/auth/send-2fa-code] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error enviando código" },
+      { ok: false, error: "internal_error" },
       { status: 500 },
     );
   }

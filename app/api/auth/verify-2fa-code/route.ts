@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Get latest unused code for this user
-    const { data: record } = await supabaseAdmin
+    const { data: record, error: recordError } = await supabaseAdmin
       .from("two_factor_codes")
       .select("*")
       .eq("user_id", userId)
@@ -27,6 +27,18 @@ export async function POST(request: Request) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (recordError) {
+      console.error("[api/auth/verify-2fa-code] record query failed", {
+        userId,
+        code: recordError.code,
+        message: recordError.message,
+      });
+      return NextResponse.json(
+        { ok: false, error: "internal_error" },
+        { status: 500 },
+      );
+    }
 
     if (!record) {
       return NextResponse.json(
@@ -37,6 +49,8 @@ export async function POST(request: Request) {
 
     // Check expiry
     if (new Date(record.expires_at).getTime() < Date.now()) {
+      // Fire-and-forget intencional: si falla, el guard
+      // expires_at < now() sigue rechazando el codigo.
       await supabaseAdmin
         .from("two_factor_codes")
         .update({ used: true })
@@ -50,6 +64,8 @@ export async function POST(request: Request) {
 
     // Check max attempts
     if (record.attempts >= MAX_ATTEMPTS) {
+      // Fire-and-forget intencional: si falla, el guard
+      // attempts >= MAX_ATTEMPTS sigue rechazando.
       await supabaseAdmin
         .from("two_factor_codes")
         .update({ used: true })
@@ -65,10 +81,26 @@ export async function POST(request: Request) {
     const codeHash = hashCode(code);
     if (codeHash !== record.code_hash) {
       // Increment attempts
-      await supabaseAdmin
+      const { error: incError } = await supabaseAdmin
         .from("two_factor_codes")
         .update({ attempts: record.attempts + 1 })
         .eq("id", record.id);
+
+      if (incError) {
+        console.error(
+          "[api/auth/verify-2fa-code] failed to increment attempts (security risk: bruteforce protection bypassed)",
+          {
+            userId,
+            codeId: record.id,
+            code: incError.code,
+            message: incError.message,
+          },
+        );
+        return NextResponse.json(
+          { ok: false, error: "internal_error" },
+          { status: 500 },
+        );
+      }
 
       const remaining = MAX_ATTEMPTS - record.attempts - 1;
       return NextResponse.json(
@@ -83,15 +115,34 @@ export async function POST(request: Request) {
     }
 
     // Mark as used
-    await supabaseAdmin
+    const { error: usedError } = await supabaseAdmin
       .from("two_factor_codes")
       .update({ used: true })
       .eq("id", record.id);
 
+    if (usedError) {
+      console.error(
+        "[api/auth/verify-2fa-code] failed to mark code used (security risk: code may be reused)",
+        {
+          userId,
+          codeId: record.id,
+          code: usedError.code,
+          message: usedError.message,
+        },
+      );
+      return NextResponse.json(
+        { ok: false, error: "internal_error" },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("[api/auth/verify-2fa-code] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error verificando código" },
+      { ok: false, error: "internal_error" },
       { status: 500 },
     );
   }
