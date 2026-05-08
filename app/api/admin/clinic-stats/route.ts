@@ -95,8 +95,11 @@ export async function GET() {
 
     return NextResponse.json({ clinics: result });
   } catch (error) {
+    console.error("[api/admin/clinic-stats] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error" },
+      { error: "internal_error" },
       { status: 500 },
     );
   }

@@ -50,8 +50,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("[api/admin/change-subscription-status] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error" },
+      { error: "internal_error" },
       { status: 500 },
     );
   }

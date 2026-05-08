@@ -71,10 +71,25 @@ export async function POST(request: Request) {
     });
 
     // Marcar como demo
-    await supabaseAdmin
+    const { error: updateDemoError } = await supabaseAdmin
       .from("clinics")
       .update({ is_demo: true })
       .eq("id", clinic.id);
+
+    if (updateDemoError) {
+      console.error(
+        "[api/admin/demo-clinics] failed to mark clinic as demo",
+        {
+          clinicId: clinic.id,
+          code: updateDemoError.code,
+          message: updateDemoError.message,
+        },
+      );
+      return NextResponse.json(
+        { error: "internal_error" },
+        { status: 500 },
+      );
+    }
 
     // Crear usuario + membership + email de bienvenida
     let accessResult: { success: boolean; error?: string } = { success: false };
@@ -93,11 +108,28 @@ export async function POST(request: Request) {
       }
 
       // Vincular usuario ↔ clínica
-      await supabaseAdmin.from("clinic_users").insert({
-        clinic_id: clinic.id,
-        user_id: authData.user.id,
-        role: "owner",
-      });
+      const { error: bindError } = await supabaseAdmin
+        .from("clinic_users")
+        .insert({
+          clinic_id: clinic.id,
+          user_id: authData.user.id,
+          role: "owner",
+        });
+
+      if (bindError) {
+        console.error(
+          "[api/admin/demo-clinics] failed to link user to clinic",
+          {
+            clinicId: clinic.id,
+            code: bindError.code,
+            message: bindError.message,
+          },
+        );
+        return NextResponse.json(
+          { error: "internal_error" },
+          { status: 500 },
+        );
+      }
 
       // Generar link de reset password
       const { data: linkData, error: linkError } =
@@ -134,8 +166,11 @@ export async function POST(request: Request) {
       access: accessResult,
     }, { status: 201 });
   } catch (error) {
+    console.error("[api/admin/demo-clinics POST] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "No se pudo crear la demo" },
+      { error: "internal_error" },
       { status: 500 },
     );
   }
@@ -159,8 +194,11 @@ export async function DELETE(request: Request) {
     await deleteClinicById(clinicId);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("[api/admin/demo-clinics DELETE] uncaught error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "No se pudo eliminar" },
+      { error: "internal_error" },
       { status: 500 },
     );
   }

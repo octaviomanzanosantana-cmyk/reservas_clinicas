@@ -9,6 +9,9 @@ export async function POST() {
   const token = cookieStore.get(COOKIE_NAME)?.value?.trim();
 
   if (token) {
+    // Fire-and-forget intencional: si falla, la cookie se
+    // borra igualmente abajo y la sesion termina; la fila
+    // queda con used=false solo afecta a auditoria.
     const { data } = await supabaseAdmin
       .from("impersonation_tokens")
       .update({ used: true })
