@@ -1,5 +1,6 @@
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ClinicPanelLayout } from "@/components/clinic/ClinicPanelLayout";
+import DPABanner from "@/components/clinic/DPABanner";
 import SubscriptionBanner from "@/components/clinic/SubscriptionBanner";
 import { requireClinicAccessForSlug } from "@/lib/clinicAuth";
 import { cookies } from "next/headers";
@@ -24,7 +25,12 @@ export default async function DynamicClinicLayout({
       <ClinicPanelLayout
         clinicSlug={slug}
         basePath={`/clinic/${slug}`}
-        banner={<SubscriptionBanner clinicId={clinicAccess.clinicId} />}
+        banner={
+          <>
+            <SubscriptionBanner clinicId={clinicAccess.clinicId} />
+            <DPABanner clinicId={clinicAccess.clinicId} />
+          </>
+        }
       >
         {children}
       </ClinicPanelLayout>
