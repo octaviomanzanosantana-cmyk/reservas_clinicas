@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         .from("clinics")
         .update({
           dpa_accepted_at: new Date().toISOString(),
-          dpa_version: metadata.dpa_version ?? "v1.4",
+          dpa_version: metadata.dpa_version ?? "v1.5",
           dpa_ip: metadata.dpa_ip ?? null,
         })
         .eq("id", clinic.id);

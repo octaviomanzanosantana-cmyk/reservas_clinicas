@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       .from("clinics")
       .update({
         dpa_accepted_at: new Date().toISOString(),
-        dpa_version: "v1.4",
+        dpa_version: "v1.5",
         dpa_ip: ip,
       })
       .eq("id", access.clinicId);

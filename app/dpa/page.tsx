@@ -15,7 +15,7 @@ export default function DpaPage() {
           <h1 className="mt-4 font-heading text-3xl font-bold tracking-tight text-foreground">
             Contrato de Encargo de Tratamiento (DPA)
           </h1>
-          <p className="mt-2 text-sm text-muted">Versión 1.4 · Abril 2026</p>
+          <p className="mt-2 text-sm text-muted">Versión 1.5 · Mayo 2026</p>
 
           <div className="mt-6 rounded-[10px] border border-border bg-background p-4 text-sm text-muted leading-6">
             <p><strong className="text-foreground">Encargado:</strong> ANALÓGICAMENTE DIGITALES, SOCIEDAD LIMITADA (AppoClick)</p>
@@ -36,8 +36,8 @@ export default function DpaPage() {
               <h2 className="font-heading text-lg font-semibold text-foreground">2. Datos tratados</h2>
               <ul className="mt-3 list-disc space-y-1.5 pl-6 text-muted">
                 <li><strong className="text-foreground">Categorías de interesados:</strong> pacientes de la clínica</li>
-                <li><strong className="text-foreground">Tipos de datos:</strong> nombre, email, teléfono, fecha/hora de cita, tipo de consulta, modalidad (presencial/online)</li>
-                <li><strong className="text-foreground">No se tratan:</strong> historiales médicos, diagnósticos, datos clínicos ni contenido sanitario</li>
+                <li><strong className="text-foreground">Tipos de datos:</strong> nombre, email, teléfono, fecha y hora de la cita, servicio contratado, tipo de cita (primera visita o revisión), modalidad (presencial u online), enlace de videollamada cuando la modalidad es online, e identificador único asignado por el sistema para la gestión de la cita por parte del paciente (cancelación o reprogramación desde su email de confirmación)</li>
+                <li><strong className="text-foreground">No se tratan:</strong> historiales médicos, diagnósticos, datos clínicos ni contenido sanitario. AppoClick no dispone de campos de texto libre para que el paciente o la clínica introduzcan información clínica</li>
               </ul>
             </section>
 
@@ -72,10 +72,14 @@ export default function DpaPage() {
                     <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Supabase Inc.</td><td className="py-2.5 pr-4">Base de datos y autenticación</td><td className="py-2.5">UE (Frankfurt)</td></tr>
                     <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Vercel Inc.</td><td className="py-2.5 pr-4">Infraestructura y hosting</td><td className="py-2.5">UE / EE.UU. (DPF)</td></tr>
                     <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Resend Inc.</td><td className="py-2.5 pr-4">Envío de emails transaccionales</td><td className="py-2.5">EE.UU. (DPF)</td></tr>
-                    <tr><td className="py-2.5 pr-4">Stripe Inc.</td><td className="py-2.5 pr-4">Procesamiento de pagos (solo datos de clínicas)</td><td className="py-2.5">UE / EE.UU. (DPF)</td></tr>
+                    <tr className="border-b border-border/50"><td className="py-2.5 pr-4">Stripe Inc.</td><td className="py-2.5 pr-4">Procesamiento de pagos (datos de la clínica, no de pacientes)</td><td className="py-2.5">UE / EE.UU. (DPF)</td></tr>
+                    <tr><td className="py-2.5 pr-4">Google LLC</td><td className="py-2.5 pr-4">Sincronización opcional de citas con Google Calendar (sólo si la clínica conecta su cuenta)</td><td className="py-2.5">EE.UU. (DPF)</td></tr>
                   </tbody>
                 </table>
               </div>
+              <p className="mt-3 text-muted">
+                La integración con Google Calendar es opcional y se activa únicamente cuando la clínica conecta su cuenta de Google desde el panel. En ese caso, AppoClick transmite a Google Calendar el nombre del paciente, la fecha y hora de la cita, el servicio contratado y el identificador único de la cita. Si la clínica no conecta Google Calendar, no se realiza transferencia alguna a Google.
+              </p>
               <p className="mt-3 text-muted">
                 El Responsable autoriza al Encargado a contratar nuevos subencargados, previa notificación. El Responsable puede oponerse en un plazo de 15 días.
               </p>
@@ -92,12 +96,18 @@ export default function DpaPage() {
               <h2 className="font-heading text-lg font-semibold text-foreground">6. Medidas de seguridad</h2>
               <ul className="mt-3 list-disc space-y-1.5 pl-6 text-muted">
                 <li>Cifrado HTTPS/TLS en todas las comunicaciones</li>
-                <li>Separación de datos por clínica (Row-Level Security)</li>
-                <li>Autenticación segura con 2FA obligatorio</li>
-                <li>Tokens únicos con caducidad por cita</li>
-                <li>Rate limiting en login (protección fuerza bruta)</li>
-                <li>Backups automáticos cifrados</li>
-                <li>Notificación de brechas a la AEPD en menos de 72 horas</li>
+                <li>Cifrado en reposo de la base de datos (proporcionado por el subencargado de hosting de base de datos)</li>
+                <li>Separación de datos por clínica mediante Row-Level Security en la base de datos</li>
+                <li>Autenticación segura con segundo factor (2FA) obligatorio para los usuarios del panel de la clínica</li>
+                <li>Identificadores únicos por cita con caducidad para la gestión por parte del paciente</li>
+                <li>Rate limiting en endpoints públicos de autenticación, registro y reserva de citas para protección frente a abuso y fuerza bruta</li>
+                <li>Verificación criptográfica (HMAC) de la firma de los webhooks recibidos de subencargados</li>
+                <li>Mecanismo de idempotencia que impide procesar dos veces el mismo evento externo</li>
+                <li>Auditoría del acceso de soporte: las sesiones de impersonación por parte del personal de AppoClick requieren un token de un solo uso con caducidad máxima de 60 minutos y se registran para trazabilidad</li>
+                <li>Registro de las eliminaciones de datos de pacientes solicitadas por la clínica, conservando únicamente el email afectado, fecha y autor del borrado, para acreditar el cumplimiento de las solicitudes ARCO</li>
+                <li>Aislamiento de credenciales y secretos en el servidor: ningún secreto ni clave de API se expone en el código que se entrega al navegador del cliente</li>
+                <li>Backups automáticos cifrados gestionados por el subencargado de base de datos</li>
+                <li>Notificación de brechas de seguridad a la AEPD en menos de 72 horas desde su conocimiento, conforme al art. 33 RGPD</li>
               </ul>
             </section>
 
@@ -111,6 +121,9 @@ export default function DpaPage() {
               </ul>
               <p className="mt-4 text-muted">
                 <strong className="text-foreground">Gestión de solicitudes de supresión (derecho al olvido):</strong> el sistema identifica a los pacientes por dirección de email. Si un mismo paciente ha realizado reservas utilizando emails distintos, la clínica deberá eliminar sus datos de forma separada para cada email utilizado, desde el panel Pacientes. La identificación de todos los emails asociados a un paciente es responsabilidad de la clínica como Responsable del Tratamiento.
+              </p>
+              <p className="mt-4 text-muted">
+                <strong className="text-foreground">Recordatorios por WhatsApp:</strong> la funcionalidad de recordatorios por WhatsApp que ofrece AppoClick consiste en preparar el texto del recordatorio y ponerlo a disposición de la clínica (por email matinal o desde el panel). AppoClick no envía mensajes a través de WhatsApp Business API ni de ningún otro canal de mensajería instantánea. La transmisión efectiva del recordatorio al paciente vía WhatsApp se realiza por iniciativa y bajo la responsabilidad de la clínica desde su propia cuenta personal de WhatsApp, quedando fuera del ámbito de tratamiento del Encargado.
               </p>
             </section>
 

@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         data: {
           clinic_name: clinicName,
           dpa_accepted: dpaAccepted,
-          dpa_version: dpaAccepted ? "v1.4" : null,
+          dpa_version: dpaAccepted ? "v1.5" : null,
           dpa_ip: dpaAccepted ? clientIp : null,
         },
       },
