@@ -75,7 +75,12 @@ export async function requireCurrentClinicForRequest(): Promise<CurrentClinicAcc
   const impersonation = await tryAdminImpersonation();
   if (impersonation) return impersonation;
 
-  redirect("/login");
+  // User autenticado pero sin clinic_users (provisioning incompleto del signup,
+  // p.ej. confirmación vía path Supabase nativo que se salta /auth/confirm).
+  // Redirigir a /login crea bucle: login OK → /clinic → aquí → /login → ...
+  // /verify-email con ?error= muestra CTA reenviar email; si no hay sesión
+  // real, su useEffect detecta !user y redirige a /login (1 hop extra, OK).
+  redirect("/verify-email?error=no_clinic_provisioned");
 }
 
 export async function verifyAdminImpersonationToken(

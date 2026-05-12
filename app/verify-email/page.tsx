@@ -1,11 +1,63 @@
 "use client";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-export default function VerifyEmailPage() {
+type ErrorCode =
+  | "no_clinic_provisioned"
+  | "invalid_link"
+  | "verify_failed"
+  | "provisioning_failed"
+  | "unknown";
+
+function normalizeErrorCode(raw: string | null): ErrorCode | null {
+  if (!raw) return null;
+  switch (raw) {
+    case "no_clinic_provisioned":
+    case "invalid_link":
+    case "verify_failed":
+    case "provisioning_failed":
+      return raw;
+    default:
+      // /auth/confirm también emite ?error=<verifyError.message> en algunos
+      // casos (mensaje crudo de Supabase). Cae en "unknown" → copy genérico.
+      return "unknown";
+  }
+}
+
+const ERROR_COPY: Record<ErrorCode, { title: string; message: string }> = {
+  no_clinic_provisioned: {
+    title: "Tu panel no se creó",
+    message:
+      "Tu email se confirmó pero la creación de tu panel no se completó. Reenvía el email de verificación para terminar la activación.",
+  },
+  invalid_link: {
+    title: "Enlace no válido",
+    message:
+      "El enlace de confirmación no es válido. Solicita un nuevo email para volver a intentarlo.",
+  },
+  verify_failed: {
+    title: "No pudimos verificar tu email",
+    message:
+      "El enlace puede haber expirado o haberse usado ya. Reenvía el email de verificación para obtener uno nuevo.",
+  },
+  provisioning_failed: {
+    title: "No pudimos crear tu panel",
+    message:
+      "Tu email se confirmó pero no pudimos crear tu panel automáticamente. Reenvía el email de verificación o contacta soporte si el problema persiste.",
+  },
+  unknown: {
+    title: "Algo no ha ido bien",
+    message:
+      "Ha ocurrido un error procesando tu verificación. Reenvía el email para volver a intentarlo.",
+  },
+};
+
+function VerifyEmailContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorCode = normalizeErrorCode(searchParams.get("error"));
   const [supabase] = useState(() => createSupabaseBrowserClient());
   const [email, setEmail] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
@@ -22,8 +74,10 @@ export default function VerifyEmailPage() {
         router.replace("/login");
         return;
       }
-      // Ya confirmado: llévalo a su panel
-      if (data.user.email_confirmed_at) {
+      // Con errorCode en URL, mostramos el mensaje aunque el email esté
+      // confirmado (rompe el bucle /clinic→/verify-email→/clinic cuando
+      // el provisioning quedó incompleto). Sin errorCode: panel.
+      if (!errorCode && data.user.email_confirmed_at) {
         router.replace("/clinic");
         return;
       }
@@ -33,7 +87,7 @@ export default function VerifyEmailPage() {
     return () => {
       active = false;
     };
-  }, [supabase, router]);
+  }, [supabase, router, errorCode]);
 
   const handleResend = async () => {
     if (!email) return;
@@ -64,22 +118,30 @@ export default function VerifyEmailPage() {
     return null;
   }
 
+  const errorCopy = errorCode ? ERROR_COPY[errorCode] : null;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-md flex-col gap-6 px-4 py-16">
         <div className="rounded-[14px] border-[0.5px] border-border bg-card p-8">
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-            Verifica tu email
+            {errorCopy ? errorCopy.title : "Verifica tu email"}
           </h1>
-          <p className="mt-3 text-sm text-foreground">
-            Hemos enviado un enlace de verificación a{" "}
-            {email ? <strong>{email}</strong> : "tu correo"}. Haz clic en él para activar tu cuenta
-            y acceder al panel.
-          </p>
-          <p className="mt-2 text-sm text-muted">
-            Si no ves el email, revisa la carpeta de spam o promociones. Puede tardar un par de
-            minutos.
-          </p>
+          {errorCopy ? (
+            <p className="mt-3 text-sm text-foreground">{errorCopy.message}</p>
+          ) : (
+            <>
+              <p className="mt-3 text-sm text-foreground">
+                Hemos enviado un enlace de verificación a{" "}
+                {email ? <strong>{email}</strong> : "tu correo"}. Haz clic en él para activar tu cuenta
+                y acceder al panel.
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                Si no ves el email, revisa la carpeta de spam o promociones. Puede tardar un par de
+                minutos.
+              </p>
+            </>
+          )}
 
           <div className="mt-6 flex flex-col gap-3">
             <button
@@ -104,5 +166,13 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
