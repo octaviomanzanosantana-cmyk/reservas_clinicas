@@ -26,11 +26,21 @@ export async function GET() {
 
     const clinicIds = (clinics ?? []).map((c) => c.id);
 
+    // Bug-1 signal (intermitente): clinics query OK pero 0 filas.
+    // Sin clinicIds no hay nada que enriquecer; devolvemos respuesta vacía
+    // valida en vez de inyectar "__none__" en columnas uuid (22P02).
+    if (clinicIds.length === 0) {
+      console.warn("[clinic-stats] zero clinics returned by query", {
+        timestamp: new Date().toISOString(),
+      });
+      return NextResponse.json({ clinics: [] });
+    }
+
     // Get owner emails via clinic_users join
     const { data: clinicUsers, error: clinicUsersError } = await supabaseAdmin
       .from("clinic_users")
       .select("clinic_id, user_id")
-      .in("clinic_id", clinicIds.length > 0 ? clinicIds : ["__none__"]);
+      .in("clinic_id", clinicIds);
 
     if (clinicUsersError) {
       console.error("[clinic-stats] clinic_users query failed", {
@@ -69,7 +79,7 @@ export async function GET() {
     const { data: counts, error: countsError } = await supabaseAdmin
       .from("appointments")
       .select("clinic_id")
-      .in("clinic_id", clinicIds.length > 0 ? clinicIds : ["__none__"]);
+      .in("clinic_id", clinicIds);
 
     if (countsError) {
       console.error("[clinic-stats] appointments query failed", {
