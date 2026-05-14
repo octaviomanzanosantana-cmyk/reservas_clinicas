@@ -10,7 +10,7 @@ export async function GET() {
 
   try {
     // Get all clinics with their owner email
-    const { data: clinics, error: clinicsError } = await supabaseAdmin
+    const { data: clinicsInitial, error: clinicsError } = await supabaseAdmin
       .from("clinics")
       .select("id, slug, name, plan, is_demo, created_at, subscription_status, trial_ends_at, stripe_subscription_id")
       .order("created_at", { ascending: false });
@@ -24,7 +24,8 @@ export async function GET() {
       return NextResponse.json({ error: "clinics query failed" }, { status: 500 });
     }
 
-    const clinicIds = (clinics ?? []).map((c) => c.id);
+    let clinics = clinicsInitial ?? [];
+    let clinicIds = clinics.map((c) => c.id);
 
     // Bug-1 signal (intermitente): clinics query OK pero 0 filas.
     // Sin clinicIds no hay nada que enriquecer; devolvemos respuesta vacía
@@ -53,7 +54,28 @@ export async function GET() {
           anonKeyPrefix: anonKey.slice(0, 4),
         },
       });
-      return NextResponse.json({ clinics: [] });
+
+      // TODO(T2-BUG1-RLS): workaround for pool-stale bug.
+      // Root cause not fully diagnosed. See sprint doc.
+      const retry = await supabaseAdmin
+        .from("clinics")
+        .select("id, slug, name, plan, is_demo, created_at, subscription_status, trial_ends_at, stripe_subscription_id")
+        .order("created_at", { ascending: false });
+
+      if ((retry.data?.length ?? 0) > 0) {
+        console.warn("[clinic-stats] retry succeeded — pool stale confirmed (e4)", {
+          retryRowCount: retry.data?.length ?? 0,
+        });
+        clinics = retry.data ?? [];
+        clinicIds = clinics.map((c) => c.id);
+        // Fall through al flujo normal de enriquecimiento (clinic_users + appointments).
+      } else {
+        console.warn("[clinic-stats] retry also returned zero", {
+          retryErrorCode: (retry.error as { code?: string } | null)?.code,
+          retryErrorMessage: retry.error?.message,
+        });
+        return NextResponse.json({ clinics: [] });
+      }
     }
 
     // Get owner emails via clinic_users join
