@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getAdminUser } from "@/lib/adminAuth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { cookies } from "next/headers";
@@ -74,6 +75,14 @@ export async function requireCurrentClinicForRequest(): Promise<CurrentClinicAcc
   // Fallback: check admin impersonation cookie (paridad con requireCurrentClinicForApi)
   const impersonation = await tryAdminImpersonation();
   if (impersonation) return impersonation;
+
+  // Superadmin (email en ADMIN_EMAILS) no tiene clinic_users por diseño:
+  // pertenece a la plataforma, no a una clinica. Redirigir al panel admin
+  // en vez de /verify-email (que es para clientes con provisioning fallido).
+  const adminUser = await getAdminUser();
+  if (adminUser) {
+    redirect("/admin/clinics");
+  }
 
   // User autenticado pero sin clinic_users (provisioning incompleto del signup,
   // p.ej. confirmación vía path Supabase nativo que se salta /auth/confirm).
