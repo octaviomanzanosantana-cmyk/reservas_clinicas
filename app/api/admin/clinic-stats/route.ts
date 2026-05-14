@@ -30,8 +30,28 @@ export async function GET() {
     // Sin clinicIds no hay nada que enriquecer; devolvemos respuesta vacía
     // valida en vez de inyectar "__none__" en columnas uuid (22P02).
     if (clinicIds.length === 0) {
+      // Sanity check dirigido (EJE B'): ¿el cliente tiene service role real?
+      // auth.admin.listUsers SOLO funciona con service role legacy JWT (eyJ...).
+      // Si falla o devuelve vacio → cliente esta autenticado con anon o con
+      // sb_secret_* nuevas que NO bypassan RLS (ver hotfix B7.1 revertido 9/5/26).
+      const sanityStart = Date.now();
+      const { data: sanityData, error: sanityError } =
+        await supabaseAdmin.auth.admin.listUsers({ perPage: 1 });
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
       console.warn("[clinic-stats] zero clinics returned by query", {
         timestamp: new Date().toISOString(),
+        sanity: {
+          ms: Date.now() - sanityStart,
+          hasServiceRole: !sanityError && (sanityData?.users?.length ?? 0) > 0,
+          errorCode: (sanityError as { code?: string } | null)?.code,
+          errorMessage: sanityError?.message,
+          serviceRoleKeyLen: serviceKey.length,
+          serviceRoleKeyPrefix: serviceKey.slice(0, 4),
+          anonKeyLen: anonKey.length,
+          anonKeyPrefix: anonKey.slice(0, 4),
+        },
       });
       return NextResponse.json({ clinics: [] });
     }
