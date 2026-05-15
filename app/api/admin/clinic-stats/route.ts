@@ -2,6 +2,19 @@ import { getAdminUser } from "@/lib/adminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
+// Shape devuelto por public.get_all_clinics() — 9 columnas estrictas.
+type ClinicRow = {
+  id: string;
+  slug: string;
+  name: string;
+  plan: string;
+  is_demo: boolean;
+  created_at: string;
+  subscription_status: string | null;
+  trial_ends_at: string | null;
+  stripe_subscription_id: string | null;
+};
+
 export async function GET() {
   const admin = await getAdminUser();
   if (!admin) {
@@ -9,11 +22,9 @@ export async function GET() {
   }
 
   try {
-    // Get all clinics with their owner email
+    // Plan B Bug 1 — RPC SECURITY DEFINER bypasea pool/role stale.
     const { data: clinicsInitial, error: clinicsError } = await supabaseAdmin
-      .from("clinics")
-      .select("id, slug, name, plan, is_demo, created_at, subscription_status, trial_ends_at, stripe_subscription_id")
-      .order("created_at", { ascending: false });
+      .rpc("get_all_clinics");
 
     if (clinicsError) {
       console.error("[clinic-stats] clinics query failed", {
@@ -24,7 +35,7 @@ export async function GET() {
       return NextResponse.json({ error: "clinics query failed" }, { status: 500 });
     }
 
-    let clinics = clinicsInitial ?? [];
+    let clinics: ClinicRow[] = (clinicsInitial as ClinicRow[] | null) ?? [];
     let clinicIds = clinics.map((c) => c.id);
 
     // Bug-1 signal (intermitente): clinics query OK pero 0 filas.
@@ -55,18 +66,14 @@ export async function GET() {
         },
       });
 
-      // TODO(T2-BUG1-RLS): workaround for pool-stale bug.
-      // Root cause not fully diagnosed. See sprint doc.
-      const retry = await supabaseAdmin
-        .from("clinics")
-        .select("id, slug, name, plan, is_demo, created_at, subscription_status, trial_ends_at, stripe_subscription_id")
-        .order("created_at", { ascending: false });
+      // Defense-in-depth: segundo intento via RPC (mismo bypass de RLS).
+      const retry = await supabaseAdmin.rpc("get_all_clinics");
 
       if ((retry.data?.length ?? 0) > 0) {
         console.warn("[clinic-stats] retry succeeded — pool stale confirmed (e4)", {
           retryRowCount: retry.data?.length ?? 0,
         });
-        clinics = retry.data ?? [];
+        clinics = (retry.data as ClinicRow[] | null) ?? [];
         clinicIds = clinics.map((c) => c.id);
         // Fall through al flujo normal de enriquecimiento (clinic_users + appointments).
       } else {
