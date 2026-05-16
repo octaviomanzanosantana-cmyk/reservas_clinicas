@@ -84,6 +84,10 @@ export function ClinicPatientsPage({
   const [editingAppointment, setEditingAppointment] = useState<AppointmentRow | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  // Status update (Asistió / Cancelar)
+  const [updatingAppointmentToken, setUpdatingAppointmentToken] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // Delete modal
   const [deleteEmail, setDeleteEmail] = useState<string | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -189,6 +193,50 @@ export function ClinicPatientsPage({
     }
   };
 
+  const handleAppointmentStatusUpdate = useCallback(async (
+    token: string,
+    status: "confirmed" | "cancelled" | "completed",
+  ) => {
+    setUpdatingAppointmentToken(token);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/appointments/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, status }),
+      });
+      const data = (await response.json()) as {
+        appointment?: AppointmentRow;
+        error?: string;
+        calendarWarning?: string | null;
+      };
+
+      if (!response.ok || !data.appointment) {
+        throw new Error(data.error ?? "No se pudo actualizar la cita");
+      }
+
+      setAppointments((current) =>
+        current.map((a) => (a.token === token ? { ...a, ...data.appointment! } : a)),
+      );
+
+      if (status === "completed") {
+        setFeedback("Marcada como asistida. Email de reseña enviado.");
+        setTimeout(() => setFeedback(null), 4000);
+      }
+
+      if (data.calendarWarning) {
+        setErrorMessage(
+          `La cita se actualizó, pero Google Calendar no se pudo sincronizar: ${data.calendarWarning}`,
+        );
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la cita");
+    } finally {
+      setUpdatingAppointmentToken(null);
+    }
+  }, []);
+
   // Show ARCO button only when searching by exact email
   const isExactEmailSearch = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -267,6 +315,9 @@ export function ClinicPatientsPage({
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {feedback}
         </p>
+      ) : null}
+      {errorMessage ? (
+        <p className="text-sm text-red-600">{errorMessage}</p>
       ) : null}
 
       {/* Search + Filters */}
@@ -352,6 +403,7 @@ export function ClinicPatientsPage({
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Fecha/hora</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -385,6 +437,32 @@ export function ClinicPatientsPage({
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_BADGE[a.status] ?? STATUS_BADGE.cancelled}`}>
                       {STATUS_LABELS[a.status] ?? a.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {a.status === "confirmed" ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(a.token, "completed")
+                          }
+                          disabled={updatingAppointmentToken === a.token}
+                          className="rounded-[10px] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Asistió
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleAppointmentStatusUpdate(a.token, "cancelled")
+                          }
+                          disabled={updatingAppointmentToken === a.token}
+                          className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}

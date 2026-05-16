@@ -103,7 +103,7 @@ function isFutureAppointment(appointment: AppointmentRow): boolean {
   const scheduledAt = new Date(appointment.scheduled_at);
   if (Number.isNaN(scheduledAt.getTime())) return false;
 
-  return scheduledAt.getTime() > Date.now();
+  return scheduledAt.getTime() > Date.now() || isTodayLocal(appointment.scheduled_at);
 }
 
 function getAppointmentStatusLabel(status: string): string {
@@ -828,9 +828,33 @@ export function ClinicDashboardPage({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {appointment.review_sent_at ? (
                         <span title="Email de reseña enviado">⭐️</span>
+                      ) : null}
+                      {appointment.status === "confirmed" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleAppointmentStatusUpdate(appointment.token, "completed")
+                            }
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-[10px] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Asistió
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleAppointmentStatusUpdate(appointment.token, "cancelled")
+                            }
+                            disabled={updatingAppointmentToken === appointment.token}
+                            className="rounded-[10px] border-[0.5px] border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancelar
+                          </button>
+                        </>
                       ) : null}
                       {appointment.status === "completed" || appointment.status === "cancelled" ? (
                         <button
