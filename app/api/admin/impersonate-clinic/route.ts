@@ -20,13 +20,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "slug requerido" }, { status: 400 });
     }
 
-    const { data: clinic, error: clinicError } = await supabaseAdmin
-      .from("clinics")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+    // Plan B PostgREST authenticator bug — RPC SECURITY DEFINER
+    // bypasea el rol incorrecto (mismo patron que get_all_clinics).
+    const { data: clinicRows, error: clinicError } = await supabaseAdmin
+      .rpc("get_clinic_by_slug", { p_slug: slug });
 
     if (clinicError) throw new Error(clinicError.message);
+    const clinic = (clinicRows as Array<{ id: string }> | null)?.[0] ?? null;
     if (!clinic) {
       return NextResponse.json({ error: "Clínica no encontrada" }, { status: 404 });
     }
