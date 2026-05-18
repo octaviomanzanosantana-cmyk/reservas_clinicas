@@ -394,3 +394,54 @@ Marcar al final:
 ---
 
 **Fin del checklist · congelado 17 mayo 2026 · ejecutar tal cual el lunes**
+
+---
+
+## 11. Ejecución real · 19 mayo 2026
+
+### Resumen ejecutivo
+
+- Timestamp Ready: lunes 19 mayo 2026 · 10:42 Canarias
+- Duración total: ~30 min
+- Resultado: EXITOSO
+- Deploy LIVE actual: HJcaifWCt (redeploy de 222846c)
+- Deploy rollback disponible: GHsd8kNfQ (commit 222846c)
+- STRIPE_MODE: test → live ✅
+
+### Verificaciones pasadas
+
+- [x] STRIPE_MODE=live verificado visualmente
+- [x] Redeploy "Ready" verde
+- [x] app.appoclick.com carga normalmente
+- [x] Webhook GET → 405 (correcto)
+- [x] Webhook POST sin firma → 400 con [stripe-webhook] signatu…
+- [x] Sin errores 5xx en logs Vercel últimos 5 min
+- [x] Sin "Missing STRIPE_*_LIVE" en logs
+- [x] Smoke signup público OK
+- [x] Webhook LIVE 0 fallos pre y post flip
+
+### Baselines pre-flip
+
+- Clinics con stripe_subscription_id pre-flip: 2 (TEST esperadas)
+- Webhook eventos fallidos 7d pre-flip: 0
+- Customers Stripe LIVE detectados: 2 huérfanos sin sub (Miriam, test_prueba, ambos del 7 abr, 0 € gastados)
+
+### Hardening env vars LIVE ejecutado
+
+- STRIPE_SECRET_KEY_LIVE: editado, scope Production+Preview (sin Development)
+- STRIPE_WEBHOOK_SECRET_LIVE: editado, mismo scope
+- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE: editado, mismo scope
+- STRIPE_PRICE_STARTER_MONTHLY_LIVE: verificado OK (Sensitive)
+- STRIPE_PRICE_STARTER_YEARLY_LIVE: verificado OK (Sensitive)
+
+### Incidencias durante ejecución
+
+Ninguna bloqueante. Una observación local:
+
+- curl en PowerShell falló con CRYPT_E_NO_REVOCATION_CHECK (problema Schannel de Windows, no de producción). Resuelto con flag -k para el smoke. Apuntado a backlog.
+
+### Backlog Tier 2 detectado durante cutover
+
+- **T2-LIVE-CLEANUP**: limpiar customers Stripe LIVE huérfanos (Miriam + test_prueba, 7 abr, 0 € gastados, sin subscription). Verificar que `clinics.stripe_customer_id` huérfano de Miriam no genera ruido en queries.
+- **T2-UX-LOGIN-TYPO**: typo "panel de tu clinica" sin tilde en `/login` (pre-existente, no introducido en cutover).
+- **T2-WIN-LOCAL**: investigar `CRYPT_E_NO_REVOCATION_CHECK` en PowerShell/curl local Windows. No afecta producción, solo herramientas locales de diagnóstico.
