@@ -11,7 +11,8 @@ export type Feature =
   | "unlimited_services"
   | "white_label"
   | "custom_domain"
-  | "private_video_room";
+  | "private_video_room"
+  | "month_view";
 
 const PLAN_FEATURES: Record<Plan, Feature[]> = {
   free: ["booking", "email_confirmation"],
@@ -24,6 +25,7 @@ const PLAN_FEATURES: Record<Plan, Feature[]> = {
     "video_link",
     "unlimited_appointments",
     "unlimited_services",
+    "month_view",
   ],
   pro: [
     "booking",
@@ -37,6 +39,7 @@ const PLAN_FEATURES: Record<Plan, Feature[]> = {
     "white_label",
     "custom_domain",
     "private_video_room",
+    "month_view",
   ],
 };
 

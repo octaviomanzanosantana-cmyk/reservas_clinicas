@@ -35,6 +35,7 @@ export async function GET(request: Request) {
         logo_has_dark_bg: clinic.logo_has_dark_bg,
         timezone: clinic.timezone,
         plan: clinic.plan ?? "free",
+        is_pilot: clinic.is_pilot ?? false,
         dpa_accepted_at: clinic.dpa_accepted_at ?? null,
         notify_on_new_appointment: clinic.notify_on_new_appointment ?? false,
         notify_on_whatsapp_reminder: clinic.notify_on_whatsapp_reminder ?? false,
