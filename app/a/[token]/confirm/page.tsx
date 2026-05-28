@@ -24,12 +24,14 @@ export default function ConfirmPage() {
   const [loading, setLoading] = useState(true);
   const [calendarWarning, setCalendarWarning] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
+  const [slotTakenError, setSlotTakenError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       setLoading(true);
+      setSlotTakenError(null);
       try {
         const response = await fetch("/api/appointments/confirm", {
           method: "POST",
@@ -38,6 +40,20 @@ export default function ConfirmPage() {
         });
 
         if (!response.ok) {
+          if (response.status === 409) {
+            const errorBody = (await response.json().catch(() => ({}))) as {
+              error?: string;
+              message?: string;
+            };
+            if (active && errorBody.error === "slot_taken") {
+              setSlotTakenError(
+                errorBody.message ?? "Este horario ya no está disponible.",
+              );
+              setAppointment(null);
+              setClinic(null);
+              return;
+            }
+          }
           if (active) { setAppointment(null); setClinic(null); }
           return;
         }
@@ -78,6 +94,19 @@ export default function ConfirmPage() {
       return (
         <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center text-sm text-muted">
           Cargando cita...
+        </section>
+      );
+    }
+
+    if (slotTakenError) {
+      return (
+        <section className="rounded-[14px] border-[0.5px] border-border bg-card p-6 text-center">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">
+            Horario no disponible
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            {slotTakenError} Por favor, contacta con la clínica para reagendar tu cita.
+          </p>
         </section>
       );
     }
@@ -192,7 +221,7 @@ export default function ConfirmPage() {
         <PatientFooter supportPhone={clinic?.supportPhone ?? null} />
       </>
     );
-  }, [appointment, calendarWarning, changed, clinic, loading, token]);
+  }, [appointment, calendarWarning, changed, clinic, loading, slotTakenError, token]);
 
   return <div className="space-y-4">{content}</div>;
 }
