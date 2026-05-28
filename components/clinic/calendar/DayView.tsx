@@ -67,7 +67,7 @@ export function DayView({
   }, [currentDaySchedules, selectedDateObject]);
 
   const appointmentsBySlot = useMemo(() => {
-    const map = new Map<string, AppointmentRow>();
+    const map = new Map<string, AppointmentRow[]>();
 
     for (const appointment of appointments) {
       if (!appointment.scheduled_at) continue;
@@ -75,7 +75,13 @@ export function DayView({
       const scheduledAt = new Date(appointment.scheduled_at);
       if (Number.isNaN(scheduledAt.getTime())) continue;
 
-      map.set(getSlotKey(scheduledAt), appointment);
+      const key = getSlotKey(scheduledAt);
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(appointment);
+      } else {
+        map.set(key, [appointment]);
+      }
     }
 
     return map;
@@ -96,7 +102,7 @@ export function DayView({
     <div className="space-y-3">
       {agendaSlots.map((slot) => {
         const slotLabel = formatTimeLabel(slot);
-        const appointment = appointmentsBySlot.get(slotLabel);
+        const slotAppointments = appointmentsBySlot.get(slotLabel) ?? [];
 
         return (
           <div
@@ -106,12 +112,17 @@ export function DayView({
             <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold tracking-tight text-slate-900 shadow-sm">
               {slotLabel}
             </div>
-            {appointment ? (
-              <AppointmentCard
-                appointment={appointment}
-                variant="regular"
-                onClick={onAppointmentClick}
-              />
+            {slotAppointments.length > 0 ? (
+              <div className="space-y-2">
+                {slotAppointments.map((appointment) => (
+                  <AppointmentCard
+                    key={appointment.token}
+                    appointment={appointment}
+                    variant="regular"
+                    onClick={onAppointmentClick}
+                  />
+                ))}
+              </div>
             ) : (
               <Link
                 href={`${basePath}/appointments/new?date=${selectedDateObject ? formatDateInput(selectedDateObject) : selectedDate}&time=${slotLabel}`}

@@ -143,15 +143,14 @@ export function WeekView({
                 const slotExists = daySlots.some(
                   (slot) => formatTimeLabel(slot) === timeLabel,
                 );
-                const appointment =
-                  (appointmentsByDate[item.dateKey] ?? []).find((entry) => {
-                    if (!entry.scheduled_at) return false;
-                    const scheduledAt = new Date(entry.scheduled_at);
-                    return (
-                      !Number.isNaN(scheduledAt.getTime()) &&
-                      getSlotKey(scheduledAt) === timeLabel
-                    );
-                  }) ?? null;
+                const slotAppointments = (appointmentsByDate[item.dateKey] ?? []).filter((entry) => {
+                  if (!entry.scheduled_at) return false;
+                  const scheduledAt = new Date(entry.scheduled_at);
+                  return (
+                    !Number.isNaN(scheduledAt.getTime()) &&
+                    getSlotKey(scheduledAt) === timeLabel
+                  );
+                });
 
                 const isDayInactive =
                   item.daySchedules.length === 0 ||
@@ -162,12 +161,17 @@ export function WeekView({
                     key={`${item.dateKey}-${timeLabel}`}
                     className={`min-w-0 border-b border-l border-slate-200 p-2 ${isDayInactive ? "bg-slate-50" : "bg-white"}`}
                   >
-                    {!slotExists ? null : appointment ? (
-                      <AppointmentCard
-                        appointment={appointment}
-                        variant="compact"
-                        onClick={onAppointmentClick}
-                      />
+                    {!slotExists ? null : slotAppointments.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {slotAppointments.map((appointment) => (
+                          <AppointmentCard
+                            key={appointment.token}
+                            appointment={appointment}
+                            variant="compact"
+                            onClick={onAppointmentClick}
+                          />
+                        ))}
+                      </div>
                     ) : (
                       <Link
                         href={`${basePath}/appointments/new?date=${item.dateKey}&time=${timeLabel}`}
