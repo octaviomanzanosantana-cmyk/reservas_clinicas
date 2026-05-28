@@ -33,6 +33,41 @@ export async function POST(request: Request) {
 
     await assertCurrentClinicAccessForApi({ clinicId: current.clinic_id });
 
+    // Revalidar slot solo cuando la transición es realmente a 'confirmed' desde otro estado.
+    // Las transiciones a 'cancelled' o 'completed' nunca revalidan (siempre permitido liberar/completar).
+    if (body.status === "confirmed" && current.status !== "confirmed") {
+      if (!current.scheduled_at || !current.clinic_id) {
+        console.warn(
+          `[update-status] skip slot check: scheduled_at/clinic_id null, token=${current.token}`,
+        );
+      } else {
+        const { data: collision, error: collisionError } = await supabaseAdmin
+          .from("appointments")
+          .select("id")
+          .eq("scheduled_at", current.scheduled_at)
+          .eq("clinic_id", current.clinic_id)
+          .neq("status", "cancelled")
+          .neq("token", current.token)
+          .limit(1)
+          .maybeSingle();
+
+        if (collisionError) {
+          throw new Error(collisionError.message);
+        }
+
+        if (collision) {
+          return NextResponse.json(
+            {
+              error: "slot_taken",
+              message:
+                "Ese horario ya está ocupado por otra cita. Cancela o reagenda la otra antes de confirmar esta.",
+            },
+            { status: 409 },
+          );
+        }
+      }
+    }
+
     const appointment = (await updateAppointmentStatus(token, body.status)) ?? current;
     let calendarWarning: string | null = null;
 

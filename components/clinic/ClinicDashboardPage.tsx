@@ -283,11 +283,12 @@ export function ClinicDashboardPage({
       const data = (await response.json()) as {
         appointment?: AppointmentRow;
         error?: string;
+        message?: string;
         calendarWarning?: string | null;
       };
 
       if (!response.ok || !data.appointment) {
-        throw new Error(data.error ?? "No se pudo actualizar la cita");
+        throw new Error(data.message ?? data.error ?? "No se pudo actualizar la cita");
       }
 
       setAppointments((current) =>
