@@ -1,10 +1,12 @@
-# Sprint Fix Doble Booking (parte 1 de 2 — código)
+# Sprint Fix Doble Booking (parte 1 + 2 — código + DB)
 
-**Fecha cierre:** 28 mayo 2026
+**Fecha cierre parte 1 (código):** 28 mayo 2026
+**Fecha cierre parte 2 (DB):** 28 mayo 2026
 **Branch:** main
-**Commits (en orden):** `22af5c4`, `562b29c`, `c70b7c9`
+**Commits parte 1 (en orden):** `22af5c4`, `562b29c`, `c70b7c9`
+**Migración parte 2:** `supabase/migrations/20260528_appointments_unique_slot_active.sql`
 **Deploy:** pendiente push (3 commits acumulados en local; GitHub HTTPS auth roto en la máquina local).
-**Bloqueante para soft launch S8:** No — el incidente está contenido (1 par duplicado conocido, Isabelle+Rosa), el fix de código cierra los dos agujeros conocidos.
+**Bloqueante para soft launch S8:** No — el incidente está contenido (1 par duplicado conocido, Isabelle+Rosa), el fix de código cierra los dos agujeros conocidos y el índice DB elimina la posibilidad de nuevos doble bookings.
 
 ---
 
@@ -116,20 +118,20 @@ Impersonación Doctora Miriam, casos validados por Octavio:
 
 ---
 
-## 6. PENDIENTE — parte 2 del sprint
+## 6. Parte 2 — COMPLETADA 28 mayo 2026
 
-**No ejecutado en este sprint, queda como parte 2:**
+Aplicada manualmente en el SQL Editor de Supabase y reflejada en repo vía migración `supabase/migrations/20260528_appointments_unique_slot_active.sql` (con `IF NOT EXISTS` — solo documenta el estado, no recrea).
 
-1. **Limpieza histórica del duplicado Isabelle/Rosa.** Decisión producto pendiente de Miriam: cuál de las dos citas mantiene `confirmed` y cuál pasa a `cancelled`. Acción manual desde panel clínica una vez decidido (los fixes de PASOS 1-2 ya impedirán que el rescate vuelva a generar el conflicto).
-2. **Detección de otros duplicados preexistentes** vía la query Q4 del PASO 5 (`GROUP BY clinic_id, scheduled_at HAVING COUNT(*) > 1 AND status IS DISTINCT FROM 'cancelled'`). Si aparecen más casos en otras clínicas, limpieza coordinada antes del índice.
-3. **Crear índice unique parcial** sobre `appointments`:
+1. **Limpieza histórica del duplicado Isabelle/Rosa.** ✅ Hecho 28/5/26: cita de Isabelle pasada a `cancelled` manualmente desde el SQL Editor antes de crear el índice.
+2. **Detección de otros duplicados preexistentes** vía la query Q4 del PASO 5. ✅ Ejecutada: solo el par Isabelle/Rosa apareció, sin más limpiezas necesarias.
+3. **Índice unique parcial** sobre `appointments`. ✅ Creado 28/5/26 en producción:
    ```sql
-   CREATE UNIQUE INDEX idx_appointments_unique_active_slot
-     ON public.appointments (clinic_id, scheduled_at)
+   CREATE UNIQUE INDEX appointments_unique_slot_active
+     ON appointments (clinic_id, scheduled_at)
      WHERE status IS DISTINCT FROM 'cancelled';
    ```
-   Predicado refinado a `IS DISTINCT FROM` (cubre `NULL` como activo, defensa en profundidad). Bloqueado hasta cumplir (1) y (2): un `CREATE UNIQUE INDEX` con duplicados existentes falla en seco.
-4. **Cerrar race condition residual.** Hoy los checks de colisión en `confirm`/`update-status` siguen siendo SELECT-then-UPDATE (no atómico). El índice de (3) es la única garantía DB contra dos requests confirm/update-status simultáneos sobre el mismo slot. Hasta entonces, riesgo teórico bajo (no es el patrón del incidente real, que es secuencial con 11 días de separación).
+   Predicado `IS DISTINCT FROM` cubre `NULL` como activo (defensa en profundidad). Nombre final: `appointments_unique_slot_active` (en la planificación inicial se barajaba `idx_appointments_unique_active_slot`).
+4. **Race condition residual cerrada.** ✅ El índice de (3) es ahora la garantía DB contra dos requests confirm/update-status simultáneos sobre el mismo slot. T2-APPT-CONFIRM-RACE cerrado.
 
 ---
 
@@ -178,16 +180,10 @@ Impersonación Doctora Miriam, casos validados por Octavio:
 - **Push de los 3 commits** cuando se reautentique GitHub HTTPS en local (PAT expirado o helper roto — bloquea el push, no afecta los commits ya creados).
 - Commit doc Sprint Fix Doble Booking incluido en este mismo push.
 
-### Parte 2 del sprint (entrada al stack en cuanto haya decisión producto)
-
-1. Miriam decide cuál cita mantener (Isabelle vs Rosa) — pendiente.
-2. Ejecución Q4 + posibles limpiezas adicionales.
-3. `CREATE UNIQUE INDEX` con predicado `IS DISTINCT FROM 'cancelled'`.
-
 ### Tier 2 priorizable
 
-7 hallazgos abiertos en §7. **T2-APPT-STATUS-NO-SHOW-CHECK-MISMATCH** es el más barato (decidir + 1 migration). **T2-APPT-STATUS-AUDIT-LOG** es el más valioso defensivamente (sin él los próximos incidentes serán igual de difíciles de reconstruir). **T2-APPT-MULTI-STAFF-INDEX** se activa solo cuando llegue el sprint multi-staff.
+6 hallazgos abiertos en §7 tras cerrar T2-APPT-CONFIRM-RACE en la parte 2. **T2-APPT-STATUS-NO-SHOW-CHECK-MISMATCH** es el más barato (decidir + 1 migration). **T2-APPT-STATUS-AUDIT-LOG** es el más valioso defensivamente (sin él los próximos incidentes serán igual de difíciles de reconstruir). **T2-APPT-MULTI-STAFF-INDEX** se activa solo cuando llegue el sprint multi-staff (migrar `appointments_unique_slot_active` a `(clinic_id, staff_id, scheduled_at)`).
 
 ---
 
-**Sprint Fix Doble Booking (parte 1 de 2 — código) cerrado el 28 mayo 2026.**
+**Sprint Fix Doble Booking (parte 1 + 2 — código + DB) cerrado el 28 mayo 2026.**
