@@ -86,6 +86,11 @@ export async function GET(request: NextRequest) {
     dpa_version?: string | null;
     dpa_ip?: string | null;
     clinic_provisioned?: boolean;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_term?: string;
+    utm_content?: string;
   };
 
   // Idempotencia: ¿ya tiene clínica este user? (por ejemplo, si hace click
@@ -149,6 +154,34 @@ export async function GET(request: NextRequest) {
           dpa_ip: metadata.dpa_ip ?? null,
         })
         .eq("id", clinic.id);
+    }
+
+    // Atribución de canal (UTM). Lo ausente se escribe NULL — nunca
+    // undefined ni "" — para que en CAC se distinga "vino sin ese UTM" de
+    // un dato corrupto. Aislado: perder una atribución es molesto, pero un
+    // fallo aquí NO debe tumbar el alta (perder un alta es grave).
+    try {
+      const { error: utmError } = await supabaseAdmin
+        .from("clinics")
+        .update({
+          utm_source: metadata.utm_source ?? null,
+          utm_medium: metadata.utm_medium ?? null,
+          utm_campaign: metadata.utm_campaign ?? null,
+          utm_term: metadata.utm_term ?? null,
+          utm_content: metadata.utm_content ?? null,
+        })
+        .eq("id", clinic.id);
+      if (utmError) {
+        console.warn("[auth/confirm] utm attribution update failed", {
+          clinicId: clinic.id,
+          error: utmError.message,
+        });
+      }
+    } catch (err) {
+      console.warn("[auth/confirm] utm attribution update threw", {
+        clinicId: clinic.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Marcar la metadata para evitar re-provisioning si algo vuelve aquí
