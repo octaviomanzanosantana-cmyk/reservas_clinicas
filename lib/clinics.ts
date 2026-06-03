@@ -52,6 +52,11 @@ export type ClinicRow = {
   holded_contact_id: string | null;
   is_pilot: boolean;
   last_trial_email_sent: "5d" | "24h" | "expired" | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
 };
 
 /**
