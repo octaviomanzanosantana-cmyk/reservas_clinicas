@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function RegisterForm() {
+export type UtmParams = Partial<
+  Record<
+    "utm_source" | "utm_medium" | "utm_campaign" | "utm_term" | "utm_content",
+    string
+  >
+>;
+
+export function RegisterForm({ utm = {} }: { utm?: UtmParams }) {
   const router = useRouter();
   const [clinicName, setClinicName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,6 +37,7 @@ export function RegisterForm() {
           clinicName: clinicName.trim(),
           dpa_accepted: true,
           website,
+          ...utm,
         }),
       });
 

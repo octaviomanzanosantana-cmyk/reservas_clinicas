@@ -1,13 +1,39 @@
-import { RegisterForm } from "@/components/auth/RegisterForm";
+import { RegisterForm, type UtmParams } from "@/components/auth/RegisterForm";
 import { getCurrentClinicForRequest } from "@/lib/clinicAuth";
 import { redirect } from "next/navigation";
 
-export default async function RegisterPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+const UTM_KEYS: (keyof UtmParams)[] = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+];
+
+function readUtmParams(params: SearchParams): UtmParams {
+  const utm: UtmParams = {};
+  for (const key of UTM_KEYS) {
+    const raw = params[key];
+    const value = (Array.isArray(raw) ? raw[0] : raw)?.trim();
+    if (value) utm[key] = value;
+  }
+  return utm;
+}
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const clinicAccess = await getCurrentClinicForRequest();
 
   if (clinicAccess) {
     redirect(`/clinic/${clinicAccess.clinicSlug}`);
   }
+
+  const utm = readUtmParams(await searchParams);
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 md:px-6 md:py-12">
@@ -25,7 +51,7 @@ export default async function RegisterPage() {
             </p>
 
             <div className="mt-8">
-              <RegisterForm />
+              <RegisterForm utm={utm} />
             </div>
           </div>
         </section>

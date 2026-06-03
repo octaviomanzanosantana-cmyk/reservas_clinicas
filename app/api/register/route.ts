@@ -10,7 +10,34 @@ type RegisterBody = {
   clinicName?: unknown;
   dpa_accepted?: unknown;
   website?: unknown; // honeypot
+  utm_source?: unknown;
+  utm_medium?: unknown;
+  utm_campaign?: unknown;
+  utm_term?: unknown;
+  utm_content?: unknown;
 };
+
+const UTM_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+] as const;
+
+// Saneamos los UTM: solo strings, recortados y con tope de longitud para no
+// almacenar basura. Los que no vengan se omiten (quedan NULL en clinics).
+function extractUtm(body: RegisterBody): Record<string, string> {
+  const utm: Record<string, string> = {};
+  for (const key of UTM_KEYS) {
+    const raw = body[key];
+    if (typeof raw === "string") {
+      const value = raw.trim().slice(0, 200);
+      if (value) utm[key] = value;
+    }
+  }
+  return utm;
+}
 
 function getAppUrl(): string {
   const appUrl =
@@ -34,6 +61,7 @@ export async function POST(request: NextRequest) {
   const clinicName = typeof body.clinicName === "string" ? body.clinicName.trim() : "";
   const dpaAccepted = body.dpa_accepted === true;
   const websiteHoneypot = typeof body.website === "string" ? body.website.trim() : "";
+  const utm = extractUtm(body);
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
   // Honeypot: campo oculto que bots rellenan. Soft error (200 + ok:false)
@@ -146,6 +174,7 @@ export async function POST(request: NextRequest) {
           dpa_accepted: dpaAccepted,
           dpa_version: dpaAccepted ? "v1.5" : null,
           dpa_ip: dpaAccepted ? clientIp : null,
+          ...utm,
         },
       },
     });
