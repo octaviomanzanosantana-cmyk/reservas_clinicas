@@ -220,9 +220,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ?signup=1 marca el primer aterrizaje tras crear la clínica. Lo lee
+    // SignupConversion (cliente) para disparar el evento de conversión de
+    // Google Ads una sola vez. La rama idempotente de arriba NO lo añade.
     const redirect = url.clone();
     redirect.pathname = `/clinic/${clinic.slug}`;
-    redirect.search = "";
+    redirect.search = "?signup=1";
     return NextResponse.redirect(redirect);
   } catch (error) {
     console.error("[auth/confirm] clinic provisioning failed", {

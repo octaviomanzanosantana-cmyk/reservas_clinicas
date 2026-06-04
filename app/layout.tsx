@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
+import { GoogleAds } from "@/components/GoogleAds";
+import ConsentBanner from "@/components/ConsentBanner";
+import SignupConversion from "@/components/SignupConversion";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -57,7 +60,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${jakarta.variable} ${dm.variable} antialiased`}>
+        <GoogleAds />
         {children}
+        <SignupConversion />
+        <ConsentBanner />
         <Toaster
           position="bottom-right"
           duration={3500}
