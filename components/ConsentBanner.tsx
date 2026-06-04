@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { GADS_ID, gtag } from "@/lib/gtag";
 
 const STORAGE_KEY = "appo_consent";
@@ -71,12 +70,14 @@ export default function ConsentBanner() {
         <p className="text-sm text-foreground">
           Usamos cookies propias y de terceros (Google Ads) para medir la
           eficacia de nuestra publicidad. Puedes aceptarlas o rechazarlas.{" "}
-          <Link
-            href="/privacidad"
+          <a
+            href="https://appoclick.com/cookies"
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline underline-offset-2 hover:no-underline"
           >
             Más información
-          </Link>
+          </a>
           .
         </p>
         <div className="flex shrink-0 items-center gap-2">
