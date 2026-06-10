@@ -18,27 +18,21 @@ export async function POST(request: NextRequest) {
     const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60_000).toISOString();
 
     // Check rate limit
-    const { count } = await supabaseAdmin
-      .from("login_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("email", email)
-      .gte("attempted_at", windowStart);
+    const { data: stats, error: statsError } = await supabaseAdmin.rpc(
+      "get_login_attempt_stats",
+      { p_email: email, p_window_start: windowStart },
+    );
 
-    const attempts = count ?? 0;
+    if (statsError) {
+      return NextResponse.json({ error: "internal_error" }, { status: 500 });
+    }
+
+    const attempts = Number(stats?.[0]?.attempt_count ?? 0);
+    const oldestAttemptedAt: string | null = stats?.[0]?.oldest_attempted_at ?? null;
 
     if (attempts >= MAX_ATTEMPTS) {
-      // Find oldest attempt in window to calculate unlock time
-      const { data: oldest } = await supabaseAdmin
-        .from("login_attempts")
-        .select("attempted_at")
-        .eq("email", email)
-        .gte("attempted_at", windowStart)
-        .order("attempted_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      const unlocksAt = oldest?.attempted_at
-        ? new Date(new Date(oldest.attempted_at).getTime() + WINDOW_MINUTES * 60_000)
+      const unlocksAt = oldestAttemptedAt
+        ? new Date(new Date(oldestAttemptedAt).getTime() + WINDOW_MINUTES * 60_000)
         : new Date(Date.now() + WINDOW_MINUTES * 60_000);
       const minutesLeft = Math.max(1, Math.ceil((unlocksAt.getTime() - Date.now()) / 60_000));
 
@@ -60,7 +54,10 @@ export async function POST(request: NextRequest) {
 
     if (authError || !authData.user) {
       // Record failed attempt
-      await supabaseAdmin.from("login_attempts").insert({ email, ip_address: ip });
+      await supabaseAdmin.rpc("record_login_attempt", {
+        p_email: email,
+        p_ip_address: ip,
+      });
 
       const remaining = MAX_ATTEMPTS - attempts - 1;
       const raw = authError?.message?.toLowerCase() ?? "";
@@ -77,10 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Login OK — clear attempts for this email
-    await supabaseAdmin
-      .from("login_attempts")
-      .delete()
-      .eq("email", email);
+    await supabaseAdmin.rpc("clear_login_attempts", { p_email: email });
 
     return NextResponse.json({
       ok: true,
