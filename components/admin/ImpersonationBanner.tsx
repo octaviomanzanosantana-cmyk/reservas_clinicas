@@ -9,11 +9,10 @@ export async function ImpersonationBanner() {
   const token = cookieStore.get("admin_token")?.value?.trim();
   if (!token) return null;
 
-  const { data: tokenRow } = await supabaseAdmin
-    .from("impersonation_tokens")
-    .select("clinic_slug, expires_at, used")
-    .eq("token", token)
-    .maybeSingle();
+  const { data } = await supabaseAdmin.rpc("get_impersonation_token", {
+    p_token: token,
+  });
+  const tokenRow = data?.[0];
 
   if (!tokenRow || tokenRow.used) return null;
   if (new Date(tokenRow.expires_at).getTime() < Date.now()) return null;

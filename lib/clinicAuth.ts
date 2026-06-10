@@ -99,21 +99,14 @@ export async function verifyAdminImpersonationToken(
   const safeToken = token.trim();
   if (!safeToken) return false;
 
-  const { data } = await supabaseAdmin
-    .from("impersonation_tokens")
-    .select("*")
-    .eq("token", safeToken)
-    .eq("clinic_slug", clinicSlug)
-    .eq("used", false)
-    .maybeSingle();
-
-  if (!data) return false;
-
-  // Check expiry
-  if (new Date(data.expires_at).getTime() < Date.now()) {
-    return false;
-  }
-
+  const { data } = await supabaseAdmin.rpc("get_impersonation_token", {
+    p_token: safeToken,
+  });
+  const row = data?.[0];
+  if (!row) return false;
+  if (row.clinic_slug !== clinicSlug) return false;
+  if (row.used) return false;
+  if (new Date(row.expires_at).getTime() < Date.now()) return false;
   return true;
 }
 
@@ -160,19 +153,18 @@ async function tryAdminImpersonation(): Promise<CurrentClinicAccess | null> {
     if (!adminToken) return null;
 
     // Find the token to get the clinic_slug
-    const { data } = await supabaseAdmin
-      .from("impersonation_tokens")
-      .select("*")
-      .eq("token", adminToken.trim())
-      .maybeSingle();
-
-    if (!data || new Date(data.expires_at).getTime() < Date.now()) return null;
+    const { data } = await supabaseAdmin.rpc("get_impersonation_token", {
+      p_token: adminToken.trim(),
+    });
+    const row = data?.[0];
+    if (!row || new Date(row.expires_at).getTime() < Date.now()) return null;
+    if (row.used) return null; // [FIX-USED] hardening: antes no se comprobaba
 
     // Get clinic ID from slug
     const { data: clinic } = await supabaseAdmin
       .from("clinics")
       .select("id")
-      .eq("slug", data.clinic_slug)
+      .eq("slug", row.clinic_slug)
       .maybeSingle();
 
     if (!clinic) return null;
@@ -180,7 +172,7 @@ async function tryAdminImpersonation(): Promise<CurrentClinicAccess | null> {
     return {
       userId: "admin-impersonation",
       clinicId: clinic.id,
-      clinicSlug: data.clinic_slug,
+      clinicSlug: row.clinic_slug,
       role: "admin",
     };
   } catch {
