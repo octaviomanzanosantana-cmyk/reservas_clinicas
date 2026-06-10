@@ -19,14 +19,11 @@ export async function POST(request: Request) {
     }
 
     // Get latest unused code for this user
-    const { data: record, error: recordError } = await supabaseAdmin
-      .from("two_factor_codes")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("used", false)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: codes, error: recordError } = await supabaseAdmin.rpc(
+      "get_active_2fa_code",
+      { p_user_id: userId },
+    );
+    const record = codes?.[0] ?? null;
 
     if (recordError) {
       console.error("[api/auth/verify-2fa-code] record query failed", {
@@ -51,10 +48,7 @@ export async function POST(request: Request) {
     if (new Date(record.expires_at).getTime() < Date.now()) {
       // Fire-and-forget intencional: si falla, el guard
       // expires_at < now() sigue rechazando el codigo.
-      await supabaseAdmin
-        .from("two_factor_codes")
-        .update({ used: true })
-        .eq("id", record.id);
+      await supabaseAdmin.rpc("mark_2fa_code_used", { p_code_id: record.id });
 
       return NextResponse.json(
         { error: "expired", message: "El código ha caducado. Solicita uno nuevo." },
@@ -66,10 +60,7 @@ export async function POST(request: Request) {
     if (record.attempts >= MAX_ATTEMPTS) {
       // Fire-and-forget intencional: si falla, el guard
       // attempts >= MAX_ATTEMPTS sigue rechazando.
-      await supabaseAdmin
-        .from("two_factor_codes")
-        .update({ used: true })
-        .eq("id", record.id);
+      await supabaseAdmin.rpc("mark_2fa_code_used", { p_code_id: record.id });
 
       return NextResponse.json(
         { error: "max_attempts", message: "Demasiados intentos. Solicita un nuevo código." },
@@ -80,11 +71,11 @@ export async function POST(request: Request) {
     // Verify code
     const codeHash = hashCode(code);
     if (codeHash !== record.code_hash) {
-      // Increment attempts
-      const { error: incError } = await supabaseAdmin
-        .from("two_factor_codes")
-        .update({ attempts: record.attempts + 1 })
-        .eq("id", record.id);
+      // Increment attempts atomically
+      const { data: incremented, error: incError } = await supabaseAdmin.rpc(
+        "increment_2fa_attempts",
+        { p_code_id: record.id },
+      );
 
       if (incError) {
         console.error(
@@ -102,7 +93,8 @@ export async function POST(request: Request) {
         );
       }
 
-      const remaining = MAX_ATTEMPTS - record.attempts - 1;
+      const newAttempts = Number(incremented?.[0]?.attempts ?? record.attempts + 1);
+      const remaining = MAX_ATTEMPTS - newAttempts;
       return NextResponse.json(
         {
           error: "invalid_code",
@@ -115,10 +107,9 @@ export async function POST(request: Request) {
     }
 
     // Mark as used
-    const { error: usedError } = await supabaseAdmin
-      .from("two_factor_codes")
-      .update({ used: true })
-      .eq("id", record.id);
+    const { error: usedError } = await supabaseAdmin.rpc("mark_2fa_code_used", {
+      p_code_id: record.id,
+    });
 
     if (usedError) {
       console.error(

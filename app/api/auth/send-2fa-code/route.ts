@@ -22,19 +22,16 @@ export async function POST(request: Request) {
     }
 
     // Rate limit: check if a code was sent less than 60s ago
-    const { data: recent, error: recentError } = await supabaseAdmin
-      .from("two_factor_codes")
-      .select("created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: latest, error: latestError } = await supabaseAdmin.rpc(
+      "get_latest_2fa_code_time",
+      { p_user_id: userId },
+    );
 
-    if (recentError) {
+    if (latestError) {
       console.error("[api/auth/send-2fa-code] rate-limit query failed", {
         userId,
-        code: recentError.code,
-        message: recentError.message,
+        code: latestError.code,
+        message: latestError.message,
       });
       return NextResponse.json(
         { ok: false, error: "internal_error" },
@@ -42,19 +39,19 @@ export async function POST(request: Request) {
       );
     }
 
-    if (recent?.created_at) {
-      const lastSent = new Date(recent.created_at).getTime();
+    const latestCreatedAt = latest?.[0]?.created_at;
+    if (latestCreatedAt) {
+      const lastSent = new Date(latestCreatedAt).getTime();
       if (Date.now() - lastSent < 60_000) {
         return NextResponse.json({ error: "cooldown", message: "Espera 60 segundos para reenviar" }, { status: 429 });
       }
     }
 
     // Invalidate previous codes
-    const { error: invalidateError } = await supabaseAdmin
-      .from("two_factor_codes")
-      .update({ used: true })
-      .eq("user_id", userId)
-      .eq("used", false);
+    const { error: invalidateError } = await supabaseAdmin.rpc(
+      "invalidate_active_2fa_codes",
+      { p_user_id: userId },
+    );
 
     if (invalidateError) {
       console.error(
@@ -75,15 +72,11 @@ export async function POST(request: Request) {
     const codeHash = hashCode(code);
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
 
-    const { error: insertError } = await supabaseAdmin
-      .from("two_factor_codes")
-      .insert({
-        user_id: userId,
-        code_hash: codeHash,
-        expires_at: expiresAt,
-        used: false,
-        attempts: 0,
-      });
+    const { error: insertError } = await supabaseAdmin.rpc("create_2fa_code", {
+      p_user_id: userId,
+      p_code_hash: codeHash,
+      p_expires_at: expiresAt,
+    });
 
     if (insertError) {
       console.error(
